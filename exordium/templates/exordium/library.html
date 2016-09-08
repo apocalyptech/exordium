@@ -1,0 +1,11 @@
+{# vim: set syntax=htmldjango: #}
+{% extends "exordium/base.html" %}
+
+{% block body %}
+<p><strong>Base Path:</strong> {{ base_path }}<br />
+<strong>Media URL Prefix:</strong> {{ media_url }}</p>
+
+<p><a href="{% url 'exordium:library_add' %}">Add new music</a></p>
+<p><a href="{% url 'exordium:library_update' %}">Update/Clean music (will also add)</a></p>
+
+{% endblock %}

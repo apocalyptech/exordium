@@ -1,0 +1,4 @@
+django
+mutagen
+django-tables2
+django-dynamic-preferences

@@ -1,0 +1,4 @@
+dist
+build
+django_exordium.egg-info
+**/__pycache__

@@ -1,0 +1,10 @@
+{# vim: set syntax=htmldjango: #}
+{% extends "exordium/base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block body %}
+<p>Artist: <strong><a href="{% url 'exordium:artist' album.artist.pk %}">{{ album.artist }}</a></strong></p>
+<p>Album: <strong>{{ album }}</strong></p>
+<p>Year: <strong>{{ album.year }}</strong></p>
+{% render_table songs %}
+{% endblock %}

@@ -1,0 +1,7 @@
+include LICENSE
+include README.rst
+recursive-include exordium/static *
+recursive-include exordium/fixtures *
+recursive-include exordium/testdata *
+recursive-include exordium/templates *
+recursive-include docs *

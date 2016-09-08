@@ -1,0 +1,10 @@
+[
+    {
+        "model": "exordium.artist",
+        "pk": 1,
+        "fields": {
+            "name": "Various",
+            "prefix": ""
+        }
+    }
+]

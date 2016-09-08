@@ -1,0 +1,32 @@
+BODY {
+    color: black;
+    font-family: Verdana, Arial, Helvetica;
+}
+.sidebar {
+    background: #ccc;
+    border: 1px solid black;
+    width: 200px;
+    float: left;
+    padding: .5em;
+}
+.body {
+    margin-left: 230px;
+}
+.green {
+    color: green;
+}
+.red {
+    color: red;
+}
+.library_update {
+    font-size: smaller;
+}
+.adminlinks {
+    font-size: smaller;
+}
+h1 {
+    margin-top: 0px;
+}
+.searchform {
+    width: 100%;
+}

@@ -1,0 +1,39 @@
+{# vim: set syntax=htmldjango: #}
+{% load static %}
+<html>
+<head>
+<title>Exordium{% if exordium_title and exordium_title != '' %} | {{ exordium_title }}{% endif %}</title>
+<link rel="stylesheet" type="text/css" href="{% static 'exordium/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+</head>
+<body>
+<div class="sidebar">
+    <h1>Exordium</h1>
+    <p>Welcome, {{ request.user }}</p>
+    <p><a href="{% url 'exordium:index' %}">Home</a></p>
+    <p><strong>Browse</strong></p>
+    <ul>
+        <li><a href="{% url 'exordium:browse_artist' %}">Artists</a></li>
+        <li><a href="{% url 'exordium:browse_album' %}">Albums</a></li>
+    </ul>
+    <form action="{% url 'exordium:search' %}" method="get">
+        <input type="text" name="q" id="searchstr" class="searchform" maxlength="80" />
+        <input type="submit" id="searchbut" class="searchform" value="Search" />
+    </form>
+{% if request.user.is_staff %}
+<hr />
+<div class="adminlinks">
+    <p>Administrative Links</p>
+    <p><a href="{% url 'admin:dynamic_preferences_globalpreferencemodel_changelist' %}">Library Configuration</a></p>
+    <p><a href="{% url 'exordium:library' %}">Library Upkeep</a></p>
+    <p><a href="{% url 'admin:index' %}">Django Admin</a></p>
+</div>
+{% endif %}
+</div>
+<div class="body">
+{% if exordium_title and exordium_title != '' %}<h2>{{ exordium_title }}</h2>{% endif %}
+{% block body %}
+{% endblock %}
+</div>
+</body>
+</html>

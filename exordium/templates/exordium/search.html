@@ -1,0 +1,27 @@
+{# vim: set syntax=htmldjango: #}
+{% extends "exordium/base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block body %}
+<p>Search results for <strong>"{{ q }}"</strong></p>
+{% if found_results %}
+
+{% if artist_results %}
+<h3>Artists</h3>
+{% render_table artist_results %}
+{% endif %}
+
+{% if album_results %}
+<h3>Albums</h3>
+{% render_table album_results %}
+{% endif %}
+
+{% if song_results %}
+<h3>Songs</h3>
+{% render_table song_results %}
+{% endif %}
+
+{% else %}
+<p class="red">No results found!</p>
+{% endif %}
+{% endblock %}
