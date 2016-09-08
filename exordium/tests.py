@@ -36,7 +36,7 @@ class ExordiumTests(TestCase):
         library hanging around in our testdata dir, ensure that our base
         testing files exist, and then set up the base library path.
         """
-        for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3']:
+        for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         if os.path.exists(self.library_path):
@@ -54,8 +54,9 @@ class ExordiumTests(TestCase):
         shutil.rmtree(self.library_path)
 
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
-            title='', tracknum=0, maxtracks=None, year=1234, yeartag='TDRC',
-            basefile='silence-vbr.mp3', save_as_v23=False):
+            title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
+            basefile='silence-vbr.mp3', save_as_v23=False,
+            apply_tags=True):
         """
         Adds a new mp3 with the given parameters to our library.
 
@@ -64,6 +65,9 @@ class ExordiumTests(TestCase):
         will happen there is conversion of the year tag to TYER, which
         we'll otherwise not be specifying directly.  `yeartag` is effectively
         ignored when `save_as_v23` is True.
+
+        Pass in `False` for `apply_tags` to only use whatever tags happen to
+        be present in the source basefile.
         """
         if path != '' and ('..' in path or path[0] == '/'):
             raise Exception('Given path "%s" is invalid' % (path))
@@ -80,6 +84,10 @@ class ExordiumTests(TestCase):
         os.makedirs(full_path, exist_ok=True)
         shutil.copyfile(src_filename, full_filename)
         self.assertEqual(os.path.exists(full_filename), True)
+
+        # Finish here if we've been told to.
+        if not apply_tags:
+            return
 
         # Apply the tags as specified
         tags = ID3()
@@ -338,6 +346,38 @@ class BasicAddTests(ExordiumTests):
         that the year is populated properly.
         """
         self.mp3_year_test(1970, 'TDRC')
+
+    def test_add_mp3_empty_track_tag(self):
+        """
+        Adds a single track with an empty tracknum field.  Note that
+        mutagen refuses to write an actually-empty string to a tag,
+        so we're using a space instead.  The important part is just
+        that it's a value that fails when passed to int()
+        """
+        self.add_mp3(artist='Artist', title='Title', tracknum=' ')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.tracknum, 0)
+
+    def test_add_mp3_empty_year_tag(self):
+        """
+        Adds a single track with an empty year field.  Mutagen refuses to
+        write out invalid tags, so we've just constructed one to pass in.
+        This technically also tests an empty tracknum field, making the
+        previous test unnecessary, but whatever, we'll do both.
+        """
+        self.add_mp3(basefile='invalid-tags.mp3', apply_tags=False)
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        song = Song.objects.get()
+        #os.system('mid3v2 -l %s' % (os.path.join(self.library_path, song.filename)))
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.year, 0)
+        self.assertEqual(song.tracknum, 0)
 
     def test_add_mp3_artist_prefix(self):
         """

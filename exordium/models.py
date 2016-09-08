@@ -278,7 +278,7 @@ class Song(models.Model):
         title = ''
         filetype = ''
         tracknum = 0
-        year = 1234
+        year = 0
         length = 0
         bitrate = 0
 
@@ -297,14 +297,20 @@ class Song(models.Model):
                 tracknum = str(audio['TRCK'])
                 if '/' in tracknum:
                     tracknum = tracknum.split('/', 2)[0]
-                tracknum = int(tracknum)
+                try:
+                    tracknum = int(tracknum)
+                except ValueError:
+                    tracknum = 0
 
-            if 'TYER' in audio:
-                year = int(str(audio['TYER']))
-            elif 'TDRL' in audio:
-                year = int(str(audio['TDRL']))
-            elif 'TDRC' in audio:
-                year = int(str(audio['TDRC']))
+            try:
+                if 'TYER' in audio:
+                    year = int(str(audio['TYER']))
+                elif 'TDRL' in audio:
+                    year = int(str(audio['TDRL']))
+                elif 'TDRC' in audio:
+                    year = int(str(audio['TDRC']))
+            except ValueError:
+                year = 0
 
             filetype = Song.MP3
             length = audio.info.length
@@ -831,7 +837,7 @@ class App(object):
                     old_artist = album_obj.artist
                     old_name = album_obj.name
                     album_obj.artist = artist_obj
-                    if tracks[0].year is not None and tracks[0].year != 1234:
+                    if tracks[0].year is not None and tracks[0].year != 0:
                         album_obj.year = tracks[0].year
                     album_obj.name = album
                     album_obj.save()
