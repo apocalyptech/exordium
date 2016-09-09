@@ -489,9 +489,9 @@ class App(object):
         # Grab a nested dict of all artists and their albums
         known_artists = {}
         for artist in Artist.objects.all():
-            known_artists[artist.name] = (artist, {})
+            known_artists[artist.name.lower()] = (artist, {})
         for album in Album.objects.all():
-            known_artists[album.artist.name][1][album.name] = album
+            known_artists[album.artist.name.lower()][1][album.name.lower()] = album
 
         # Also grab songs and sort by what directory they're in.  We only
         # need this for the following scenario: An album exists in a
@@ -535,70 +535,82 @@ class App(object):
 
             # Step 1: Loop through new tracks and populate album_artist
             for helper in songlist:
-                if helper.album not in album_artist:
-                    album_artist[helper.album] = helper.artist_name
-                if helper.artist_name != album_artist[helper.album]:
-                    album_artist[helper.album] = 'Various'
+                helper_album_lower = helper.album.lower()
+                if helper_album_lower not in album_artist:
+                    album_artist[helper_album_lower] = helper.artist_name
+                if helper.artist_name.lower() != album_artist[helper_album_lower].lower():
+                    album_artist[helper_album_lower] = 'Various'
 
             # Step 2: Loop through any existing tracks in this
             # directory and potentially mark them for update as well.
             if base_dir in existing_songs_in_dir:
                 for song in existing_songs_in_dir[base_dir]:
-                    if song.album.name not in album_artist:
-                        album_artist[song.album.name] = song.album.artist.name
-                    if song.artist.name != album_artist[song.album.name]:
-                        album_artist[song.album.name] = 'Various'
-                        albums_to_update[song.album.name] = song.album
+                    song_album_name_lower = song.album.name.lower()
+                    song_artist_name_lower = song.artist.name.lower()
+                    if song_album_name_lower not in album_artist:
+                        album_artist[song_album_name_lower] = song.album.artist.name
+                    if song_artist_name_lower != album_artist[song_album_name_lower].lower():
+                        album_artist[song_album_name_lower] = 'Various'
+                        albums_to_update[song_album_name_lower] = song.album
 
             # Step 3: actually assign the artist to the SongHelper
             for helper in songlist:
-                helper.album_artist = album_artist[helper.album]
+                helper.album_artist = album_artist[helper.album.lower()]
 
             # Step 4: update existing album records if we need to
             for (albumname, album) in albums_to_update.items():
+                album_artist_name_lower = album.artist.name.lower()
+                album_name_lower = album.name.lower()
                 try:
-                    del known_artists[album.artist.name][1][album.name]
-                    album.artist = Artist.objects.get(name=album_artist[album.name])
+                    del known_artists[album_artist_name_lower][1][album_name_lower]
+                    retlines.append((App.STATUS_DEBUG, 'Switching album "%s / %s" to artist "%s"' %
+                        (album.artist, album, album_artist[album_name_lower])))
+                    album.artist = Artist.objects.get(name=album_artist[album_name_lower])
                     album.save()
-                    known_artists[album.artist.name][1][album.name] = album
+                    album_artist_name_lower = album.artist.name.lower()
+                    known_artists[album_artist_name_lower][1][album_name_lower] = album
                 except Artist.DoesNotExist:
                     retlines.append((App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
-                        (album_artist[albumname])))
+                        (album_artist[albumname.lower()])))
 
         # Loop through helper objects
         for (base_dir, songlist) in songs_in_dir.items():
 
             for helper in songlist:
+
+                artist_name_lower = helper.artist_name.lower()
+                album_artist_lower = helper.album_artist.lower()
+                album_lower = helper.album.lower()
             
                 # Check to see if we know the artist yet, and if not create it.
-                if helper.artist_name not in known_artists:
+                if artist_name_lower not in known_artists:
                     artist_obj = helper.new_artist()
                     artist_obj.save()
-                    known_artists[helper.artist_name] = (artist_obj, {})
+                    known_artists[artist_name_lower] = (artist_obj, {})
                     retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
                     artists_added += 1
-                elif helper.artist_prefix != '' and known_artists[helper.artist_name][0].prefix == '':
+                elif helper.artist_prefix != '' and known_artists[artist_name_lower][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
                     # but we see one now, update the artist record with that prefix.
-                    known_artists[helper.artist_name][0].prefix = helper.artist_prefix
-                    known_artists[helper.artist_name][0].save()
+                    known_artists[artist_name_lower][0].prefix = helper.artist_prefix
+                    known_artists[artist_name_lower][0].save()
                     retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
-                        (known_artists[helper.artist_name][0])))
+                        (known_artists[artist_name_lower][0])))
 
                 # Check to see if we know the album yet, and if not create it.
-                if helper.album not in known_artists[helper.album_artist][1]:
+                if album_lower not in known_artists[album_artist_lower][1]:
                     album_obj = Album(name=helper.album,
-                            artist=known_artists[helper.album_artist][0],
+                            artist=known_artists[album_artist_lower][0],
                             year=helper.song_obj.year,
                             special=helper.special_album)
                     album_obj.save()
-                    known_artists[helper.album_artist][1][helper.album] = album_obj
+                    known_artists[album_artist_lower][1][album_lower] = album_obj
                     retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
                     albums_added += 1
 
                 # And now, update and save our song_obj
-                helper.song_obj.artist = known_artists[helper.artist_name][0]
-                helper.song_obj.album = known_artists[helper.album_artist][1][helper.album]
+                helper.song_obj.artist = known_artists[artist_name_lower][0]
+                helper.song_obj.album = known_artists[album_artist_lower][1][album_lower]
                 helper.song_obj.save()
                 songs_added += 1
 

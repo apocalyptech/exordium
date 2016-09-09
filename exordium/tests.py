@@ -373,11 +373,27 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 1)
         song = Song.objects.get()
-        #os.system('mid3v2 -l %s' % (os.path.join(self.library_path, song.filename)))
         self.assertEqual(song.artist.name, 'Artist')
         self.assertEqual(song.title, 'Title')
         self.assertEqual(song.year, 0)
         self.assertEqual(song.tracknum, 0)
+
+    def test_add_mp3s_different_artist_case(self):
+        """
+        Adds two tracks by the same artist, but with different capitalization
+        on the artist name.  Which version of the artist name gets stored is
+        basically just dependent on whatever the app sees first.  I'm tempted
+        to have it compare when it sees alternate cases and use the one with
+        the most uppercase, but I think I'll just leave that to manual editing.
+        """
+        self.add_mp3(artist='Artist Name', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='artist name', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        # Note the mixed-case in the query, just checking that too.
+        artist = Artist.objects.get(name='artist Name')
+        self.assertEqual(artist.name.lower(), 'artist name')
 
     def test_add_mp3_artist_prefix(self):
         """
@@ -629,6 +645,9 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
 
         # Just verify that the album is Artist 1 quick
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
         album = Album.objects.get(name='Album')
         self.assertEqual(album.name, 'Album')
         self.assertEqual(album.artist.name, 'Artist 1')
