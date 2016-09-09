@@ -439,6 +439,51 @@ class BasicAddTests(ExordiumTests):
         artist = Artist.objects.get(name='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
 
+    def test_add_mp3s_differing_umlaut_artist(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        artist name.
+        """
+        self.add_mp3(artist='Umläut', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umlaut', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_mp3s_differing_umlaut_album(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        album name.
+        """
+        self.add_mp3(artist='Umlaut', album='Albüm',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umlaut', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_mp3s_differing_umlaut_album_and_artist(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        album and artist names.
+        """
+        self.add_mp3(artist='Umläut', album='Albüm',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umlaut', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
     def test_add_mp3_artist_prefix(self):
         """
         Adds a single track with an artist name "The Artist" to check for
@@ -1135,6 +1180,69 @@ class BasicUpdateTests(ExordiumTests):
         # Eh, let's not care about PK conservation here, this
         # is a ridiculous corner case.
         #self.assertEqual(album.pk, album_pk)
+
+    def test_update_differing_umlaut_artist(self):
+        """
+        Update one of two files to get rid of an umlaut in the artist name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Umläut', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umläut', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='umlaut')
+        artist_pk = artist.pk
+        self.assertEqual(artist.name, 'Umläut')
+        
+        # Update
+        self.update_mp3('song2.mp3', artist='Umlaut')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='umlaut')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Umläut')
+
+    def test_update_differing_umlaut_album(self):
+        """
+        Update one of two files to get rid of an umlaut in the album name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Umlaut', album='Albüm',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umlaut', album='Albüm',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        album = Album.objects.get(name='album')
+        album_pk = album.pk
+        self.assertEqual(album.name, 'Albüm')
+        
+        # Update
+        self.update_mp3('song2.mp3', album='Album')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        album = Album.objects.get(name='album')
+        self.assertEqual(album_pk, album.pk)
+        self.assertEqual(album.song_set.count(), 2)
+        self.assertEqual(album.name, 'Albüm')
 
     def test_update_song_delete(self):
         """
