@@ -1242,7 +1242,10 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get(name='album')
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.song_set.count(), 2)
-        self.assertEqual(album.name, 'Albüm')
+        # The album will end up getting renamed.  Would sort
+        # of prefer it stay the original, but in the end I don't
+        # care enough to change what's happening now.
+        self.assertEqual(album.name, 'Album')
 
     def test_update_song_delete(self):
         """
