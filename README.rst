@@ -75,6 +75,39 @@ The tests in `test.py` make use of the `exist_ok` parameter to Python's
 `os.makedirs()`, which was not introduced until Python 3.2, so the
 tests at least currently require at least Python 3.2.
 
+A Note for WSGI Deployments
+---------------------------
+
+If deploying via WSGI, there's a serious problem which can occur if any
+non-ASCII characters are found in your filenames.  Basically, by default
+the WSGI process will be launched with a $LANG of "C", making ascii
+the default encoding for various things, including the filesystem encoding
+as reported by `sys.getfilesystemencoding()`.  If you try and import
+any files with non-ASCII characters in the filename, you can end up with
+absurd errors like this in your logs:
+
+    UnicodeEncodeError: 'utf-8' codec can't encode character '\\udcc3' in position 7160: surrogates not allowed
+
+This behavior is especially difficult to track down since it will NOT
+be repeatable in any unit tests, nor will it be repeatable when running
+the development test server - it'll only ever show up in the WSGI
+deployment.
+
+Currently Exordium doesn't have a check for this - I'll hope to
+eventually add that in - but for now just make sure that you're specifying
+the following after your WSGIDaemonProcess line:
+
+    lang='en_US.UTF-8' locale='en_US.UTF-8'
+
+Of course, replacing the encoding with the proper one for the data stored
+on your filesystem.
+
+There may be some similar problems if more than one encoding is found in
+your system's filenames - that's another thing I have yet to investigate.
+
+You can read a bit more on this problem here, FWIW:
+http://blog.dscpl.com.au/2014/09/setting-lang-and-lcall-when-using.html
+
 Quick start
 -----------
 
