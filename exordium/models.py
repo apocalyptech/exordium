@@ -3,6 +3,7 @@ import re
 import hashlib
 import mutagen
 import datetime
+import unicodedata
 
 from dynamic_preferences.registries import global_preferences_registry
 
@@ -25,6 +26,19 @@ def extract_prefix(name):
         return (match.group(2), match.group(3))
     else:
         return ('', name)
+
+# TODO: Move this somewhere more reasonable, too?
+def compare_name(name):
+    """
+    Returns a name which can be used to compare against other
+    names, disregarding case and special characters like umlauts.
+    
+    Technically this can create some collisions which shouldn't happen.
+    For instance, the name "hellø" would become just "hell" afterwards,
+    the ø character just getting dropped altogether.  Still, it's enough
+    of a corner case that this is what I'm trying for now.
+    """
+    return unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').lower()
 
 class SongHelper(object):
     """
@@ -489,9 +503,9 @@ class App(object):
         # Grab a nested dict of all artists and their albums
         known_artists = {}
         for artist in Artist.objects.all():
-            known_artists[artist.name.lower()] = (artist, {})
+            known_artists[compare_name(artist.name)] = (artist, {})
         for album in Album.objects.all():
-            known_artists[album.artist.name.lower()][1][album.name.lower()] = album
+            known_artists[compare_name(album.artist.name)][1][compare_name(album.name)] = album
 
         # Also grab songs and sort by what directory they're in.  We only
         # need this for the following scenario: An album exists in a
@@ -535,52 +549,52 @@ class App(object):
 
             # Step 1: Loop through new tracks and populate album_artist
             for helper in songlist:
-                helper_album_lower = helper.album.lower()
+                helper_album_lower = compare_name(helper.album)
                 if helper_album_lower not in album_artist:
                     album_artist[helper_album_lower] = helper.artist_name
-                if helper.artist_name.lower() != album_artist[helper_album_lower].lower():
+                if compare_name(helper.artist_name) != compare_name(album_artist[helper_album_lower]):
                     album_artist[helper_album_lower] = 'Various'
 
             # Step 2: Loop through any existing tracks in this
             # directory and potentially mark them for update as well.
             if base_dir in existing_songs_in_dir:
                 for song in existing_songs_in_dir[base_dir]:
-                    song_album_name_lower = song.album.name.lower()
-                    song_artist_name_lower = song.artist.name.lower()
+                    song_album_name_lower = compare_name(song.album.name)
+                    song_artist_name_lower = compare_name(song.artist.name)
                     if song_album_name_lower not in album_artist:
                         album_artist[song_album_name_lower] = song.album.artist.name
-                    if song_artist_name_lower != album_artist[song_album_name_lower].lower():
+                    if song_artist_name_lower != compare_name(album_artist[song_album_name_lower]):
                         album_artist[song_album_name_lower] = 'Various'
                         albums_to_update[song_album_name_lower] = song.album
 
             # Step 3: actually assign the artist to the SongHelper
             for helper in songlist:
-                helper.album_artist = album_artist[helper.album.lower()]
+                helper.album_artist = album_artist[compare_name(helper.album)]
 
             # Step 4: update existing album records if we need to
             for (albumname, album) in albums_to_update.items():
-                album_artist_name_lower = album.artist.name.lower()
-                album_name_lower = album.name.lower()
+                album_artist_name_lower = compare_name(album.artist.name)
+                album_name_lower = compare_name(album.name)
                 try:
                     del known_artists[album_artist_name_lower][1][album_name_lower]
                     retlines.append((App.STATUS_DEBUG, 'Switching album "%s / %s" to artist "%s"' %
                         (album.artist, album, album_artist[album_name_lower])))
                     album.artist = Artist.objects.get(name=album_artist[album_name_lower])
                     album.save()
-                    album_artist_name_lower = album.artist.name.lower()
+                    album_artist_name_lower = compare_name(album.artist.name)
                     known_artists[album_artist_name_lower][1][album_name_lower] = album
                 except Artist.DoesNotExist:
                     retlines.append((App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
-                        (album_artist[albumname.lower()])))
+                        (album_artist[compare_name(albumname)])))
 
         # Loop through helper objects
         for (base_dir, songlist) in songs_in_dir.items():
 
             for helper in songlist:
 
-                artist_name_lower = helper.artist_name.lower()
-                album_artist_lower = helper.album_artist.lower()
-                album_lower = helper.album.lower()
+                artist_name_lower = compare_name(helper.artist_name)
+                album_artist_lower = compare_name(helper.album_artist)
+                album_lower = compare_name(helper.album)
             
                 # Check to see if we know the artist yet, and if not create it.
                 if artist_name_lower not in known_artists:
