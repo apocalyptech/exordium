@@ -484,6 +484,21 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
 
+    def test_add_mp3s_mismatched_japanese_artists(self):
+        """
+        Adds two files with different artist names using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        separate instead of collapsing them into a single artist.
+
+        Characters taken from a search for "test" at google.co.jp,
+        hopefully they are nothing offensive.  :)
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+
     def test_add_mp3_artist_prefix(self):
         """
         Adds a single track with an artist name "The Artist" to check for
