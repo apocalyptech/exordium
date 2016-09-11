@@ -484,6 +484,7 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
 
+    # TODO: should add one of these for albums, too
     def test_add_mp3s_mismatched_japanese_artists(self):
         """
         Adds two files with different artist names using Japanese characters,
@@ -498,6 +499,18 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 3)
+
+    # TODO: should add one of these for albums, too
+    def test_add_mp3s_mismatched_aesc(self):
+        """
+        Adds two files with artist names which differ in that one uses an "æ" char
+        and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Mediaeval', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
 
     def test_add_mp3_artist_prefix(self):
         """
