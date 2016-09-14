@@ -3,7 +3,6 @@ import re
 import hashlib
 import mutagen
 import datetime
-import unicodedata
 
 from dynamic_preferences.registries import global_preferences_registry
 
@@ -32,13 +31,35 @@ def compare_name(name):
     """
     Returns a name which can be used to compare against other
     names, disregarding case and special characters like umlauts.
-    
-    Technically this can create some collisions which shouldn't happen.
-    For instance, the name "hellø" would become just "hell" afterwards,
-    the ø character just getting dropped altogether.  Still, it's enough
-    of a corner case that this is what I'm trying for now.
+    and the like.  After doing some initial manual translations,
+    the final step is to convert to plain ASCII.  If we end up
+    losing any string length due to that conversion, we'll
+    assume that we don't know enough to safely denormalize it
+    and just return the original string again.  This may end
+    up causing some IntegrityErrors while inserting into the
+    database later...
+
+    We used to use `unicodedata.normalize('NFKD', name)` in here
+    but was running into problems such as the following:
+
+        >>> len('umläut')
+        6
+        >>> len(unicodedata.normalize('NFKD', 'umläut'))
+        7
+
+    ... since the normalized form would technically be taking
+    two characters to combine the umlauts.  In the end I 
+    figured it just wasn't worth it.
     """
-    return unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').lower()
+    # TODO: Translations and replacements could use some expansion
+    lower = name.lower()
+    lower = lower.translate(str.maketrans('äáàâãëéèíìöóòøúùüýðç', 'aaaaaeeeiioooouuuydc')).replace(
+        'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
+    final = lower.encode('ASCII', 'ignore')
+    if len(final) != len(lower):
+        return lower
+    else:
+        return final
 
 class SongHelper(object):
     """
