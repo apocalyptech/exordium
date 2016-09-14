@@ -512,6 +512,18 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 2)
 
+    # TODO: should add one of these for albums, too
+    def test_add_mp3s_mismatched_slashed_o(self):
+        """
+        Adds two files with artist names which differ in that one uses an "ø" char
+        and the other uses "o".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='søster', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='soster', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
     def test_add_mp3_artist_prefix(self):
         """
         Adds a single track with an artist name "The Artist" to check for

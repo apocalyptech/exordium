@@ -6,7 +6,8 @@ import datetime
 
 from dynamic_preferences.registries import global_preferences_registry
 
-from django.db import models
+from django.db import models, transaction
+from django.db.utils import IntegrityError
 from django.utils import timezone
 
 # Create your models here.
@@ -94,12 +95,12 @@ class SongHelper(object):
         else:
             self.special_album = False
 
+    @transaction.atomic
     def new_artist(self):
         """
-        Returns a new Artist object based on our data.  Does NOT
-        `save()` the object to the database.
+        Returns a new Artist object based on our data.
         """
-        return Artist(name=self.artist_name, prefix=self.artist_prefix)
+        return Artist.objects.create(name=self.artist_name, prefix=self.artist_prefix)
 
 class Artist(models.Model):
 
@@ -619,11 +620,18 @@ class App(object):
             
                 # Check to see if we know the artist yet, and if not create it.
                 if artist_name_lower not in known_artists:
-                    artist_obj = helper.new_artist()
-                    artist_obj.save()
-                    known_artists[artist_name_lower] = (artist_obj, {})
-                    retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
-                    artists_added += 1
+                    try:
+                        artist_obj = helper.new_artist()
+                        known_artists[artist_name_lower] = (artist_obj, {})
+                        retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
+                        artists_added += 1
+                    except IntegrityError:
+                        # Apparently in this case we're not associating things according to our
+                        # database's collation values.  We'll just try to load the matching artist
+                        # for now...
+                        artist_obj = Artist.objects.get(name=helper.artist_name)
+                        known_artists[artist_name_lower] = (artist_obj, {})
+                        retlines.append((App.STATUS_INFO, 'Loaded existing artist for "%s"' % (artist_obj)))
                 elif helper.artist_prefix != '' and known_artists[artist_name_lower][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
                     # but we see one now, update the artist record with that prefix.
@@ -634,14 +642,19 @@ class App(object):
 
                 # Check to see if we know the album yet, and if not create it.
                 if album_lower not in known_artists[album_artist_lower][1]:
-                    album_obj = Album(name=helper.album,
-                            artist=known_artists[album_artist_lower][0],
-                            year=helper.song_obj.year,
-                            special=helper.special_album)
-                    album_obj.save()
-                    known_artists[album_artist_lower][1][album_lower] = album_obj
-                    retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
-                    albums_added += 1
+                    try:
+                        with transaction.atomic():
+                            album_obj = Album.objects.create(name=helper.album,
+                                    artist=known_artists[album_artist_lower][0],
+                                    year=helper.song_obj.year,
+                                    special=helper.special_album)
+                            known_artists[album_artist_lower][1][album_lower] = album_obj
+                            retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
+                            albums_added += 1
+                    except IntegrityError:
+                        album_obj = Album.objects.get(name=helper.album, artist=known_artists[album_artist_lower][0])
+                        known_artists[album_artist_lower][1][album_lower] = album_obj
+                        retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
 
                 # And now, update and save our song_obj
                 helper.song_obj.artist = known_artists[artist_name_lower][0]
@@ -783,7 +796,6 @@ class App(object):
                             (artist_obj)))
                 except Artist.DoesNotExist:
                     artist_obj = helper.new_artist()
-                    artist_obj.save()
                     retlines.append((App.STATUS_DEBUG, 'Created new artist "%s"' % (artist_obj)))
                 delete_rel_artists[song.artist] = True
                 song.artist = artist_obj
