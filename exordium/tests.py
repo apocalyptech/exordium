@@ -484,7 +484,6 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
 
-    # TODO: should add one of these for albums, too
     def test_add_mp3s_mismatched_japanese_artists(self):
         """
         Adds two files with different artist names using Japanese characters,
@@ -494,14 +493,49 @@ class BasicAddTests(ExordiumTests):
         Characters taken from a search for "test" at google.co.jp,
         hopefully they are nothing offensive.  :)
         """
-        self.add_mp3(artist='\u81EA\u52D5\u8ABF', title='Title 1', filename='song1.mp3')
-        self.add_mp3(artist='\u30AB\u30CA\u30C0', title='Title 2', filename='song2.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3', path='Album1')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', album='Album',
+            title='Title 2', filename='song2.mp3', path='Album2')
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
 
-    # TODO: should add one of these for albums, too
-    def test_add_mp3s_mismatched_aesc(self):
+    def test_add_mp3s_same_japanese_artists(self):
+        """
+        Adds two files with the same artist name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_mp3s_mismatched_japanese_albums(self):
+        """
+        Adds two files with different album names using Japanese characters,
+        to ensure that our album-comparison normalization stuff keeps them
+        separate instead of collapsing them into a single album.
+
+        Characters taken from a search for "test" at google.co.jp,
+        hopefully they are nothing offensive.  :)
+        """
+        self.add_mp3(artist='Artist', album='\u81EA\u52D5\u8ABF',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='\u30AB\u30CA\u30C0',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+    def test_add_mp3s_mismatched_aesc_artist(self):
         """
         Adds two files with artist names which differ in that one uses an "æ" char
         and the other uses "ae".  Should both normalize to the same artist.
@@ -512,8 +546,21 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 2)
 
-    # TODO: should add one of these for albums, too
-    def test_add_mp3s_mismatched_slashed_o(self):
+    def test_add_mp3s_mismatched_aesc_album(self):
+        """
+        Adds two files with album names which differ in that one uses an "æ" char
+        and the other uses "ae".  Should both normalize to the same album.
+        """
+        self.add_mp3(artist='Artist', album='Mediæval',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Mediaeval',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_mp3s_mismatched_slashed_o_artist(self):
         """
         Adds two files with artist names which differ in that one uses an "ø" char
         and the other uses "o".  Should both normalize to the same artist.
@@ -523,6 +570,20 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_mp3s_mismatched_slashed_o_album(self):
+        """
+        Adds two files with album names which differ in that one uses an "ø" char
+        and the other uses "o".  Should both normalize to the same album.
+        """
+        self.add_mp3(artist='Artist', album='søster',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='soster',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
 
     def test_add_mp3_artist_prefix(self):
         """
@@ -1074,8 +1135,9 @@ class BasicUpdateTests(ExordiumTests):
         # Update
         self.update_mp3('song2.mp3', album='album name')
         self.update_mp3('song3.mp3', artist='artist name')
-        for (status, line) in self.run_update():
-            print(line)
+        retlines = self.run_update()
+        #for (status, line) in retlines:
+        #    print(line)
 
         # Verification
         self.assertEqual(Song.objects.all().count(), 3)
@@ -1206,7 +1268,7 @@ class BasicUpdateTests(ExordiumTests):
 
         # Update
         self.update_mp3('song3.mp3', artist='artist 1')
-        retlines = self.run_update()
+        self.run_update()
 
         # Verification
         self.assertEqual(Song.objects.all().count(), 3)
@@ -1286,6 +1348,61 @@ class BasicUpdateTests(ExordiumTests):
         # of prefer it stay the original, but in the end I don't
         # care enough to change what's happening now.
         self.assertEqual(album.name, 'Album')
+
+    def test_update_mismatched_japanese_artists(self):
+        """
+        Tests an update where two previously distinct Japanese-named artists
+        should update to become one artist.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album 1',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', album='Album 2',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+        # Now update
+        self.update_mp3('song2.mp3', artist='\u81EA\u52D5\u8ABF')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 2)
+        artist = Artist.objects.get(name='\u81EA\u52D5\u8ABF')
+        self.assertEqual(artist.name, '\u81EA\u52D5\u8ABF')
+
+    def test_update_mismatched_japanese_artists_backwards(self):
+        """
+        Tests an update where two previously joined Japanese-named artist
+        tracks should update to become two artists.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+        # Now update
+        self.update_mp3('song2.mp3', artist='\u30AB\u30CA\u30C0')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        al1 = Album.objects.get()
+        self.assertEqual(al1.artist.name, 'Various')
+        self.assertEqual(al1.song_set.count(), 2)
 
     def test_update_song_delete(self):
         """

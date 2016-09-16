@@ -53,6 +53,7 @@ def compare_name(name):
     figured it just wasn't worth it.
     """
     # TODO: Translations and replacements could use some expansion
+    # TODO: move maketrans outside func so it's just compiled once?
     lower = name.lower()
     lower = lower.translate(str.maketrans('äáàâãëéèíìöóòøúùüýðç', 'aaaaaeeeiioooouuuydc')).replace(
         'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
