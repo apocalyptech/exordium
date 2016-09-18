@@ -787,7 +787,7 @@ class App(object):
 
             # Process an Artist change, if we need to
             artist_changed = False
-            if helper.artist_name != song.artist.name:
+            if compare_name(helper.artist_name) != compare_name(song.artist.name):
                 try:
                     artist_obj = Artist.objects.get(name=helper.artist_name)
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
