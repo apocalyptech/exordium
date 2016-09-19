@@ -1536,6 +1536,36 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist_pk, artist.pk)
         self.assertEqual(artist.name, 'Umläut')
 
+    def test_update_differing_aesc_artist(self):
+        """
+        Update one of two files to get rid of an Æ in the artist name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Ærtist', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Ærtist', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='Ærtist')
+        artist_pk = artist.pk
+        
+        # Update
+        self.update_mp3('song2.mp3', artist='Aertist')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='Ærtist')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Ærtist')
+
     def test_update_differing_umlaut_album(self):
         """
         Update one of two files to get rid of an umlaut in the album name,
@@ -1567,6 +1597,38 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.song_set.count(), 2)
         self.assertEqual(album.name, 'Albüm')
+
+    def test_update_differing_aesc_album(self):
+        """
+        Update one of two files to get rid of an Æ in the album name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Ælbum',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Ælbum',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        album = Album.objects.get(name='Ælbum')
+        album_pk = album.pk
+        self.assertEqual(album.name, 'Ælbum')
+        
+        # Update
+        self.update_mp3('song2.mp3', album='Aelbum')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        album = Album.objects.get(name='Ælbum')
+        self.assertEqual(album_pk, album.pk)
+        self.assertEqual(album.song_set.count(), 2)
+        self.assertEqual(album.name, 'Ælbum')
 
     def test_update_mismatched_japanese_artists(self):
         """
