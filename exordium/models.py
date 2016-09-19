@@ -28,7 +28,6 @@ class SongHelper(object):
         # Direct vars
         self.song_obj = song_obj
         self.album = album
-        self.norm_album = App.norm_name(album)
 
         # Some inferred info
         (self.artist_prefix, self.artist_name) = Artist.extract_prefix(artist_full)
@@ -43,10 +42,14 @@ class SongHelper(object):
         # This... might not be the right place to do this?  Still, it's
         # convenient here, so whatever.
         if self.album == '':
-            self.album = App.non_album_format_str % (artist_full)
-            self.special_album = True
+            self.album = Album.miscellaneous_format_str % (artist_full)
+            self.miscellaneous_album = True
         else:
-            self.special_album = False
+            self.miscellaneous_album = False
+
+        # Create our normalized album name here, in case we'd started with it
+        # blank.
+        self.norm_album = App.norm_name(self.album)
 
     def set_artist(self, artist):
         """
@@ -119,6 +122,8 @@ class Artist(models.Model):
 
 class Album(models.Model):
 
+    miscellaneous_format_str = '(Non-Album Tracks: %s)'
+
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     artist.verbose_name = 'Artist'
     name = models.CharField(
@@ -132,7 +137,7 @@ class Album(models.Model):
         default=0,
     )
     year.verbose_name = 'Year'
-    special = models.BooleanField(default=False)
+    miscellaneous = models.BooleanField(default=False)
     time_added = models.DateTimeField(default=timezone.now)
     time_added.verbose_name = 'Added to Database'
 
@@ -143,7 +148,10 @@ class Album(models.Model):
         """
         Returns a string representation of ourselves
         """
-        return self.name
+        if self.miscellaneous:
+            return Album.miscellaneous_format_str % (self.artist)
+        else:
+            return self.name
 
     def save(self, *args, **kwargs):
         """
@@ -432,8 +440,6 @@ class App(object):
 
     prefs = None
 
-    non_album_format_str = '(Non-Album Tracks: %s)'
-
     prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
 
     norm_translation = str.maketrans('äáàâãëéèêẽïíìîĩöóòôõøüúùûũÿýỳŷỹðç', 'aaaaaeeeeeiiiiioooooouuuuuyyyyydc')
@@ -595,9 +601,12 @@ class App(object):
         # Grab a nested dict of all artists and their albums
         known_artists = {}
         for artist in Artist.objects.all():
-            known_artists[artist.normname] = (artist, {})
+            known_artists[artist.normname] = (artist, {}, {})
         for album in Album.objects.all():
-            known_artists[album.artist.normname][1][album.normname] = album
+            if album.miscellaneous:
+                known_artists[album.artist.normname][2]['miscellaneous'] = album
+            else:
+                known_artists[album.artist.normname][1][album.normname] = album
 
         # Also grab songs and sort by what directory they're in.  We only
         # need this for the following scenario: An album exists in a
@@ -682,7 +691,7 @@ class App(object):
                 if helper.norm_artist_name not in known_artists:
                     try:
                         artist_obj = helper.new_artist()
-                        known_artists[helper.norm_artist_name] = (artist_obj, {})
+                        known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
                         retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
                         artists_added += 1
                     except IntegrityError:
@@ -690,7 +699,7 @@ class App(object):
                         # database's collation values.  We'll just try to load the matching artist
                         # for now...
                         artist_obj = Artist.objects.get(name=helper.artist_name)
-                        known_artists[helper.norm_artist_name] = (artist_obj, {})
+                        known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
                         retlines.append((App.STATUS_INFO, 'Loaded existing artist for "%s"' % (artist_obj)))
                 elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
@@ -701,24 +710,43 @@ class App(object):
                         (known_artists[helper.norm_artist_name][0])))
 
                 # Check to see if we know the album yet, and if not create it.
-                if helper.norm_album not in known_artists[helper.norm_album_artist][1]:
-                    try:
-                        with transaction.atomic():
-                            album_obj = Album.objects.create(name=helper.album,
-                                    artist=known_artists[helper.norm_album_artist][0],
-                                    year=helper.song_obj.year,
-                                    special=helper.special_album)
+                if helper.miscellaneous_album:
+                    if 'miscellaneous' not in known_artists[helper.norm_album_artist][2]:
+                        try:
+                            with transaction.atomic():
+                                album_obj = Album.objects.create(name=helper.album,
+                                        artist=known_artists[helper.norm_album_artist][0],
+                                        year=helper.song_obj.year,
+                                        miscellaneous=helper.miscellaneous_album)
+                                known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
+                                retlines.append((App.STATUS_INFO, 'Created new miscellaneous album "%s / %s"' % (album_obj.artist, album_obj)))
+                                albums_added += 1
+                        except IntegrityError:
+                            album_obj = Album.objects.get(miscellaneous=True, artist=known_artists[helper.norm_album_artist][0])
+                            known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
+                            retlines.append((App.STATUS_INFO, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj)))
+                else:
+                    if helper.norm_album not in known_artists[helper.norm_album_artist][1]:
+                        try:
+                            with transaction.atomic():
+                                album_obj = Album.objects.create(name=helper.album,
+                                        artist=known_artists[helper.norm_album_artist][0],
+                                        year=helper.song_obj.year,
+                                        miscellaneous=helper.miscellaneous_album)
+                                known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
+                                retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
+                                albums_added += 1
+                        except IntegrityError:
+                            album_obj = Album.objects.get(name=helper.album, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
-                            retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
-                            albums_added += 1
-                    except IntegrityError:
-                        album_obj = Album.objects.get(name=helper.album, artist=known_artists[helper.norm_album_artist][0])
-                        known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
-                        retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
+                            retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
 
                 # And now, update and save our song_obj
                 helper.song_obj.artist = known_artists[helper.norm_artist_name][0]
-                helper.song_obj.album = known_artists[helper.norm_album_artist][1][helper.norm_album]
+                if helper.miscellaneous_album:
+                    helper.song_obj.album = known_artists[helper.norm_album_artist][2]['miscellaneous']
+                else:
+                    helper.song_obj.album = known_artists[helper.norm_album_artist][1][helper.norm_album]
                 helper.song_obj.save()
                 songs_added += 1
 
@@ -896,11 +924,12 @@ class App(object):
             album_artist = {}
             album_tracks = {}
             album_denorm = {}
+            miscellaneous_albums = {}
             for filename in files:
 
                 if filename in to_update_helpers:
                     helper = to_update_helpers[filename]
-                    album_tuple = (helper.album, helper.norm_album,
+                    album_tuple = (helper.miscellaneous_album, helper.album, helper.norm_album,
                             helper.song_obj.artist.name, helper.song_obj.artist.normname,
                             helper.song_obj)
                 else:
@@ -909,7 +938,7 @@ class App(object):
                         # This is fudging a bit; these songs would only need a save() later
                         # if they actually change, but whatever.
                         to_update.append(song)
-                        album_tuple = (song.album.name, song.album.normname,
+                        album_tuple = (song.album.miscellaneous, song.album.name, song.album.normname,
                             song.artist.name, song.artist.normname,
                             song)
                     except Song.DoesNotExist:
@@ -917,18 +946,22 @@ class App(object):
                         continue
 
                 # Album Artist Name detection
-                (album, norm_album, artist, norm_artist, song_obj) = album_tuple
+                (miscellaneous, album, norm_album, artist, norm_artist, song_obj) = album_tuple
                 if norm_album not in album_artist:
                     retlines.append((App.STATUS_DEBUG, 'Initial album artist: %s' % (artist)))
                     album_artist[norm_album] = (artist, norm_artist)
                     album_tracks[norm_album] = []
                     album_denorm[norm_album] = album
+                    miscellaneous_albums[norm_album] = miscellaneous
                 album_tracks[norm_album].append(song_obj)
                 if norm_artist != album_artist[norm_album][1]:
                     retlines.append((App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[norm_album][0], artist)))
                     album_artist[norm_album] = ('Various', 'various')
 
-            retlines.append((App.STATUS_DEBUG, album_artist))
+            #retlines.append((App.STATUS_DEBUG, album_artist))
+            #retlines.append((App.STATUS_DEBUG, album_tracks))
+            #retlines.append((App.STATUS_DEBUG, album_denorm))
+            #retlines.append((App.STATUS_DEBUG, miscellaneous_albums))
 
             # Actually make the changes
             updated_albums = {}
@@ -941,6 +974,7 @@ class App(object):
                 album = album_denorm[norm_album]
                 (artist, norm_artist) = album_artist[norm_album]
                 tracks = album_tracks[norm_album]
+                miscellaneous = miscellaneous_albums[norm_album]
                 retlines.append((App.STATUS_DEBUG, 'Looking at album %s, artist %s, tracks %d' % (album, artist, len(tracks))))
 
                 try:
@@ -962,16 +996,16 @@ class App(object):
                 tracks_to_update = 0
                 seen_album_title = None
                 for track in tracks:
-                    if track.album.normname == norm_album:
-                        track_updates_possible += 1
-                        if track.filename in to_update_helpers:
-                            if seen_album_title is None:
-                                seen_album_title = to_update_helpers[track.filename].album
-                            retlines.append((App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title)))
-                            if to_update_helpers[track.filename].album == seen_album_title:
-                                tracks_to_update += 1
+                    #if track.album.normname == norm_album:
+                    track_updates_possible += 1
+                    if track.filename in to_update_helpers:
+                        if seen_album_title is None:
+                            seen_album_title = to_update_helpers[track.filename].album
+                        retlines.append((App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title)))
+                        if to_update_helpers[track.filename].album == seen_album_title:
+                            tracks_to_update += 1
                 retlines.append((App.STATUS_DEBUG, 'tracks to update: %d, possible: %d' % (tracks_to_update, track_updates_possible)))
-                if tracks_to_update == track_updates_possible and tracks[0].album.pk not in updated_albums:
+                if tracks_to_update != 0 and tracks_to_update == track_updates_possible and tracks[0].album.pk not in updated_albums:
                     retlines.append((App.STATUS_DEBUG, 'Going to update album!'))
                     album_obj = tracks[0].album
                     old_artist = album_obj.artist
@@ -991,7 +1025,8 @@ class App(object):
                     except Album.DoesNotExist:
                         album_obj = Album(name=album,
                             artist=artist_obj,
-                            year=tracks[0].year)
+                            year=tracks[0].year,
+                            miscellaneous=miscellaneous)
                         album_obj.save()
                         retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
                     updated_albums[album_obj.pk] = True

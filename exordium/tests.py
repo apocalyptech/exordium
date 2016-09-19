@@ -605,9 +605,73 @@ class BasicAddTests(ExordiumTests):
         self.add_mp3(artist='Artist', title='Title')
         self.run_add()
 
-        album_title = App.non_album_format_str % ('Artist')
+        album_title = Album.miscellaneous_format_str % ('Artist')
         album = Album.objects.get()
-        self.assertEqual(album.name, album_title)
+        self.assertEqual(str(album), album_title)
+
+    def test_add_mp3_no_album_two_stage(self):
+        """
+        Adds an mp3 without an album to check that it's properly sorted
+        into a 'Non-Album Tracks' album, and then add a second using
+        an umlaut to test out our matching abilities there
+        """
+        self.add_mp3(artist='Artist', title='Title', filename='song1.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        album_title = Album.miscellaneous_format_str % ('Artist')
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+
+        # Another add
+        self.add_mp3(artist='Ärtist', title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Now the real checks
+        album_title = Album.miscellaneous_format_str % ('Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        self.assertEqual(album.song_set.count(), 2)
+
+    def test_add_mp3_no_album_two_stage_aesc(self):
+        """
+        Adds an mp3 without an album to check that it's properly sorted
+        into a 'Non-Album Tracks' album, and then add a second using
+        an aesc to test out our matching abilities there.
+        """
+        self.add_mp3(artist='Aertist', title='Title', filename='song1.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        album_title = Album.miscellaneous_format_str % ('Aertist')
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+
+        # Another add
+        self.add_mp3(artist='Ærtist', title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Now the real checks
+        album_title = Album.miscellaneous_format_str % ('Aertist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        self.assertEqual(album.song_set.count(), 2)
 
     def test_add_mp3_two_song_album(self):
         """
@@ -1427,6 +1491,83 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(al1.artist.name, 'Various')
         self.assertEqual(al1.song_set.count(), 2)
 
+    def test_update_miscellaneous_tracks_to_different_artist_name(self):
+        """
+        Add two albumless tracks and then update the artist name.  The
+        reported non-album-track album should reflect the new name.
+        """
+        self.add_mp3(artist='Artist', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        album_title = Album.miscellaneous_format_str % ('Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        album_pk = album.pk
+
+        # Updates
+        self.update_mp3('song1.mp3', artist='New Artist')
+        self.update_mp3('song2.mp3', artist='New Artist')
+        self.run_update()
+
+        # Now the real checks
+        new_album_title = Album.miscellaneous_format_str % ('New Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), new_album_title)
+        self.assertEqual(album.song_set.count(), 2)
+        self.assertEqual(album.name, new_album_title)
+
+    def test_update_one_miscellaneous_track_to_different_artist_name(self):
+        """
+        Add two albumless tracks and then update the artist name on one of
+        them.  We should end up with two non-album-track albums, one for each
+        artist.
+        """
+        self.add_mp3(artist='Artist', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        album_title = Album.miscellaneous_format_str % ('Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        album_pk = album.pk
+
+        # Updates
+        self.update_mp3('song2.mp3', artist='New Artist')
+        self.run_update()
+
+        # Now the real checks
+        new_album_title = Album.miscellaneous_format_str % ('New Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        album = Album.objects.get(artist__name='Artist', miscellaneous=True)
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        self.assertEqual(album.song_set.count(), 1)
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.song_set.get().filename, 'song1.mp3')
+        album = Album.objects.get(artist__name='New Artist', miscellaneous=True)
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), new_album_title)
+        self.assertEqual(album.song_set.count(), 1)
+        self.assertEqual(album.song_set.get().filename, 'song2.mp3')
+
     def test_update_song_delete(self):
         """
         Test a track deletion (also ensures that album+artist records get cleared out)
@@ -1776,6 +1917,72 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         album = Album.objects.get()
         self.assertEqual(album.name, 'New Album')
+        self.assertEqual(album.pk, album_pk)
+
+    def test_update_entire_album_name_umlaut_pk_stays_the_same(self):
+        """
+        Test an update of the album name from all tracks in an
+        album.  The primary key of the album should remain the
+        same.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist 1', title='Title',
+            album = 'Album')
+        self.add_mp3(filename='song2.mp3', artist='Artist 1', title='Title 2',
+            album = 'Album')
+        self.run_add()
+
+        # Some quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        album_pk = album.pk
+
+        # Now do the updates
+        self.update_mp3('song.mp3', album='Albüm')
+        self.update_mp3('song2.mp3', album='Albüm')
+        self.run_update()
+
+        # Checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Albüm')
+        self.assertEqual(album.pk, album_pk)
+
+    def test_update_entire_album_name_aesc_pk_stays_the_same(self):
+        """
+        Test an update of the album name from all tracks in an
+        album.  The primary key of the album should remain the
+        same.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist 1', title='Title',
+            album = 'Ælbum')
+        self.add_mp3(filename='song2.mp3', artist='Artist 1', title='Title 2',
+            album = 'Ælbum')
+        self.run_add()
+
+        # Some quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Ælbum')
+        album_pk = album.pk
+
+        # Now do the updates
+        self.update_mp3('song.mp3', album='Aelbum')
+        self.update_mp3('song2.mp3', album='Aelbum')
+        self.run_update()
+
+        # Checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Aelbum')
         self.assertEqual(album.pk, album_pk)
 
     def test_update_split_into_two_albums(self):
