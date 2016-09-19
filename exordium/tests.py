@@ -1045,10 +1045,11 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song.artist.name, 'New Artist')
         self.assertEqual(song.album.name, 'New Album')
 
-    def test_update_change_artist_case(self):
+    def test_update_change_artist_case_single_track(self):
         """
         Test what happens when a track gets updated with the same artist
-        name but with a different case.
+        name but with a different case.  Since it's the only track with
+        that artist name, we want the case of the artist to get updated.
         """
         self.add_mp3(artist='Artist Name', album='Album',
             title='Title 1', filename='song1.mp3')
@@ -1071,12 +1072,45 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         artist = Artist.objects.get(name='Artist Name')
         self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'artist name')
+
+    def test_update_change_artist_case_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same artist
+        name but with a different case.  Since it's only one out of the
+        two tracks track with that artist name, we want the case of the
+        artist to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', artist='artist name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Artist Name')
 
-    def test_update_change_album_case(self):
+    def test_update_change_album_case_single(self):
         """
-        Test what happens when a track gets updated with the same album
-        name but with a different case.
+        Test what happens when a single-track album gets updated with the
+        same album name but with a different case.  The album name should
+        be updated, since all tracks in the album have been updated.
         """
         self.add_mp3(artist='Artist Name', album='Album Name',
             title='Title 1', filename='song1.mp3')
@@ -1106,25 +1140,21 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'album name')
 
-    # TODO: This test is actually just an attempt to try and get a failure
-    # to happen in an area of code that I suspect a failure could happen,
-    # but it currently passes.
-    def test_update_change_album_case_with_two_updates(self):
+    def test_update_change_album_case_multiple(self):
         """
-        Test what happens when a track gets updated with the same album
-        name but with a different case.  This time with a three-track
-        album where two tracks get updated
+        Test what happens when one track in a multi-track album gets updated
+        with the same album name but with a different case.  The album name
+        should remain the same, since not all tracks in the album have been
+        updated.
         """
         self.add_mp3(artist='Artist Name', album='Album Name',
             title='Title 1', filename='song1.mp3')
         self.add_mp3(artist='Artist Name', album='Album Name',
             title='Title 2', filename='song2.mp3')
-        self.add_mp3(artist='Artist Name', album='Album Name',
-            title='Title 3', filename='song3.mp3')
         self.run_add()
 
         # Quick verification
-        self.assertEqual(Song.objects.all().count(), 3)
+        self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
         self.assertEqual(Artist.objects.all().count(), 2)
         artist = Artist.objects.get(name='Artist Name')
@@ -1134,13 +1164,10 @@ class BasicUpdateTests(ExordiumTests):
 
         # Update
         self.update_mp3('song2.mp3', album='album name')
-        self.update_mp3('song3.mp3', artist='artist name')
-        retlines = self.run_update()
-        #for (status, line) in retlines:
-        #    print(line)
+        self.run_update()
 
         # Verification
-        self.assertEqual(Song.objects.all().count(), 3)
+        self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
         self.assertEqual(Artist.objects.all().count(), 2)
         artist = Artist.objects.get(name='Artist Name')
@@ -1149,7 +1176,48 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get(name='Album Name')
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'Album Name')
-        self.assertEqual(album.song_set.count(), 3)
+
+    # TODO: This test is actually just an attempt to try and get a failure
+    # to happen in an area of code that I suspect a failure could happen,
+    # but it currently passes.
+    def test_various_things(self):
+        """
+        ...
+        """
+        self.add_mp3(artist='Artist Name', album='Album Name',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album Name',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        artist_pk = artist.pk
+        album = Album.objects.get(name='Album Name')
+        album_pk = album.pk
+
+        # Update
+        #self.update_mp3('song1.mp3', album='Two')
+        self.update_mp3('song1.mp3', artist='Artist Näme')
+        self.update_mp3('song2.mp3', artist='Artist Näme')
+        retlines = self.run_update()
+        #for (status, line) in retlines:
+        #    print(line)
+
+        # Verification
+        #self.assertEqual(Song.objects.all().count(), 3)
+        #self.assertEqual(Album.objects.all().count(), 1)
+        #self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Artist Näme')
+        #album = Album.objects.get(name='Album Name')
+        #self.assertEqual(album.pk, album_pk)
+        #self.assertEqual(album.name, 'Album Name')
+        #self.assertEqual(album.song_set.count(), 3)
 
     def test_update_change_artist_case_on_single_album_track(self):
         """

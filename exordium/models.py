@@ -12,9 +12,6 @@ from django.utils import timezone
 
 # Create your models here.
 
-# TODO: dynamic prefixes via the admin interface?
-# TODO: prefix exceptions ("The The")
-prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
 class SongHelper(object):
     """
     A little class, little more than a glorified dict, which is used
@@ -34,7 +31,7 @@ class SongHelper(object):
         self.norm_album = App.norm_name(album)
 
         # Some inferred info
-        (self.artist_prefix, self.artist_name) = SongHelper.extract_prefix(artist_full)
+        (self.artist_prefix, self.artist_name) = Artist.extract_prefix(artist_full)
         self.norm_artist_name = App.norm_name(self.artist_name)
         self.base_dir = os.path.dirname(song_obj.filename)
 
@@ -74,19 +71,6 @@ class SongHelper(object):
         """
         return Artist.objects.create(name=self.artist_name, prefix=self.artist_prefix)
 
-    @staticmethod
-    def extract_prefix(name):
-        """
-        Extracts a prefix from the given name, if one exists.  Returns
-        a tuple of `(prefix, name)`, where `prefix` may be an empty string.
-        """
-        global prefixre
-        match = prefixre.match(name)
-        if match.group(2):
-            return (match.group(2), match.group(3))
-        else:
-            return ('', name)
-
 class Artist(models.Model):
 
     name = models.CharField(
@@ -118,6 +102,20 @@ class Artist(models.Model):
         """
         self.normname = App.norm_name(self.name)
         super(Artist, self).save(*args, **kwargs)
+
+    # TODO: dynamic prefixes via the admin interface?
+    # TODO: prefix exceptions ("The The")
+    @staticmethod
+    def extract_prefix(name):
+        """
+        Extracts a prefix from the given name, if one exists.  Returns
+        a tuple of `(prefix, name)`, where `prefix` may be an empty string.
+        """
+        match = App.prefixre.match(name)
+        if match.group(2):
+            return (match.group(2), match.group(3))
+        else:
+            return ('', name)
 
 class Album(models.Model):
 
@@ -182,6 +180,14 @@ class Song(models.Model):
     title.verbose_name = 'Title'
     year = models.IntegerField()
     tracknum = models.SmallIntegerField('#')
+
+    # "raw" tag information.  Only used currently by App.update()
+    # when checking to see if an artist name definition should be
+    # updated to a value which is identical in normalization but
+    # different in specifics.  "raw" is a bit of a misnomer, really,
+    # since this value will omit any of our defined prefixes
+    # regardless of the *actual* raw value.
+    raw_artist = models.CharField(max_length=255)
 
     # Technical information
     filetype = models.CharField(
@@ -265,6 +271,7 @@ class Song(models.Model):
         # Update all our information (don't bother checking to see
         # if it changed, just copy the new values)
         (artist_full, album, new_song) = song_info
+        self.raw_artist = new_song.raw_artist
         self.year = new_song.year
         self.title = new_song.title
         self.tracknum = new_song.tracknum
@@ -317,6 +324,7 @@ class Song(models.Model):
         """
 
         # Set up some vars
+        raw_artist = ''
         artist = ''
         album = ''
         title = ''
@@ -333,6 +341,7 @@ class Song(models.Model):
         if str(type(audio)) == "<class 'mutagen.mp3.MP3'>":
             if 'TPE1' in audio:
                 artist_full = str(audio['TPE1'])
+                (prefix, raw_artist) = Artist.extract_prefix(artist_full)
             if 'TALB' in audio:
                 album = str(audio['TALB'])
             if 'TIT2' in audio:
@@ -391,6 +400,7 @@ class Song(models.Model):
         # Create the object
         song_obj = Song(
             filename = short_filename,
+            raw_artist = raw_artist,
             year = year,
             title = title,
             tracknum = tracknum,
@@ -421,6 +431,8 @@ class App(object):
     prefs = None
 
     non_album_format_str = '(Non-Album Tracks: %s)'
+
+    prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
 
     norm_translation = str.maketrans('äáàâãëéèêẽïíìîĩöóòôõøüúùûũÿýỳŷỹðç', 'aaaaaeeeeeiiiiioooooouuuuuyyyyydc')
 
@@ -821,6 +833,7 @@ class App(object):
 
         # Updates next, pull in the new data
         to_update_helpers = {}
+        possible_artist_updates = {}
         for song in to_update:
 
             song_info = song.update_from_disk(retlines)
@@ -832,7 +845,21 @@ class App(object):
 
             # Process an Artist change, if we need to
             artist_changed = False
-            if helper.norm_artist_name != song.artist.normname:
+            if helper.norm_artist_name == song.artist.normname:
+                # Check for a prefix update, if we have it
+                if helper.artist_prefix != '' and song.artist.prefix == '':
+                    song.artist.prefix = helper.artist_prefix
+                    song.artist.save()
+                    retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
+                        (song.artist)))
+                # Also check to see if the non-normalized artist name matches or not.
+                # If not, we MAY want to update the main artist name to match, though
+                # only if literally all instances of the artist name are equal, in the
+                # DB.
+                if helper.artist_name != song.artist.name:
+                    possible_artist_updates[song.artist.normname] = True
+            else:
+                # Otherwise, try to load in the artist we should be, or create a new one
                 try:
                     artist_obj = Artist.objects.get(name=helper.artist_name)
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
@@ -851,13 +878,11 @@ class App(object):
                 # we DON'T do an album switch now is if we're a various artists
                 # album.  We'll include this in the next 'if' clause
                 artist_changed = True
-            else:
-                if helper.artist_prefix != '' and song.artist.prefix == '':
-                    song.artist.prefix = helper.artist_prefix
-                    song.artist.save()
-                    retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
-                        (song.artist)))
 
+            # Ordinarily we would compare normalized names here, but there's the possibility
+            # that all tracks making up an album might have changed the album name to something
+            # which would otherwise match our normalized case, and if ALL the tracks get updated
+            # then that's a change we'd want to make even if it's "virtually" the same thing.
             if artist_changed or helper.album != song.album.name:
                 delete_rel_albums[song.album] = True
                 album_changes[helper.base_dir] = True
@@ -894,6 +919,8 @@ class App(object):
                 if artist != album_artist[album]:
                     retlines.append((App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[album], artist)))
                     album_artist[album] = 'Various'
+
+            retlines.append((App.STATUS_DEBUG, album_artist))
 
             # Actually make the changes
             #retlines.append((App.STATUS_DEBUG, album_artist))
@@ -983,6 +1010,27 @@ class App(object):
                 if artist.album_set.count() == 0 and artist.song_set.count() == 0:
                     retlines.append((App.STATUS_DEBUG, 'Deleted orphaned artist "%s"' % (artist)))
                     artist.delete()
+
+        # Now check to see if we need to update any artist names.
+        for normname in possible_artist_updates.keys():
+            try:
+                artist = Artist.objects.get(normname=normname)
+                seen_name = None
+                mismatch = False
+                for song in artist.song_set.all():
+                    if seen_name is None:
+                        seen_name = song.raw_artist
+                    elif seen_name != song.raw_artist:
+                        mismatch = True
+                        break
+                if not mismatch:
+                    retlines.append((App.STATUS_INFO, 'Updated artist name from "%s" to "%s"' % (
+                        artist.name, seen_name)))
+                    artist.name = seen_name
+                    artist.save()
+            except Artist.DoesNotExist:
+                # Maybe we were deleted or something, whatever.
+                pass
 
         # Finally, return
         retlines.append((App.STATUS_SUCCESS, 'Finished update/clean!'))
