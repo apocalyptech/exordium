@@ -14,55 +14,7 @@ from django.utils import timezone
 
 # TODO: dynamic prefixes via the admin interface?
 # TODO: prefix exceptions ("The The")
-# TODO: Move this somewhere more appropriate. Probably the SongHelper obj?
 prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
-def extract_prefix(name):
-    """
-    Extracts a prefix from the given name, if one exists.  Returns
-    a tuple of `(prefix, name)`, where `prefix` may be an empty string.
-    """
-    match = prefixre.match(name)
-    if match.group(2):
-        return (match.group(2), match.group(3))
-    else:
-        return ('', name)
-
-# TODO: Move this somewhere more reasonable, too?
-def compare_name(name):
-    """
-    Returns a name which can be used to compare against other
-    names, disregarding case and special characters like umlauts.
-    and the like.  After doing some initial manual translations,
-    the final step is to convert to plain ASCII.  If we end up
-    losing any string length due to that conversion, we'll
-    assume that we don't know enough to safely denormalize it
-    and just return the original string again.  This may end
-    up causing some IntegrityErrors while inserting into the
-    database later...
-
-    We used to use `unicodedata.normalize('NFKD', name)` in here
-    but was running into problems such as the following:
-
-        >>> len('umläut')
-        6
-        >>> len(unicodedata.normalize('NFKD', 'umläut'))
-        7
-
-    ... since the normalized form would technically be taking
-    two characters to combine the umlauts.  In the end I 
-    figured it just wasn't worth it.
-    """
-    # TODO: Translations and replacements could use some expansion
-    # TODO: move maketrans outside func so it's just compiled once?
-    lower = name.lower()
-    lower = lower.translate(str.maketrans('äáàâãëéèíìöóòøúùüýðç', 'aaaaaeeeiioooouuuydc')).replace(
-        'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
-    final = lower.encode('ASCII', 'ignore')
-    if len(final) != len(lower):
-        return lower
-    else:
-        return final
-
 class SongHelper(object):
     """
     A little class, little more than a glorified dict, which is used
@@ -79,13 +31,16 @@ class SongHelper(object):
         # Direct vars
         self.song_obj = song_obj
         self.album = album
+        self.norm_album = App.norm_name(album)
 
         # Some inferred info
-        (self.artist_prefix, self.artist_name) = extract_prefix(artist_full)
+        (self.artist_prefix, self.artist_name) = SongHelper.extract_prefix(artist_full)
+        self.norm_artist_name = App.norm_name(self.artist_name)
         self.base_dir = os.path.dirname(song_obj.filename)
 
         # Information which may be overwritten later
         self.album_artist = self.artist_name
+        self.norm_album_artist = self.norm_artist_name
 
         # If we have no defined album, make one up!
         # This... might not be the right place to do this?  Still, it's
@@ -96,12 +51,41 @@ class SongHelper(object):
         else:
             self.special_album = False
 
+    def set_artist(self, artist):
+        """
+        Sets the artist for this helper (and also the normalized version
+        of the artist)
+        """
+        self.artist_name = artist
+        self.norm_artist_name = App.norm_name(artist)
+
+    def set_album_artist(self, artist):
+        """
+        Sets the album artist for this helper (and also the normalized version
+        of the artist)
+        """
+        self.album_artist = artist
+        self.norm_album_artist = App.norm_name(artist)
+
     @transaction.atomic
     def new_artist(self):
         """
         Returns a new Artist object based on our data.
         """
         return Artist.objects.create(name=self.artist_name, prefix=self.artist_prefix)
+
+    @staticmethod
+    def extract_prefix(name):
+        """
+        Extracts a prefix from the given name, if one exists.  Returns
+        a tuple of `(prefix, name)`, where `prefix` may be an empty string.
+        """
+        global prefixre
+        match = prefixre.match(name)
+        if match.group(2):
+            return (match.group(2), match.group(3))
+        else:
+            return ('', name)
 
 class Artist(models.Model):
 
@@ -110,6 +94,10 @@ class Artist(models.Model):
         unique=True,
     )
     name.verbose_name = 'Artist'
+    normname = models.CharField(
+        max_length=255,
+        unique=True,
+    )
     prefix = models.CharField(
         max_length=32,
     )
@@ -123,6 +111,14 @@ class Artist(models.Model):
         else:
             return self.name
 
+    def save(self, *args, **kwargs):
+        """
+        Custom handler for save() which populates our normname field
+        automatically.
+        """
+        self.normname = App.norm_name(self.name)
+        super(Artist, self).save(*args, **kwargs)
+
 class Album(models.Model):
 
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
@@ -131,6 +127,9 @@ class Album(models.Model):
         max_length=255,
     )
     name.verbose_name = 'Album Title'
+    normname = models.CharField(
+        max_length=255,
+    )
     year = models.IntegerField()
     year.verbose_name = 'Year'
     special = models.BooleanField(default=False)
@@ -145,6 +144,14 @@ class Album(models.Model):
         Returns a string representation of ourselves
         """
         return self.name
+
+    def save(self, *args, **kwargs):
+        """
+        Custom handler for save() which populates our normname field
+        automatically.
+        """
+        self.normname = App.norm_name(self.name)
+        super(Album, self).save(*args, **kwargs)
 
 class Song(models.Model):
 
@@ -415,6 +422,54 @@ class App(object):
 
     non_album_format_str = '(Non-Album Tracks: %s)'
 
+    norm_translation = str.maketrans('äáàâãëéèêẽïíìîĩöóòôõøüúùûũÿýỳŷỹðç', 'aaaaaeeeeeiiiiioooooouuuuuyyyyydc')
+
+    @staticmethod
+    def norm_name(name):
+        """
+        Returns a name which can be used to compare against other
+        names, disregarding case and special characters like umlauts.
+        and the like.
+
+        This process used to do a few things which aren't done anymore.
+        We used to use `unicodedata.normalize('NFKD', name)` in here
+        but was running into problems such as the following:
+
+            >>> len('umläut')
+            6
+            >>> len(unicodedata.normalize('NFKD', 'umläut'))
+            7
+
+        ... since the normalized form would technically be taking
+        two characters to combine the umlauts.  In the end I 
+        figured it just wasn't worth it.
+
+        Then, after doing some initial manual translations, the final
+        step used to be to convert to plain ASCII - if we ended up
+        losing any string length due to that conversion, we'd
+        assume that we don't know enough to safely denormalize it
+        and just return the original string again.  In the end I opted
+        not to do that either, since we'd then have some warring data
+        types with explicitly-encoded strings and the like.
+
+        Note that if this method doesn't include some characters which
+        are considered identical in your database's current collation
+        settings, you can end up with IntegrityErrors when trying to
+        insert new records, even if this method doesn't equate the two
+        values.
+        """
+        # TODO: Translations and replacements could use some expansion
+        return name.lower().translate(App.norm_translation).replace(
+            'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
+        #lower = name.lower()
+        #lower = lower.translate(App.norm_translation).replace(
+        #    'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
+        #final = lower.encode('ASCII', 'ignore')
+        #if len(final) != len(lower):
+        #    return lower
+        #else:
+        #    return final
+
     @staticmethod
     def ensure_prefs():
         """
@@ -526,9 +581,9 @@ class App(object):
         # Grab a nested dict of all artists and their albums
         known_artists = {}
         for artist in Artist.objects.all():
-            known_artists[compare_name(artist.name)] = (artist, {})
+            known_artists[artist.normname] = (artist, {})
         for album in Album.objects.all():
-            known_artists[compare_name(album.artist.name)][1][compare_name(album.name)] = album
+            known_artists[album.artist.normname][1][album.normname] = album
 
         # Also grab songs and sort by what directory they're in.  We only
         # need this for the following scenario: An album exists in a
@@ -572,58 +627,48 @@ class App(object):
 
             # Step 1: Loop through new tracks and populate album_artist
             for helper in songlist:
-                helper_album_lower = compare_name(helper.album)
-                if helper_album_lower not in album_artist:
-                    album_artist[helper_album_lower] = helper.artist_name
-                if compare_name(helper.artist_name) != compare_name(album_artist[helper_album_lower]):
-                    album_artist[helper_album_lower] = 'Various'
+                if helper.norm_album not in album_artist:
+                    album_artist[helper.norm_album] = helper.artist_name
+                if helper.norm_artist_name != App.norm_name(album_artist[helper.norm_album]):
+                    album_artist[helper.norm_album] = 'Various'
 
             # Step 2: Loop through any existing tracks in this
             # directory and potentially mark them for update as well.
             if base_dir in existing_songs_in_dir:
                 for song in existing_songs_in_dir[base_dir]:
-                    song_album_name_lower = compare_name(song.album.name)
-                    song_artist_name_lower = compare_name(song.artist.name)
-                    if song_album_name_lower not in album_artist:
-                        album_artist[song_album_name_lower] = song.album.artist.name
-                    if song_artist_name_lower != compare_name(album_artist[song_album_name_lower]):
-                        album_artist[song_album_name_lower] = 'Various'
-                        albums_to_update[song_album_name_lower] = song.album
+                    if song.album.normname not in album_artist:
+                        album_artist[song.album.normname] = song.album.artist.name
+                    if song.artist.normname != App.norm_name(album_artist[song.album.normname]):
+                        album_artist[song.album.normname] = 'Various'
+                        albums_to_update[song.album.normname] = song.album
 
             # Step 3: actually assign the artist to the SongHelper
             for helper in songlist:
-                helper.album_artist = album_artist[compare_name(helper.album)]
+                helper.set_album_artist(album_artist[helper.norm_album])
 
             # Step 4: update existing album records if we need to
             for (albumname, album) in albums_to_update.items():
-                album_artist_name_lower = compare_name(album.artist.name)
-                album_name_lower = compare_name(album.name)
                 try:
-                    del known_artists[album_artist_name_lower][1][album_name_lower]
+                    del known_artists[album.artist.normname][1][album.normname]
                     retlines.append((App.STATUS_DEBUG, 'Switching album "%s / %s" to artist "%s"' %
-                        (album.artist, album, album_artist[album_name_lower])))
-                    album.artist = Artist.objects.get(name=album_artist[album_name_lower])
+                        (album.artist, album, album_artist[album.normname])))
+                    album.artist = Artist.objects.get(name=album_artist[album.normname])
                     album.save()
-                    album_artist_name_lower = compare_name(album.artist.name)
-                    known_artists[album_artist_name_lower][1][album_name_lower] = album
+                    known_artists[album.artist.normname][1][album.normname] = album
                 except Artist.DoesNotExist:
                     retlines.append((App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
-                        (album_artist[compare_name(albumname)])))
+                        (album_artist[albumname])))
 
         # Loop through helper objects
         for (base_dir, songlist) in songs_in_dir.items():
 
             for helper in songlist:
 
-                artist_name_lower = compare_name(helper.artist_name)
-                album_artist_lower = compare_name(helper.album_artist)
-                album_lower = compare_name(helper.album)
-            
                 # Check to see if we know the artist yet, and if not create it.
-                if artist_name_lower not in known_artists:
+                if helper.norm_artist_name not in known_artists:
                     try:
                         artist_obj = helper.new_artist()
-                        known_artists[artist_name_lower] = (artist_obj, {})
+                        known_artists[helper.norm_artist_name] = (artist_obj, {})
                         retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
                         artists_added += 1
                     except IntegrityError:
@@ -631,35 +676,35 @@ class App(object):
                         # database's collation values.  We'll just try to load the matching artist
                         # for now...
                         artist_obj = Artist.objects.get(name=helper.artist_name)
-                        known_artists[artist_name_lower] = (artist_obj, {})
+                        known_artists[helper.norm_artist_name] = (artist_obj, {})
                         retlines.append((App.STATUS_INFO, 'Loaded existing artist for "%s"' % (artist_obj)))
-                elif helper.artist_prefix != '' and known_artists[artist_name_lower][0].prefix == '':
+                elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
                     # but we see one now, update the artist record with that prefix.
-                    known_artists[artist_name_lower][0].prefix = helper.artist_prefix
-                    known_artists[artist_name_lower][0].save()
+                    known_artists[helper.norm_artist_name][0].prefix = helper.artist_prefix
+                    known_artists[helper.norm_artist_name][0].save()
                     retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
-                        (known_artists[artist_name_lower][0])))
+                        (known_artists[helper.norm_artist_name][0])))
 
                 # Check to see if we know the album yet, and if not create it.
-                if album_lower not in known_artists[album_artist_lower][1]:
+                if helper.norm_album not in known_artists[helper.norm_album_artist][1]:
                     try:
                         with transaction.atomic():
                             album_obj = Album.objects.create(name=helper.album,
-                                    artist=known_artists[album_artist_lower][0],
+                                    artist=known_artists[helper.norm_album_artist][0],
                                     year=helper.song_obj.year,
                                     special=helper.special_album)
-                            known_artists[album_artist_lower][1][album_lower] = album_obj
+                            known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                             retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
                             albums_added += 1
                     except IntegrityError:
-                        album_obj = Album.objects.get(name=helper.album, artist=known_artists[album_artist_lower][0])
-                        known_artists[album_artist_lower][1][album_lower] = album_obj
+                        album_obj = Album.objects.get(name=helper.album, artist=known_artists[helper.norm_album_artist][0])
+                        known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                         retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
 
                 # And now, update and save our song_obj
-                helper.song_obj.artist = known_artists[artist_name_lower][0]
-                helper.song_obj.album = known_artists[album_artist_lower][1][album_lower]
+                helper.song_obj.artist = known_artists[helper.norm_artist_name][0]
+                helper.song_obj.album = known_artists[helper.norm_album_artist][1][helper.norm_album]
                 helper.song_obj.save()
                 songs_added += 1
 
@@ -787,7 +832,7 @@ class App(object):
 
             # Process an Artist change, if we need to
             artist_changed = False
-            if compare_name(helper.artist_name) != compare_name(song.artist.name):
+            if helper.norm_artist_name != song.artist.normname:
                 try:
                     artist_obj = Artist.objects.get(name=helper.artist_name)
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
