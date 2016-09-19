@@ -1177,48 +1177,6 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'Album Name')
 
-    # TODO: This test is actually just an attempt to try and get a failure
-    # to happen in an area of code that I suspect a failure could happen,
-    # but it currently passes.
-    def test_various_things(self):
-        """
-        ...
-        """
-        self.add_mp3(artist='Artist Name', album='Album Name',
-            title='Title 1', filename='song1.mp3')
-        self.add_mp3(artist='Artist Name', album='Album Name',
-            title='Title 2', filename='song2.mp3')
-        self.run_add()
-
-        # Quick verification
-        self.assertEqual(Song.objects.all().count(), 2)
-        self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
-        artist = Artist.objects.get(name='Artist Name')
-        artist_pk = artist.pk
-        album = Album.objects.get(name='Album Name')
-        album_pk = album.pk
-
-        # Update
-        #self.update_mp3('song1.mp3', album='Two')
-        self.update_mp3('song1.mp3', artist='Artist Näme')
-        self.update_mp3('song2.mp3', artist='Artist Näme')
-        retlines = self.run_update()
-        #for (status, line) in retlines:
-        #    print(line)
-
-        # Verification
-        #self.assertEqual(Song.objects.all().count(), 3)
-        #self.assertEqual(Album.objects.all().count(), 1)
-        #self.assertEqual(Artist.objects.all().count(), 2)
-        artist = Artist.objects.get(name='Artist Name')
-        self.assertEqual(artist.pk, artist_pk)
-        self.assertEqual(artist.name, 'Artist Näme')
-        #album = Album.objects.get(name='Album Name')
-        #self.assertEqual(album.pk, album_pk)
-        #self.assertEqual(album.name, 'Album Name')
-        #self.assertEqual(album.song_set.count(), 3)
-
     def test_update_change_artist_case_on_single_album_track(self):
         """
         Test what happens when a single track from an album gets
@@ -1412,10 +1370,7 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get(name='album')
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.song_set.count(), 2)
-        # The album will end up getting renamed.  Would sort
-        # of prefer it stay the original, but in the end I don't
-        # care enough to change what's happening now.
-        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.name, 'Albüm')
 
     def test_update_mismatched_japanese_artists(self):
         """

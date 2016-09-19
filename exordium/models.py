@@ -128,7 +128,9 @@ class Album(models.Model):
     normname = models.CharField(
         max_length=255,
     )
-    year = models.IntegerField()
+    year = models.IntegerField(
+        default=0,
+    )
     year.verbose_name = 'Year'
     special = models.BooleanField(default=False)
     time_added = models.DateTimeField(default=timezone.now)
@@ -893,46 +895,52 @@ class App(object):
             files = App.get_filesystem_media(extra_base=album_basedir)
             album_artist = {}
             album_tracks = {}
+            album_denorm = {}
             for filename in files:
 
                 if filename in to_update_helpers:
                     helper = to_update_helpers[filename]
-                    album_tuple = (helper.album, helper.song_obj.artist.name, helper.song_obj)
+                    album_tuple = (helper.album, helper.norm_album,
+                            helper.song_obj.artist.name, helper.song_obj.artist.normname,
+                            helper.song_obj)
                 else:
                     try:
                         song = Song.objects.get(filename=filename)
                         # This is fudging a bit; these songs would only need a save() later
                         # if they actually change, but whatever.
                         to_update.append(song)
-                        album_tuple = (song.album.name, song.artist.name, song)
+                        album_tuple = (song.album.name, song.album.normname,
+                            song.artist.name, song.artist.normname,
+                            song)
                     except Song.DoesNotExist:
                         retlines.append((App.STATUS_ERROR, 'Could not find Song record for: %s' % (filename)))
                         continue
 
                 # Album Artist Name detection
-                (album, artist, song_obj) = album_tuple
-                if album not in album_artist:
+                (album, norm_album, artist, norm_artist, song_obj) = album_tuple
+                if norm_album not in album_artist:
                     retlines.append((App.STATUS_DEBUG, 'Initial album artist: %s' % (artist)))
-                    album_artist[album] = artist
-                    album_tracks[album] = []
-                album_tracks[album].append(song_obj)
-                if artist != album_artist[album]:
-                    retlines.append((App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[album], artist)))
-                    album_artist[album] = 'Various'
+                    album_artist[norm_album] = (artist, norm_artist)
+                    album_tracks[norm_album] = []
+                    album_denorm[norm_album] = album
+                album_tracks[norm_album].append(song_obj)
+                if norm_artist != album_artist[norm_album][1]:
+                    retlines.append((App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[norm_album][0], artist)))
+                    album_artist[norm_album] = ('Various', 'various')
 
             retlines.append((App.STATUS_DEBUG, album_artist))
 
             # Actually make the changes
-            #retlines.append((App.STATUS_DEBUG, album_artist))
             updated_albums = {}
             # We're sorting here because a test uncovered a bug whose exact behavior
             # depended on which order some updates happened in, and the behavior wasn't
             # predictable unless we sorted.  Ideally the order shouldn't matter, but
             # for the purposes of squashing the bug fully and having test cases for
             # all possibilities, we'll just keep sorting.
-            for album in sorted(album_artist.keys()):
-                artist = album_artist[album]
-                tracks = album_tracks[album]
+            for norm_album in sorted(album_artist.keys()):
+                album = album_denorm[norm_album]
+                (artist, norm_artist) = album_artist[norm_album]
+                tracks = album_tracks[norm_album]
                 retlines.append((App.STATUS_DEBUG, 'Looking at album %s, artist %s, tracks %d' % (album, artist, len(tracks))))
 
                 try:
@@ -954,7 +962,7 @@ class App(object):
                 tracks_to_update = 0
                 seen_album_title = None
                 for track in tracks:
-                    if track.album.name == album:
+                    if track.album.normname == norm_album:
                         track_updates_possible += 1
                         if track.filename in to_update_helpers:
                             if seen_album_title is None:
