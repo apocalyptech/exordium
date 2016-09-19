@@ -1020,7 +1020,7 @@ class App(object):
                     updated_albums[album_obj.pk] = True
                 else:
                     try:
-                        album_obj = Album.objects.get(name=album, artist__name=artist)
+                        album_obj = Album.objects.get(normname=norm_album, artist__normname=norm_artist)
                         retlines.append((App.STATUS_DEBUG, 'Using existing album "%s / %s" for %s' % (album_obj.artist, album_obj, album)))
                     except Album.DoesNotExist:
                         album_obj = Album(name=album,

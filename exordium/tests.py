@@ -1138,6 +1138,35 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'artist name')
 
+    def test_update_change_artist_aesc_single_track(self):
+        """
+        Test what happens when a track gets updated with the same artist
+        name but with a different usage of æ.  Since it's the only track with
+        that artist name, we want the artist name to get updated.
+        """
+        self.add_mp3(artist='Aertist Name', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Aertist Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', artist='Ærtist Name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Ærtist Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Ærtist Name')
+
     def test_update_change_artist_case_two_tracks(self):
         """
         Test what happens when a track gets updated with the same artist
@@ -1169,6 +1198,38 @@ class BasicUpdateTests(ExordiumTests):
         artist = Artist.objects.get(name='Artist Name')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Artist Name')
+
+    def test_update_change_artist_aesc_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same artist
+        name but with a different Æ.  Since it's only one out of the
+        two tracks track with that artist name, we want the original
+        artist to remain unchanged
+        """
+        self.add_mp3(artist='Ærtist Name', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Ærtist Name', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Ærtist Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', artist='Aertist Name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Ærtist Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Ærtist Name')
 
     def test_update_change_album_case_single(self):
         """
@@ -1203,6 +1264,40 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get(name='Album Name')
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'album name')
+
+    def test_update_change_album_aesc_single(self):
+        """
+        Test what happens when a single-track album gets updated with the
+        same album name but with a different Æ.  The album name should
+        be updated, since all tracks in the album have been updated.
+        """
+        self.add_mp3(artist='Artist Name', album='Aelbum Name',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        artist_pk = artist.pk
+        album = Album.objects.get(name='Aelbum Name')
+        album_pk = album.pk
+
+        # Update
+        self.update_mp3('song1.mp3', album='Ælbum Name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Artist Name')
+        album = Album.objects.get(name='Ælbum Name')
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.name, 'Ælbum Name')
 
     def test_update_change_album_case_multiple(self):
         """
@@ -1240,6 +1335,43 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get(name='Album Name')
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'Album Name')
+
+    def test_update_change_album_aesc_multiple(self):
+        """
+        Test what happens when one track in a multi-track album gets updated
+        with the same album name but with a different Æ.  The album name
+        should remain the same, since not all tracks in the album have been
+        updated.
+        """
+        self.add_mp3(artist='Artist Name', album='Aelbum Name',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Aelbum Name',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        artist_pk = artist.pk
+        album = Album.objects.get(name='Aelbum Name')
+        album_pk = album.pk
+
+        # Update
+        self.update_mp3('song2.mp3', album='Ælbum Name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Artist Name')
+        album = Album.objects.get(name='Aelbum Name')
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.name, 'Aelbum Name')
 
     def test_update_change_artist_case_on_single_album_track(self):
         """
