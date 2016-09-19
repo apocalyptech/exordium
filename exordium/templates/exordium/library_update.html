@@ -7,7 +7,7 @@
     {% for status, line in library_results %}
         {% if status == 'error' %}<span class="red">{{ line }}</span>
         {% elif status == 'success' %}<span class="green">{{ line }}</span>
-        {% elif status == 'info' %}{{ line }}{% endif %}<br />
+        {% elif status == 'info' %}{{ line }}{% endif %}{% if status != 'debug' %}<br />{% endif %}
     {% endfor %}
 </blockquote>
 <p><a href="{% url 'exordium:library' %}">Back to library management</a></p>
