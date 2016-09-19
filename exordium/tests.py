@@ -1794,6 +1794,47 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(str(album), new_album_title)
         self.assertEqual(album.song_set.count(), 1)
 
+    def test_update_album_track_to_non_album_track_with_multitrack_album(self):
+        """
+        An album track is updated to become a non-album track by clearing
+        out the Album tag.  The original album should still exist, though,
+        since only one track was changed
+        """
+        self.add_mp3(artist='Artist', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, False)
+        self.assertEqual(str(album), 'Album')
+        album_pk = album.pk
+
+        # Updates
+        self.update_mp3('song1.mp3', album='')
+        self.run_update()
+
+        # Now the real checks
+        new_album_title = Album.miscellaneous_format_str % ('Artist')
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get(artist__name='Artist', miscellaneous=True)
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), new_album_title)
+        self.assertEqual(album.song_set.count(), 1)
+        self.assertEqual(album.song_set.get().filename, 'song1.mp3')
+        album = Album.objects.get(name='Album')
+        self.assertEqual(album.miscellaneous, False)
+        self.assertEqual(str(album), 'Album')
+        self.assertEqual(album.song_set.count(), 1)
+        self.assertEqual(album.song_set.get().filename, 'song2.mp3')
+
     def test_update_non_album_track_to_album_track(self):
         """
         A non-album track is updated to become an album track by adding
@@ -1823,6 +1864,46 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album.miscellaneous, False)
         self.assertEqual(str(album), 'Album')
         self.assertEqual(album.song_set.count(), 1)
+
+    def test_update_non_album_track_to_album_track_with_multitrack_album(self):
+        """
+        A non-album track is updated to become an album track by adding
+        an Album tag.  The original album should be used.
+        """
+        self.add_mp3(artist='Artist', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Preliminary checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get(name='Album')
+        self.assertEqual(album.miscellaneous, False)
+        self.assertEqual(str(album), 'Album')
+        self.assertEqual(album.song_set.count(), 1)
+        album_pk = album.pk
+        album_title = Album.miscellaneous_format_str % ('Artist')
+        album = Album.objects.get(artist__name='Artist', miscellaneous=True)
+        self.assertEqual(album.miscellaneous, True)
+        self.assertEqual(str(album), album_title)
+        self.assertEqual(album.song_set.count(), 1)
+
+        # Updates
+        self.update_mp3('song2.mp3', album='Album')
+        self.run_update()
+
+        # Now the real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.miscellaneous, False)
+        self.assertEqual(str(album), 'Album')
+        self.assertEqual(album.song_set.count(), 2)
+        self.assertEqual(album.pk, album_pk)
 
     def test_update_song_delete(self):
         """
