@@ -216,17 +216,43 @@ class ExordiumTests(TestCase):
             self.assertNotEqual(status, App.STATUS_ERROR)
         return appresults
 
+    def assertErrors(self, appresults, errors_min=1):
+        """
+        Given a list of tuples (as returned from `App.add()` or `App.update()`),
+        ensure that we have at least `errors_min` with a status of App.STATUS_ERROR
+        """
+        error_count = 0
+        for (status, line) in appresults:
+            if status == App.STATUS_ERROR:
+                error_count += 1
+        self.assertTrue(error_count >= errors_min)
+        return appresults
+
     def run_add(self):
         """
         Runs an `add` operation on our library, and checks for errors.
         """
         return self.assertNoErrors(App.add())
 
+    def run_add_errors(self, errors_min=1):
+        """
+        Runs an `add` operation on our library, and expect to see at least
+        one error.
+        """
+        return self.assertErrors(App.add(), errors_min)
+
     def run_update(self):
         """
         Runs an `update` operation on our library, and checks for errors.
         """
         return self.assertNoErrors(App.update())
+
+    def run_update_errors(self, errors_min=1):
+        """
+        Runs an `add` operation on our library, and expect to see at least
+        one error.
+        """
+        return self.assertErrors(App.update(), errors_min)
 
 class BasicAddTests(ExordiumTests):
     """
@@ -377,6 +403,26 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(song.title, 'Title')
         self.assertEqual(song.year, 0)
         self.assertEqual(song.tracknum, 0)
+
+    def test_add_mp3_no_tags(self):
+        """
+        Test adding an mp3 file which has no tags specified
+        """
+        self.add_mp3(apply_tags=False)
+        self.run_add_errors()
+        self.assertEqual(Song.objects.all().count(), 0)
+        self.assertEqual(Artist.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 0)
+
+    def test_add_mp3_no_title_tag(self):
+        """
+        Test adding an mp3 file which has no title tag specified
+        """
+        self.add_mp3(artist='Artist')
+        self.run_add_errors()
+        self.assertEqual(Song.objects.all().count(), 0)
+        self.assertEqual(Artist.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 0)
 
     def test_add_mp3s_different_artist_case(self):
         """
@@ -992,6 +1038,13 @@ class BasicUpdateAsAddTests(BasicAddTests):
         `add`, and checks for errors.
         """
         return self.assertNoErrors(App.update())
+
+    def run_add_errors(self, errors_min=1):
+        """
+        Runs an `update` operation on our library while pretending to be
+        `add`, and ensures that there's at least one error
+        """
+        return self.assertErrors(App.update(), errors_min)
 
 class BasicUpdateTests(ExordiumTests):
     """

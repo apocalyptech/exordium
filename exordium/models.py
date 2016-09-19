@@ -335,6 +335,7 @@ class Song(models.Model):
 
         # Set up some vars
         raw_artist = ''
+        artist_full = ''
         artist = ''
         album = ''
         title = ''
@@ -388,6 +389,19 @@ class Song(models.Model):
             retlines.append((App.STATUS_ERROR,
                 'ERROR: audio type of %s not yet understood: %s' % (
                     short_filename, type(audio))))
+            return None
+
+        # Some data validation here.  We can have a song without an album,
+        # but we won't allow one which doesn't have an artist or title.
+        if artist_full == '':
+            retlines.append((App.STATUS_ERROR,
+                'ERROR: Artist name not found, from audio file %s' % (
+                    short_filename)))
+            return None
+        if title == '':
+            retlines.append((App.STATUS_ERROR,
+                'ERROR: Title not found, from audio file %s' % (
+                    short_filename)))
             return None
 
         # A bit of data validation here - "Various" is a protected
