@@ -675,7 +675,7 @@ class App(object):
                     del known_artists[album.artist.normname][1][album.normname]
                     retlines.append((App.STATUS_DEBUG, 'Switching album "%s / %s" to artist "%s"' %
                         (album.artist, album, album_artist[album.normname])))
-                    album.artist = Artist.objects.get(name=album_artist[album.normname])
+                    album.artist = Artist.objects.get(normname=App.norm_name(album_artist[album.normname]))
                     album.save()
                     known_artists[album.artist.normname][1][album.normname] = album
                 except Artist.DoesNotExist:
@@ -698,7 +698,7 @@ class App(object):
                         # Apparently in this case we're not associating things according to our
                         # database's collation values.  We'll just try to load the matching artist
                         # for now...
-                        artist_obj = Artist.objects.get(name=helper.artist_name)
+                        artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
                         known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
                         retlines.append((App.STATUS_INFO, 'Loaded existing artist for "%s"' % (artist_obj)))
                 elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
@@ -737,7 +737,7 @@ class App(object):
                                 retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
                                 albums_added += 1
                         except IntegrityError:
-                            album_obj = Album.objects.get(name=helper.album, artist=known_artists[helper.norm_album_artist][0])
+                            album_obj = Album.objects.get(normname=helper.norm_album, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                             retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
 
@@ -891,7 +891,7 @@ class App(object):
             else:
                 # Otherwise, try to load in the artist we should be, or create a new one
                 try:
-                    artist_obj = Artist.objects.get(name=helper.artist_name)
+                    artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
                         artist_obj.prefix = helper.artist_prefix
                         artist_obj.save()
