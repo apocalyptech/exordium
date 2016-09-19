@@ -1014,6 +1014,7 @@ class App(object):
                     if tracks[0].year is not None and tracks[0].year != 0:
                         album_obj.year = tracks[0].year
                     album_obj.name = album
+                    album_obj.miscellaneous = miscellaneous
                     album_obj.save()
                     retlines.append((App.STATUS_INFO, 'Updated album "%s / %s" to "%s / %s"' %
                         (old_artist, old_name, album_obj.artist, album_obj)))
