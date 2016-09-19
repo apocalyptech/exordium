@@ -456,7 +456,7 @@ class App(object):
 
     prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
 
-    norm_translation = str.maketrans('äáàâãëéèêẽïíìîĩöóòôõøüúùûũÿýỳŷỹðç', 'aaaaaeeeeeiiiiioooooouuuuuyyyyydc')
+    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðç“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydc""\'\'')
 
     @staticmethod
     def norm_name(name):
@@ -494,7 +494,8 @@ class App(object):
         """
         # TODO: Translations and replacements could use some expansion
         return name.lower().translate(App.norm_translation).replace(
-            'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
+            'æ', 'ae').replace('ß', 'ss').replace('þ', 'th').replace(
+            'œ', 'oe').replace('&', 'and')
         #lower = name.lower()
         #lower = lower.translate(App.norm_translation).replace(
         #    'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
