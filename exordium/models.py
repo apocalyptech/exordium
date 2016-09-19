@@ -673,7 +673,7 @@ class App(object):
             for (albumname, album) in albums_to_update.items():
                 try:
                     del known_artists[album.artist.normname][1][album.normname]
-                    retlines.append((App.STATUS_DEBUG, 'Switching album "%s / %s" to artist "%s"' %
+                    retlines.append((App.STATUS_INFO, 'Updating album "%s / %s" to artist "%s"' %
                         (album.artist, album, album_artist[album.normname])))
                     album.artist = Artist.objects.get(normname=App.norm_name(album_artist[album.normname]))
                     album.save()
@@ -700,13 +700,13 @@ class App(object):
                         # for now...
                         artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
                         known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
-                        retlines.append((App.STATUS_INFO, 'Loaded existing artist for "%s"' % (artist_obj)))
+                        retlines.append((App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj)))
                 elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
                     # but we see one now, update the artist record with that prefix.
                     known_artists[helper.norm_artist_name][0].prefix = helper.artist_prefix
                     known_artists[helper.norm_artist_name][0].save()
-                    retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
+                    retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
                         (known_artists[helper.norm_artist_name][0])))
 
                 # Check to see if we know the album yet, and if not create it.
@@ -724,7 +724,7 @@ class App(object):
                         except IntegrityError:
                             album_obj = Album.objects.get(miscellaneous=True, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
-                            retlines.append((App.STATUS_INFO, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj)))
+                            retlines.append((App.STATUS_DEBUG, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj)))
                 else:
                     if helper.norm_album not in known_artists[helper.norm_album_artist][1]:
                         try:
@@ -739,7 +739,7 @@ class App(object):
                         except IntegrityError:
                             album_obj = Album.objects.get(normname=helper.norm_album, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
-                            retlines.append((App.STATUS_INFO, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
+                            retlines.append((App.STATUS_DEBUG, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
 
                 # And now, update and save our song_obj
                 helper.song_obj.artist = known_artists[helper.norm_artist_name][0]
@@ -833,7 +833,7 @@ class App(object):
                 sha256sum = Song.get_sha256sum(os.path.join(App.prefs['exordium__base_path'], path))
                 if sha256sum in digest_dict:
                     song = digest_dict[sha256sum]
-                    retlines.append((App.STATUS_DEBUG, 'File move: %s -> %s' % (
+                    retlines.append((App.STATUS_INFO, 'File move detected: %s -> %s' % (
                         song.filename, path
                     )))
                     song.filename = path
@@ -853,7 +853,7 @@ class App(object):
             delete_rel_artists[song.artist] = True
             album_changes[os.path.dirname(song.filename)] = True
             song.delete()
-            retlines.append((App.STATUS_DEBUG, 'Deleted file: %s' % (song.filename)))
+            retlines.append((App.STATUS_INFO, 'Deleted file: %s' % (song.filename)))
 
         # Handle adds here, just pass through for now.  There's a bunch of duplicated
         # effort between here and the update section below, and some various unnecessary
@@ -880,7 +880,7 @@ class App(object):
                 if helper.artist_prefix != '' and song.artist.prefix == '':
                     song.artist.prefix = helper.artist_prefix
                     song.artist.save()
-                    retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
+                    retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
                         (song.artist)))
                 # Also check to see if the non-normalized artist name matches or not.
                 # If not, we MAY want to update the main artist name to match, though
@@ -895,11 +895,11 @@ class App(object):
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
                         artist_obj.prefix = helper.artist_prefix
                         artist_obj.save()
-                        retlines.append((App.STATUS_INFO, 'Updated artist to include prefix: "%s"' %
+                        retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
                             (artist_obj)))
                 except Artist.DoesNotExist:
                     artist_obj = helper.new_artist()
-                    retlines.append((App.STATUS_DEBUG, 'Created new artist "%s"' % (artist_obj)))
+                    retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
                 delete_rel_artists[song.artist] = True
                 song.artist = artist_obj
 
@@ -1001,12 +1001,11 @@ class App(object):
                     if track.filename in to_update_helpers:
                         if seen_album_title is None:
                             seen_album_title = to_update_helpers[track.filename].album
-                        retlines.append((App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title)))
+                        #retlines.append((App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title)))
                         if to_update_helpers[track.filename].album == seen_album_title:
                             tracks_to_update += 1
                 retlines.append((App.STATUS_DEBUG, 'tracks to update: %d, possible: %d' % (tracks_to_update, track_updates_possible)))
                 if tracks_to_update != 0 and tracks_to_update == track_updates_possible and tracks[0].album.pk not in updated_albums:
-                    retlines.append((App.STATUS_DEBUG, 'Going to update album!'))
                     album_obj = tracks[0].album
                     old_artist = album_obj.artist
                     old_name = album_obj.name
@@ -1016,7 +1015,7 @@ class App(object):
                     album_obj.name = album
                     album_obj.miscellaneous = miscellaneous
                     album_obj.save()
-                    retlines.append((App.STATUS_INFO, 'Updated album "%s / %s" to "%s / %s"' %
+                    retlines.append((App.STATUS_INFO, 'Updated album from "%s / %s" to "%s / %s"' %
                         (old_artist, old_name, album_obj.artist, album_obj)))
                     updated_albums[album_obj.pk] = True
                 else:
@@ -1047,12 +1046,12 @@ class App(object):
         # deleted, and delete the album/artist if there's no more dependent data
         for album in delete_rel_albums.keys():
             if album.song_set.count() == 0:
-                retlines.append((App.STATUS_DEBUG, 'Deleted orphaned album "%s / %s"' % (album, album.artist)))
+                retlines.append((App.STATUS_INFO, 'Deleted orphaned album "%s / %s"' % (album, album.artist)))
                 album.delete()
         for artist in delete_rel_artists.keys():
             if artist.name != 'Various':
                 if artist.album_set.count() == 0 and artist.song_set.count() == 0:
-                    retlines.append((App.STATUS_DEBUG, 'Deleted orphaned artist "%s"' % (artist)))
+                    retlines.append((App.STATUS_INFO, 'Deleted orphaned artist "%s"' % (artist)))
                     artist.delete()
 
         # Now check to see if we need to update any artist names.
