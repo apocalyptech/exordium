@@ -650,6 +650,12 @@ class App(object):
         # lists of all the songs in that dir (as a SongHelper object)
         songs_in_dir = {}
         checksums_computed = 0
+        total_checksums = 0
+        for (short_filename, sha256sum) in to_add:
+            if sha256sum is None:
+                total_checksums += 1
+        if total_checksums > 0:
+            yield (App.STATUS_INFO, 'Total track checksums to compute: %d' % (total_checksums))
         for (short_filename, sha256sum) in to_add:
             full_filename = os.path.join(App.prefs['exordium__base_path'], short_filename)
 
@@ -657,7 +663,8 @@ class App(object):
             if sha256sum is None:
                 checksums_computed += 1
                 if checksums_computed % 100 == 0:
-                    yield (App.STATUS_INFO, 'Checksums gathered for %d tracks...' % (checksums_computed))
+                    yield (App.STATUS_INFO, 'Checksums gathered for %d/%d tracks (%d%%)' % (
+                        checksums_computed, total_checksums, (checksums_computed/total_checksums*100)))
             song_info = Song.from_filename(
                 full_filename, short_filename,
                 retlines=retlines, sha256sum=sha256sum)
