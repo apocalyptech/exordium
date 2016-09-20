@@ -160,3 +160,15 @@ As I think of them I'll add to the list.
 - If two directories contain files which seem to be in the same album,
   you'll end up with an album which spans directories.  Behavior may not
   be well-defined in that case.
+
+Migrations
+----------
+
+Practically no support is included for converting an existing music library
+database in some other app to Exordium.  There IS one administrative
+subcommand provided to import album addition times from an Ampache MySQL
+database, though, which can be accessed by running:
+
+    python manage.py importmysqlampachedates --dbhost <host> --dbname <name> --dbuser <user>
+
+The subcommand will prompt you for the database password via STDIN.
