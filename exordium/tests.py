@@ -232,27 +232,27 @@ class ExordiumTests(TestCase):
         """
         Runs an `add` operation on our library, and checks for errors.
         """
-        return self.assertNoErrors(App.add())
+        return self.assertNoErrors(list(App.add()))
 
     def run_add_errors(self, errors_min=1):
         """
         Runs an `add` operation on our library, and expect to see at least
         one error.
         """
-        return self.assertErrors(App.add(), errors_min)
+        return self.assertErrors(list(App.add()), errors_min)
 
     def run_update(self):
         """
         Runs an `update` operation on our library, and checks for errors.
         """
-        return self.assertNoErrors(App.update())
+        return self.assertNoErrors(list(App.update()))
 
     def run_update_errors(self, errors_min=1):
         """
         Runs an `add` operation on our library, and expect to see at least
         one error.
         """
-        return self.assertErrors(App.update(), errors_min)
+        return self.assertErrors(list(App.update()), errors_min)
 
 class BasicAddTests(ExordiumTests):
     """
@@ -1037,14 +1037,14 @@ class BasicUpdateAsAddTests(BasicAddTests):
         Runs an `update` operation on our library while pretending to be
         `add`, and checks for errors.
         """
-        return self.assertNoErrors(App.update())
+        return self.assertNoErrors(list(App.update()))
 
     def run_add_errors(self, errors_min=1):
         """
         Runs an `update` operation on our library while pretending to be
         `add`, and ensures that there's at least one error
         """
-        return self.assertErrors(App.update(), errors_min)
+        return self.assertErrors(list(App.update()), errors_min)
 
 class BasicUpdateTests(ExordiumTests):
     """

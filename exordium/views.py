@@ -4,6 +4,8 @@ from django.utils.decorators import method_decorator
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.urls import reverse
+from django.template import loader, Context
+from django.http import StreamingHttpResponse
 
 from django_tables2 import RequestConfig
 
@@ -187,22 +189,44 @@ class LibraryView(TitleTemplateView):
         context['media_url'] = prefs['exordium__media_url']
         return context
 
+class LibraryActionView(generic.View):
+
+    exordium_title = 'Library Action'
+    update_func = staticmethod(App.add)
+
+    def get(self, request, *args, **kwargs):
+        """
+        We support GET
+        """
+        return StreamingHttpResponse((line for line in self.update_generator()))
+
+    def update_generator(self):
+        template_page = loader.get_template('exordium/library_update.html')
+        template_line = loader.get_template('exordium/library_update_line.html')
+        context = Context({
+            'request': self.request,
+            'exordium_title': self.exordium_title,
+        })
+        page = template_page.render(context)
+        for line in page.split("\n"):
+            if line == '@__LIBRARY_UPDATE_AREA__@':
+                for (status, line) in self.update_func():
+                    yield template_line.render(Context({
+                        'status': status,
+                        'line': line,
+                    }))
+            else:
+                yield line
+
 @method_decorator(staff_member_required, name='dispatch')
-class LibraryAddView(TitleTemplateView):
-    template_name = 'exordium/library_update.html'
+class LibraryAddView(LibraryActionView):
+
     exordium_title = 'Add Music to Library'
-
-    def get_context_data(self, **kwargs):
-        context = super(LibraryAddView, self).get_context_data(**kwargs)
-        context['library_results'] = App.add()
-        return context
+    update_func = staticmethod(App.add)
 
 @method_decorator(staff_member_required, name='dispatch')
-class LibraryUpdateView(TitleTemplateView):
-    template_name = 'exordium/library_update.html'
-    exordium_title = 'Update/Clean Libraries'
+class LibraryUpdateView(LibraryActionView):
 
-    def get_context_data(self, **kwargs):
-        context = super(LibraryUpdateView, self).get_context_data(**kwargs)
-        context['library_results'] = App.update()
-        return context
+    exordium_title = 'Update/Clean Libraries'
+    update_func = staticmethod(App.update)
+

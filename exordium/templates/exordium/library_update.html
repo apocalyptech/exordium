@@ -4,11 +4,7 @@
 {% block body %}
 <p><strong>Processing Library...</strong></p>
 <blockquote class="library_update">
-    {% for status, line in library_results %}
-        {% if status == 'error' %}<span class="red">{{ line }}</span>
-        {% elif status == 'success' %}<span class="green">{{ line }}</span>
-        {% elif status == 'info' %}{{ line }}{% endif %}{% if status != 'debug' %}<br />{% endif %}
-    {% endfor %}
+@__LIBRARY_UPDATE_AREA__@
 </blockquote>
 <p><a href="{% url 'exordium:library' %}">Back to library management</a></p>
 {% endblock %}

@@ -553,18 +553,18 @@ class App(object):
             return True
 
     @staticmethod
-    def add(retlines=None, to_add=None):
+    def add(to_add=None):
         """
         Looks through our base_dir for new files we don't know anything
-        about yet.  Returns its entire processing status log as a list of
-        tuples of the form (status, text).
+        about yet.  Yields its entire processing status log as a generator,
+        as tuples of the form (status, text).
 
         `status` will be one of `info`, `debug`, `success`, or `error`, so can
         be processed appropriately by whatever calls this method.
 
-        Optionally, pass in both `retlines` and `to_add` to have this method
-        process given a list of tuples containing filenames and sha256sums.
-        This way we can be called from update()
+        Optionally, pass in `to_add` to have this method process given a list
+        of tuples containing filenames and sha256sums.  This way we can be
+        called from update()
 
         `to_add` should be a list of tuples, where the first field is the
         filename and the second is either the sha256sum or `None`, if the
@@ -580,10 +580,9 @@ class App(object):
 
         # Check to see if we're in the middle of an update or not
         updating = True
-        if retlines is None or to_add is None:
+        if to_add is None:
             to_add = []
-            retlines = []
-            retlines.append((App.STATUS_INFO, 'Starting process...'))
+            yield (App.STATUS_INFO, 'Starting process...')
             updating = False
 
             # First grab a dict of all songs we already know about
@@ -594,17 +593,17 @@ class App(object):
             # Now walk through our directory structure looking for more music
             for short_filename in App.get_filesystem_media():
                 if short_filename not in known_song_paths:
-                    retlines.append((App.STATUS_DEBUG, 'Found file: %s' % (short_filename)))
+                    yield (App.STATUS_DEBUG, 'Found file: %s' % (short_filename))
                     to_add.append((short_filename, None))
             
             # If we have no data, just get out of here
             if len(to_add) == 0:
-                retlines.append((App.STATUS_SUCCESS, 'No new music found!'))
-                return retlines
+                yield (App.STATUS_SUCCESS, 'No new music found!')
+                return
 
             # Ensure that we have a Various artist.
             if App.ensure_various_artists():
-                retlines.append((App.STATUS_INFO, 'Created new artist "Various" (meta-artist)'))
+                yield (App.STATUS_INFO, 'Created new artist "Various" (meta-artist)')
                 artists_added += 1
 
         else:
@@ -612,7 +611,7 @@ class App(object):
             # Don't bother reporting about no added files if we're updating.
             # Theoretically we shouldn't get here, but no worries if we do.
             if len(to_add) == 0:
-                return retlines
+                return
 
         # Grab a nested dict of all artists and their albums
         known_artists = {}
@@ -641,12 +640,20 @@ class App(object):
         # names in which the files are found, and the values are
         # lists of all the songs in that dir (as a SongHelper object)
         songs_in_dir = {}
+        checksums_computed = 0
         for (short_filename, sha256sum) in to_add:
             full_filename = os.path.join(App.prefs['exordium__base_path'], short_filename)
 
+            retlines = []
+            if sha256sum is None:
+                checksums_computed += 1
+                if checksums_computed % 100 == 0:
+                    yield (App.STATUS_INFO, 'Checksums gathered for %d tracks...' % (checksums_computed))
             song_info = Song.from_filename(
                 full_filename, short_filename,
                 retlines=retlines, sha256sum=sha256sum)
+            for retline in retlines:
+                yield retline
             if song_info is None:
                 continue
             else:
@@ -689,14 +696,14 @@ class App(object):
             for (albumname, album) in albums_to_update.items():
                 try:
                     del known_artists[album.artist.normname][1][album.normname]
-                    retlines.append((App.STATUS_INFO, 'Updating album "%s / %s" to artist "%s"' %
-                        (album.artist, album, album_artist[album.normname])))
+                    yield (App.STATUS_INFO, 'Updating album "%s / %s" to artist "%s"' %
+                        (album.artist, album, album_artist[album.normname]))
                     album.artist = Artist.objects.get(normname=App.norm_name(album_artist[album.normname]))
                     album.save()
                     known_artists[album.artist.normname][1][album.normname] = album
                 except Artist.DoesNotExist:
-                    retlines.append((App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
-                        (album_artist[albumname])))
+                    yield (App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
+                        (album_artist[albumname]))
 
         # Loop through helper objects
         for (base_dir, songlist) in songs_in_dir.items():
@@ -708,7 +715,7 @@ class App(object):
                     try:
                         artist_obj = helper.new_artist()
                         known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
-                        retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
+                        yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
                         artists_added += 1
                     except IntegrityError:
                         # Apparently in this case we're not associating things according to our
@@ -716,14 +723,14 @@ class App(object):
                         # for now...
                         artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
                         known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
-                        retlines.append((App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj)))
+                        yield (App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj))
                 elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
                     # While we're at it, if our artist didn't have a prefix originally
                     # but we see one now, update the artist record with that prefix.
                     known_artists[helper.norm_artist_name][0].prefix = helper.artist_prefix
                     known_artists[helper.norm_artist_name][0].save()
-                    retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                        (known_artists[helper.norm_artist_name][0])))
+                    yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                        (known_artists[helper.norm_artist_name][0]))
 
                 # Check to see if we know the album yet, and if not create it.
                 if helper.miscellaneous_album:
@@ -735,12 +742,12 @@ class App(object):
                                         year=helper.song_obj.year,
                                         miscellaneous=helper.miscellaneous_album)
                                 known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
-                                retlines.append((App.STATUS_INFO, 'Created new miscellaneous album "%s / %s"' % (album_obj.artist, album_obj)))
+                                yield (App.STATUS_INFO, 'Created new miscellaneous album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
                         except IntegrityError:
                             album_obj = Album.objects.get(miscellaneous=True, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
-                            retlines.append((App.STATUS_DEBUG, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj)))
+                            yield (App.STATUS_DEBUG, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj))
                 else:
                     if helper.norm_album not in known_artists[helper.norm_album_artist][1]:
                         try:
@@ -750,12 +757,12 @@ class App(object):
                                         year=helper.song_obj.year,
                                         miscellaneous=helper.miscellaneous_album)
                                 known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
-                                retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
+                                yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
                         except IntegrityError:
                             album_obj = Album.objects.get(normname=helper.norm_album, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
-                            retlines.append((App.STATUS_DEBUG, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj)))
+                            yield (App.STATUS_DEBUG, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj))
 
                 # And now, update and save our song_obj
                 helper.song_obj.artist = known_artists[helper.norm_artist_name][0]
@@ -768,13 +775,13 @@ class App(object):
 
         # Report
         if not updating:
-            retlines.append((App.STATUS_SUCCESS, 'Finished adding new music!'))
-            retlines.append((App.STATUS_SUCCESS, 'Artists added: %d' % (artists_added)))
-            retlines.append((App.STATUS_SUCCESS, 'Albums added: %d' % (albums_added)))
-            retlines.append((App.STATUS_SUCCESS, 'Songs added: %d' % (songs_added)))
+            yield (App.STATUS_SUCCESS, 'Finished adding new music!')
+            yield (App.STATUS_SUCCESS, 'Artists added: %d' % (artists_added))
+            yield (App.STATUS_SUCCESS, 'Albums added: %d' % (albums_added))
+            yield (App.STATUS_SUCCESS, 'Songs added: %d' % (songs_added))
 
         # Finally, return
-        return retlines
+        return
 
     @staticmethod
     def update():
@@ -783,40 +790,31 @@ class App(object):
         deleted, moved, or added (will call out to `add()` to handle the latter,
         if needed).
 
-        Returns its entire processing status log as a list of tuples of the form
-        (status, text).
+        Yields its entire processing status log as a generator, as tuples of the
+        form (status, text).
 
         `status` will be one of `info`, `debug`, `success`, or `error`, so can
         be processed appropriately by whatever calls this method.
 
-        This whole procedure is... messy.  Lots of weird little custom dicts and
-        lists flying around to keep everything straight.  I'm sure there are
-        many better ways to handle this.  One idea for updates - if the artist
-        or album changes, would it be better to literally just mark those for
-        deletion and re-add in the add step?  I think the one case in which
-        that's sub-par given current functionality is when an artist changes
-        on an album that's already Various.  Right now that operation, at least,
-        does not end up touching the Album table.  (Yeah, I think I might want
-        all that logic JUST happening inside `add()`, right now we duplicate it.)
-        Better yet, possibly - delete 'add' altogether and just have it call this
-        method with an argument to make it only process adds?
+        There's a fair amount of duplicated code between this and `add()`.
+        Arguably there should only be one function, and adds in specific would
+        just be a subset of that.
 
-        OTOH, it might be nice to try and figure out ways to intuit if an album
-        record should be updated instead of getting created/deleted when album
-        stuff changes, for all other cases.
+        This whole procedure is... messy.  Lots of weird little custom dicts and
+        lists flying around to keep everything straight, and not always terribly
+        well documented in-code.
         """
 
         App.ensure_prefs()
 
-        retlines = []
-        retlines.append((App.STATUS_INFO, 'Starting process...'))
+        yield (App.STATUS_INFO, 'Starting process...')
 
         to_update = []
         to_delete = {}
 
         # Just get this out of the way up here.
         if App.ensure_various_artists():
-            retlines.append((App.STATUS_INFO, 'Created new artist "Various" (meta-artist)'))
+            yield (App.STATUS_INFO, 'Created new artist "Various" (meta-artist)')
 
         # Step one - loop through the database and find any files which are missing
         # or have been updated.  Create `digest_dict` which is a mapping of sha256sums
@@ -836,7 +834,7 @@ class App(object):
                 db_paths[song.filename] = song
                 if song.changed_on_disk():
                     to_update.append(song)
-                    retlines.append((App.STATUS_DEBUG, 'Updated file: %s' % (song.filename)))
+                    yield (App.STATUS_DEBUG, 'Updated file: %s' % (song.filename))
             else:
                 # Just store some data for now
                 to_delete[song] = True
@@ -849,15 +847,15 @@ class App(object):
                 sha256sum = Song.get_sha256sum(os.path.join(App.prefs['exordium__base_path'], path))
                 if sha256sum in digest_dict:
                     song = digest_dict[sha256sum]
-                    retlines.append((App.STATUS_INFO, 'File move detected: %s -> %s' % (
+                    yield (App.STATUS_INFO, 'File move detected: %s -> %s' % (
                         song.filename, path
-                    )))
+                    ))
                     song.filename = path
                     song.save()
                     del digest_dict[sha256sum]
                     del to_delete[song]
                 else:
-                    retlines.append((App.STATUS_DEBUG, 'Found new file: %s' % (path)))
+                    yield (App.STATUS_DEBUG, 'Found new file: %s' % (path))
                     to_add.append((path, sha256sum))
 
         # Report on deleted files here, and delete them
@@ -869,22 +867,26 @@ class App(object):
             delete_rel_artists[song.artist] = True
             album_changes[os.path.dirname(song.filename)] = True
             song.delete()
-            retlines.append((App.STATUS_INFO, 'Deleted file: %s' % (song.filename)))
+            yield (App.STATUS_INFO, 'Deleted file: %s' % (song.filename))
 
         # Handle adds here, just pass through for now.  There's a bunch of duplicated
         # effort between here and the update section below, and some various unnecessary
         # duplication of work, but whatever.  We'll cope.
         if len(to_add) > 0:
-            App.add(to_add=to_add, retlines=retlines)
+            for retline in App.add(to_add=to_add):
+                yield retline
 
         # Updates next, pull in the new data
         to_update_helpers = {}
         possible_artist_updates = {}
         for song in to_update:
 
+            retlines = []
             song_info = song.update_from_disk(retlines)
+            for retline in retlines:
+                yield retline
             if song_info is None:
-               retlines.append((App.STATUS_ERROR, 'Could not read updated information for: %s' % (song.filename)))
+               yield (App.STATUS_ERROR, 'Could not read updated information for: %s' % (song.filename))
                continue
 
             helper = SongHelper(*song_info)
@@ -896,8 +898,8 @@ class App(object):
                 if helper.artist_prefix != '' and song.artist.prefix == '':
                     song.artist.prefix = helper.artist_prefix
                     song.artist.save()
-                    retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                        (song.artist)))
+                    yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                        (song.artist))
                 # Also check to see if the non-normalized artist name matches or not.
                 # If not, we MAY want to update the main artist name to match, though
                 # only if literally all instances of the artist name are equal, in the
@@ -911,11 +913,11 @@ class App(object):
                     if helper.artist_prefix != '' and artist_obj.prefix == '':
                         artist_obj.prefix = helper.artist_prefix
                         artist_obj.save()
-                        retlines.append((App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                            (artist_obj)))
+                        yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                            (artist_obj))
                 except Artist.DoesNotExist:
                     artist_obj = helper.new_artist()
-                    retlines.append((App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj)))
+                    yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
                 delete_rel_artists[song.artist] = True
                 song.artist = artist_obj
 
@@ -958,26 +960,26 @@ class App(object):
                             song.artist.name, song.artist.normname,
                             song)
                     except Song.DoesNotExist:
-                        retlines.append((App.STATUS_ERROR, 'Could not find Song record for: %s' % (filename)))
+                        yield (App.STATUS_ERROR, 'Could not find Song record for: %s' % (filename))
                         continue
 
                 # Album Artist Name detection
                 (miscellaneous, album, norm_album, artist, norm_artist, song_obj) = album_tuple
                 if norm_album not in album_artist:
-                    retlines.append((App.STATUS_DEBUG, 'Initial album artist: %s' % (artist)))
+                    yield (App.STATUS_DEBUG, 'Initial album artist: %s' % (artist))
                     album_artist[norm_album] = (artist, norm_artist)
                     album_tracks[norm_album] = []
                     album_denorm[norm_album] = album
                     miscellaneous_albums[norm_album] = miscellaneous
                 album_tracks[norm_album].append(song_obj)
                 if norm_artist != album_artist[norm_album][1]:
-                    retlines.append((App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[norm_album][0], artist)))
+                    yield (App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[norm_album][0], artist))
                     album_artist[norm_album] = ('Various', 'various')
 
-            #retlines.append((App.STATUS_DEBUG, album_artist))
-            #retlines.append((App.STATUS_DEBUG, album_tracks))
-            #retlines.append((App.STATUS_DEBUG, album_denorm))
-            #retlines.append((App.STATUS_DEBUG, miscellaneous_albums))
+            #yield (App.STATUS_DEBUG, album_artist)
+            #yield (App.STATUS_DEBUG, album_tracks)
+            #yield (App.STATUS_DEBUG, album_denorm)
+            #yield (App.STATUS_DEBUG, miscellaneous_albums)
 
             # Actually make the changes
             updated_albums = {}
@@ -991,13 +993,13 @@ class App(object):
                 (artist, norm_artist) = album_artist[norm_album]
                 tracks = album_tracks[norm_album]
                 miscellaneous = miscellaneous_albums[norm_album]
-                retlines.append((App.STATUS_DEBUG, 'Looking at album %s, artist %s, tracks %d' % (album, artist, len(tracks))))
+                yield (App.STATUS_DEBUG, 'Looking at album %s, artist %s, tracks %d' % (album, artist, len(tracks)))
 
                 try:
                     artist_obj = Artist.objects.get(name=artist)
                 except Artist.DoesNotExist:
                     # I don't think it should be possible to get here.
-                    retlines.append((App.STATUS_ERROR, 'Artist "%s" not found for file change on album "%s"' % (artist, album)))
+                    yield (App.STATUS_ERROR, 'Artist "%s" not found for file change on album "%s"' % (artist, album))
                     continue
 
                 # Check to see if we should update our current album record,
@@ -1017,10 +1019,10 @@ class App(object):
                     if track.filename in to_update_helpers:
                         if seen_album_title is None:
                             seen_album_title = to_update_helpers[track.filename].album
-                        #retlines.append((App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title)))
+                        #yield (App.STATUS_DEBUG, 'Comparing album %s to %s' % (to_update_helpers[track.filename].album, seen_album_title))
                         if to_update_helpers[track.filename].album == seen_album_title:
                             tracks_to_update += 1
-                retlines.append((App.STATUS_DEBUG, 'tracks to update: %d, possible: %d' % (tracks_to_update, track_updates_possible)))
+                yield (App.STATUS_DEBUG, 'tracks to update: %d, possible: %d' % (tracks_to_update, track_updates_possible))
                 if tracks_to_update != 0 and tracks_to_update == track_updates_possible and tracks[0].album.pk not in updated_albums:
                     album_obj = tracks[0].album
                     old_artist = album_obj.artist
@@ -1031,43 +1033,43 @@ class App(object):
                     album_obj.name = album
                     album_obj.miscellaneous = miscellaneous
                     album_obj.save()
-                    retlines.append((App.STATUS_INFO, 'Updated album from "%s / %s" to "%s / %s"' %
-                        (old_artist, old_name, album_obj.artist, album_obj)))
+                    yield (App.STATUS_INFO, 'Updated album from "%s / %s" to "%s / %s"' %
+                        (old_artist, old_name, album_obj.artist, album_obj))
                     updated_albums[album_obj.pk] = True
                 else:
                     try:
                         album_obj = Album.objects.get(normname=norm_album, artist__normname=norm_artist)
-                        retlines.append((App.STATUS_DEBUG, 'Using existing album "%s / %s" for %s' % (album_obj.artist, album_obj, album)))
+                        yield (App.STATUS_DEBUG, 'Using existing album "%s / %s" for %s' % (album_obj.artist, album_obj, album))
                     except Album.DoesNotExist:
                         album_obj = Album(name=album,
                             artist=artist_obj,
                             year=tracks[0].year,
                             miscellaneous=miscellaneous)
                         album_obj.save()
-                        retlines.append((App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj)))
+                        yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                     updated_albums[album_obj.pk] = True
 
                 for track in tracks:
                     if track.album != album_obj:
                         track.album = album_obj
-                        retlines.append((App.STATUS_INFO, 'Updated album to "%s / %s" for: %s' % (album_obj.artist, album_obj, track.filename)))
+                        yield (App.STATUS_INFO, 'Updated album to "%s / %s" for: %s' % (album_obj.artist, album_obj, track.filename))
 
         # Now that we theoretically have song-change albums sorted, loop through
         # again and save out all the song changes.
         for song in to_update:
             song.save()
-            retlines.append((App.STATUS_DEBUG, 'Processed file changes for: %s' % (song.filename)))
+            yield (App.STATUS_DEBUG, 'Processed file changes for: %s' % (song.filename))
 
         # Loop through the database for all albums/artists which have had records
         # deleted, and delete the album/artist if there's no more dependent data
         for album in delete_rel_albums.keys():
             if album.song_set.count() == 0:
-                retlines.append((App.STATUS_INFO, 'Deleted orphaned album "%s / %s"' % (album, album.artist)))
+                yield (App.STATUS_INFO, 'Deleted orphaned album "%s / %s"' % (album, album.artist))
                 album.delete()
         for artist in delete_rel_artists.keys():
             if artist.name != 'Various':
                 if artist.album_set.count() == 0 and artist.song_set.count() == 0:
-                    retlines.append((App.STATUS_INFO, 'Deleted orphaned artist "%s"' % (artist)))
+                    yield (App.STATUS_INFO, 'Deleted orphaned artist "%s"' % (artist))
                     artist.delete()
 
         # Now check to see if we need to update any artist names.
@@ -1083,8 +1085,8 @@ class App(object):
                         mismatch = True
                         break
                 if not mismatch:
-                    retlines.append((App.STATUS_INFO, 'Updated artist name from "%s" to "%s"' % (
-                        artist.name, seen_name)))
+                    yield (App.STATUS_INFO, 'Updated artist name from "%s" to "%s"' % (
+                        artist.name, seen_name))
                     artist.name = seen_name
                     artist.save()
             except Artist.DoesNotExist:
@@ -1092,5 +1094,5 @@ class App(object):
                 pass
 
         # Finally, return
-        retlines.append((App.STATUS_SUCCESS, 'Finished update/clean!'))
-        return retlines
+        yield (App.STATUS_SUCCESS, 'Finished update/clean!')
+        return
