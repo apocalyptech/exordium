@@ -1023,6 +1023,22 @@ class BasicAddTests(ExordiumTests):
             self.assertEqual(song.album.name, 'Album')
             self.assertEqual(song.album.artist.name, 'Various')
 
+    def test_add_live_album(self):
+        """
+        Simple test to add an album with a title which will mark it as
+        being "live"
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='2016-09-20 - Live at Somewhere',
+            filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.live, True)
+
 class BasicUpdateAsAddTests(BasicAddTests):
     """
     This is a bit of nonsense.  Basically, all tests for add() should be
@@ -2556,3 +2572,54 @@ class BasicUpdateTests(ExordiumTests):
             song = Song.objects.get(filename=filename)
             self.assertEqual(song.album.name, 'Album 1')
             self.assertEqual(song.artist.name, 'Artist 1')
+
+    def test_update_live_album_to_regular_album(self):
+        """
+        Test updating an album from one which should be live to one that's not
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='2016-09-20 - Live at Somewhere',
+            filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.live, True)
+
+        self.update_mp3('song1.mp3', album='Album')
+        self.run_update()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album_pk, album.pk)
+        self.assertEqual(album.live, False)
+
+    def test_update_regular_album_to_live_album(self):
+        """
+        Test updating an album from one which isn't live to one that's is
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.live, False)
+
+        self.update_mp3('song1.mp3', album='2016-09-20 - Live at Somewhere')
+        self.run_update()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album_pk, album.pk)
+        self.assertEqual(album.live, True)

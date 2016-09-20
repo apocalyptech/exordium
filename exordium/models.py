@@ -51,6 +51,13 @@ class SongHelper(object):
         # blank.
         self.norm_album = App.norm_name(self.album)
 
+        # Also set a "live" boolean.  Will mostly just be used for frontend
+        # filtering.
+        if App.livere.match(self.album):
+            self.live_album = True
+        else:
+            self.live_album = False
+
     def set_artist(self, artist):
         """
         Sets the artist for this helper (and also the normalized version
@@ -139,6 +146,7 @@ class Album(models.Model):
     )
     year.verbose_name = 'Year'
     miscellaneous = models.BooleanField(default=False)
+    live = models.BooleanField(default=False)
     time_added = models.DateTimeField(default=timezone.now)
     time_added.verbose_name = 'Added to Database'
 
@@ -456,6 +464,7 @@ class App(object):
     prefs = None
 
     prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
+    livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
     norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðç“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydc""\'\'')
 
@@ -740,7 +749,8 @@ class App(object):
                                 album_obj = Album.objects.create(name=helper.album,
                                         artist=known_artists[helper.norm_album_artist][0],
                                         year=helper.song_obj.year,
-                                        miscellaneous=helper.miscellaneous_album)
+                                        miscellaneous=helper.miscellaneous_album,
+                                        live=helper.live_album)
                                 known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
                                 yield (App.STATUS_INFO, 'Created new miscellaneous album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
@@ -755,7 +765,8 @@ class App(object):
                                 album_obj = Album.objects.create(name=helper.album,
                                         artist=known_artists[helper.norm_album_artist][0],
                                         year=helper.song_obj.year,
-                                        miscellaneous=helper.miscellaneous_album)
+                                        miscellaneous=helper.miscellaneous_album,
+                                        live=helper.live_album)
                                 known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                                 yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
@@ -943,11 +954,13 @@ class App(object):
             album_tracks = {}
             album_denorm = {}
             miscellaneous_albums = {}
+            live_albums = {}
             for filename in files:
 
                 if filename in to_update_helpers:
                     helper = to_update_helpers[filename]
-                    album_tuple = (helper.miscellaneous_album, helper.album, helper.norm_album,
+                    album_tuple = (helper.miscellaneous_album, helper.live_album,
+                            helper.album, helper.norm_album,
                             helper.song_obj.artist.name, helper.song_obj.artist.normname,
                             helper.song_obj)
                 else:
@@ -956,7 +969,8 @@ class App(object):
                         # This is fudging a bit; these songs would only need a save() later
                         # if they actually change, but whatever.
                         to_update.append(song)
-                        album_tuple = (song.album.miscellaneous, song.album.name, song.album.normname,
+                        album_tuple = (song.album.miscellaneous, song.album.live,
+                                song.album.name, song.album.normname,
                             song.artist.name, song.artist.normname,
                             song)
                     except Song.DoesNotExist:
@@ -964,13 +978,15 @@ class App(object):
                         continue
 
                 # Album Artist Name detection
-                (miscellaneous, album, norm_album, artist, norm_artist, song_obj) = album_tuple
+                (miscellaneous, live, album, norm_album, artist, norm_artist, song_obj) = album_tuple
                 if norm_album not in album_artist:
                     yield (App.STATUS_DEBUG, 'Initial album artist: %s' % (artist))
+                    # TODO: this is ludicrous; should just be passing around a SongHelper or something
                     album_artist[norm_album] = (artist, norm_artist)
                     album_tracks[norm_album] = []
                     album_denorm[norm_album] = album
                     miscellaneous_albums[norm_album] = miscellaneous
+                    live_albums[norm_album] = live
                 album_tracks[norm_album].append(song_obj)
                 if norm_artist != album_artist[norm_album][1]:
                     yield (App.STATUS_DEBUG, 'Got artist change from %s -> %s' % (album_artist[norm_album][0], artist))
@@ -993,6 +1009,7 @@ class App(object):
                 (artist, norm_artist) = album_artist[norm_album]
                 tracks = album_tracks[norm_album]
                 miscellaneous = miscellaneous_albums[norm_album]
+                live = live_albums[norm_album]
                 yield (App.STATUS_DEBUG, 'Looking at album %s, artist %s, tracks %d' % (album, artist, len(tracks)))
 
                 try:
@@ -1032,6 +1049,7 @@ class App(object):
                         album_obj.year = tracks[0].year
                     album_obj.name = album
                     album_obj.miscellaneous = miscellaneous
+                    album_obj.live = live
                     album_obj.save()
                     yield (App.STATUS_INFO, 'Updated album from "%s / %s" to "%s / %s"' %
                         (old_artist, old_name, album_obj.artist, album_obj))
@@ -1044,7 +1062,8 @@ class App(object):
                         album_obj = Album(name=album,
                             artist=artist_obj,
                             year=tracks[0].year,
-                            miscellaneous=miscellaneous)
+                            miscellaneous=miscellaneous,
+                            live=live)
                         album_obj.save()
                         yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                     updated_albums[album_obj.pk] = True
