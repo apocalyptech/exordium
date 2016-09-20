@@ -354,6 +354,15 @@ class Song(models.Model):
         length = 0
         bitrate = 0
 
+        # First check to see if we can even read the file.  Only complain
+        # about this in debug - ordinarily this will be something we're
+        # likely to come across intentionally.
+        if not os.access(full_filename, os.R_OK):
+            retlines.append((App.STATUS_DEBUG,
+                'Audio file is not readable: %s' % (
+                    short_filename)))
+            return None
+
         # Load the audio file into Mutagen
         audio = mutagen.File(full_filename)
 
