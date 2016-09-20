@@ -656,6 +656,44 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(artist.name, 'Artist')
         self.assertEqual(artist.prefix, 'The')
 
+    def test_add_mp3_with_exterior_spaces(self):
+        """
+        Adds a single track with both artist and album tags having extra
+        spaces on the outside of the name.  Spaces should be stripped
+        off.
+        """
+        self.add_mp3(artist=' Artist ', album=' Album ', title='Title')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        album = Album.objects.get(name='Album')
+        self.assertEqual(album.name, 'Album')
+
+    def test_add_mp3_with_trailing_nulls(self):
+        """
+        Adds a single track with both artist and album tags having an
+        extra NULL character at the end of the string.  The null char
+        should be stripped out.
+        """
+        self.add_mp3(artist="Artist\x00", album="Album\x00", title="Title\x00")
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        album = Album.objects.get(name='Album')
+        self.assertEqual(album.name, 'Album')
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+
     def test_add_mp3_no_album(self):
         """
         Adds an mp3 without an album to check that it's properly sorted

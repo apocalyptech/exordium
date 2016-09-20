@@ -369,14 +369,14 @@ class Song(models.Model):
         # Do some processing that's dependent on file type
         if str(type(audio)) == "<class 'mutagen.mp3.MP3'>":
             if 'TPE1' in audio:
-                artist_full = str(audio['TPE1'])
+                artist_full = str(audio['TPE1']).strip().strip("\x00")
                 (prefix, raw_artist) = Artist.extract_prefix(artist_full)
             if 'TALB' in audio:
-                album = str(audio['TALB'])
+                album = str(audio['TALB']).strip().strip("\x00")
             if 'TIT2' in audio:
-                title = str(audio['TIT2'])
+                title = str(audio['TIT2']).strip().strip("\x00")
             if 'TRCK' in audio:
-                tracknum = str(audio['TRCK'])
+                tracknum = str(audio['TRCK']).strip().strip("\x00")
                 if '/' in tracknum:
                     tracknum = tracknum.split('/', 2)[0]
                 try:
@@ -386,11 +386,11 @@ class Song(models.Model):
 
             try:
                 if 'TYER' in audio:
-                    year = int(str(audio['TYER']))
+                    year = int(str(audio['TYER']).strip().strip("\x00"))
                 elif 'TDRL' in audio:
-                    year = int(str(audio['TDRL']))
+                    year = int(str(audio['TDRL']).strip().strip("\x00"))
                 elif 'TDRC' in audio:
-                    year = int(str(audio['TDRC']))
+                    year = int(str(audio['TDRC']).strip().strip("\x00"))
             except ValueError:
                 year = 0
 
