@@ -643,6 +643,19 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(artist.name, 'Artist')
         self.assertEqual(artist.prefix, 'The')
 
+    def test_add_mp3_artist_prefix_double_spaces(self):
+        """
+        Adds a single track with an artist name "The  Artist" to check for
+        proper prefix handling, with more space than necessary between the
+        prefix and the actual artist name.
+        """
+        self.add_mp3(artist='The  Artist', title='Title')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
     def test_add_mp3_no_album(self):
         """
         Adds an mp3 without an album to check that it's properly sorted

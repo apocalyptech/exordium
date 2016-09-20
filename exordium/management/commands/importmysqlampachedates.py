@@ -27,7 +27,7 @@ class Command(BaseCommand):
     # of album names as well.  This can be customized in the Ampache config, so
     # perhaps we should have this be an argument, but this is the default, and
     # for now we'll just do it this way.
-    prefixre = re.compile('^((The|An|A|Die|Das|Ein|Eine|Les|Le|La) )?(.*)$', re.IGNORECASE)
+    prefixre = re.compile('^((The|An|A|Die|Das|Ein|Eine|Les|Le|La)\s+)?(.*)$', re.IGNORECASE)
 
     def add_arguments(self, parser):
         parser.add_argument('--dbhost',

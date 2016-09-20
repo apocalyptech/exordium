@@ -463,7 +463,7 @@ class App(object):
 
     prefs = None
 
-    prefixre = re.compile('^((the) )?(.*)$', re.IGNORECASE)
+    prefixre = re.compile('^((the)\s+)?(.+)$', re.IGNORECASE)
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
     norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðç“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydc""\'\'')
