@@ -88,6 +88,7 @@ class Artist(models.Model):
     prefix = models.CharField(
         max_length=32,
     )
+    various = models.BooleanField(default=False)
 
     def __str__(self):
         """
@@ -544,10 +545,10 @@ class App(object):
         True if a "Various" artist was created, and False otherwise
         """
         try:
-            va = Artist.objects.get(name='Various')
+            va = Artist.objects.get(name='Various', various=True)
             return False
         except Artist.DoesNotExist:
-            artist_obj = Artist(name='Various', prefix='')
+            artist_obj = Artist(name='Various', prefix='', various=True)
             artist_obj.save()
             return True
 

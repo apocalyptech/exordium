@@ -5,7 +5,8 @@
         "fields": {
             "name": "Various",
             "normname": "various",
-            "prefix": ""
+            "prefix": "",
+            "various": true
         }
     }
 ]
