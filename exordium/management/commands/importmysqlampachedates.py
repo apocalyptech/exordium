@@ -104,10 +104,10 @@ class Command(BaseCommand):
                 norm_artist_to_use = norm_artist_to_use[:-1]
             
             # Get the Ampache artist ID (both for the actual value and the normalized value)
-            album_artist_name = self.strip_prefix(artist_to_use)
+            album_artist_name = self.strip_prefix(artist_to_use.strip())
             norm_album_artist_name = self.strip_prefix(norm_artist_to_use)
             if album_artist_name not in ampache_artists:
-                curs.execute('select id, name from artist where name=%s', (album_artist_name,))
+                curs.execute('select id, name from artist where name=%s limit 1', (album_artist_name,))
                 row = curs.fetchone()
                 if row:
                     ampache_artists[album_artist_name] = row['id']
@@ -115,7 +115,7 @@ class Command(BaseCommand):
                     self.stdout.write('ERROR: Could not find information for artist "%s" (%s)' % (album.artist, album_artist_name))
                     continue
             if norm_album_artist_name not in ampache_artists:
-                curs.execute('select id, name from artist where name=%s', (norm_album_artist_name,))
+                curs.execute('select id, name from artist where name=%s limit 1', (norm_album_artist_name,))
                 row = curs.fetchone()
                 if row:
                     ampache_artists[norm_album_artist_name] = row['id']
@@ -134,6 +134,9 @@ class Command(BaseCommand):
                 # probably do the same in Exordium, but for now, just strip it out here.
                 while album_name[-1] == "\x00":
                     album_name = album_name[:-1]
+
+            # We've fixed this, but just in case, strip out any exterior whitespace.
+            album_name = album_name.strip()
 
             # Now get the album addition time (Note that Ampache stores this information
             # only in the song record itself.  Also note that Ampache does NOT associate
@@ -159,8 +162,8 @@ class Command(BaseCommand):
                         updated += 1
                     else:
                         self.stdout.write('ERROR: Could not find addition_time for normalized album "%s / %s"' % (album.artist, album))
-                        #self.stdout.write('  * Normalized name: "%s", artist ID %d' % (norm_album_artist_name, ampache_artists[norm_album_artist_name]))
-                        #self.stdout.write('  * Album search string: "%s"' % (album_name))
+                        self.stdout.write('  * Normalized name: "%s", artist ID %d' % (norm_album_artist_name, ampache_artists[norm_album_artist_name]))
+                        self.stdout.write('  * Album search string: "%s"' % (album_name))
                 else:
                     self.stdout.write('ERROR: Could not find addition_time for album "%s / %s"' % (album.artist, album))
 
