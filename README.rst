@@ -171,4 +171,5 @@ database, though, which can be accessed by running:
 
     python manage.py importmysqlampachedates --dbhost <host> --dbname <name> --dbuser <user>
 
-The subcommand will prompt you for the database password via STDIN.
+The subcommand will prompt you for the database password via STDIN.  Note
+that this has only been tested with Ampache 3.7.0.
