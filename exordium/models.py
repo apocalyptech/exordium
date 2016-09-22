@@ -475,7 +475,7 @@ class App(object):
     prefixre = re.compile('^((the)\s+)?(.+)$', re.IGNORECASE)
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
-    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðç“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydc""\'\'')
+    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðçř“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydcr""\'\'')
 
     @staticmethod
     def norm_name(name):
