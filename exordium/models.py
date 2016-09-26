@@ -23,7 +23,7 @@ class SongHelper(object):
     3. Takes care of stripping the artist prefix
     """
 
-    def __init__(self, artist_full, album, song_obj):
+    def __init__(self, artist_full, group, conductor, composer, album, song_obj):
 
         # Direct vars
         self.song_obj = song_obj
@@ -32,6 +32,16 @@ class SongHelper(object):
         # Some inferred info
         (self.artist_prefix, self.artist_name) = Artist.extract_prefix(artist_full)
         self.norm_artist_name = App.norm_name(self.artist_name)
+
+        (self.group_prefix, self.group_name) = Artist.extract_prefix(group)
+        self.norm_group_name = App.norm_name(self.group_name)
+
+        (self.conductor_prefix, self.conductor_name) = Artist.extract_prefix(conductor)
+        self.norm_conductor_name = App.norm_name(self.conductor_name)
+
+        (self.composer_prefix, self.composer_name) = Artist.extract_prefix(composer)
+        self.norm_composer_name = App.norm_name(self.composer_name)
+
         self.base_dir = os.path.dirname(song_obj.filename)
 
         # Information which may be overwritten later
@@ -57,14 +67,6 @@ class SongHelper(object):
             self.live_album = True
         else:
             self.live_album = False
-
-    def set_artist(self, artist):
-        """
-        Sets the artist for this helper (and also the normalized version
-        of the artist)
-        """
-        self.artist_name = artist
-        self.norm_artist_name = App.norm_name(artist)
 
     def set_album_artist(self, artist):
         """
@@ -122,6 +124,9 @@ class Artist(models.Model):
         Extracts a prefix from the given name, if one exists.  Returns
         a tuple of `(prefix, name)`, where `prefix` may be an empty string.
         """
+        if name == '':
+            return ('', '')
+
         match = App.prefixre.match(name)
         if match.group(2):
             return (match.group(2), match.group(3))
@@ -199,6 +204,15 @@ class Song(models.Model):
     title.verbose_name = 'Title'
     year = models.IntegerField()
     tracknum = models.SmallIntegerField('#')
+    group = models.ForeignKey(Artist, on_delete=models.CASCADE,
+        related_name='group_set',
+        null=True, blank=True, default=None)
+    composer = models.ForeignKey(Artist, on_delete=models.CASCADE,
+        related_name='composer_set',
+        null=True, blank=True, default=None)
+    conductor = models.ForeignKey(Artist, on_delete=models.CASCADE,
+        related_name='conductor_set',
+        null=True, blank=True, default=None)
 
     # "raw" tag information.  Only used currently by App.update()
     # when checking to see if an artist name definition should be
@@ -207,6 +221,9 @@ class Song(models.Model):
     # since this value will omit any of our defined prefixes
     # regardless of the *actual* raw value.
     raw_artist = models.CharField(max_length=255)
+    raw_group = models.CharField(max_length=255, default='')
+    raw_composer = models.CharField(max_length=255, default='')
+    raw_conductor = models.CharField(max_length=255, default='')
 
     # Technical information
     filetype = models.CharField(
@@ -263,6 +280,100 @@ class Song(models.Model):
         stat_result = os.stat(full_filename)
         return int(stat_result.st_mtime) != self.time_updated
 
+    def set_artist(self, artist):
+        """
+        Sets our artist - convenience function so that we can loop through
+        our various artist types later on in the update code.
+        """
+        self.artist = artist
+
+    def set_group(self, artist):
+        """
+        Sets our group - convenience function so that we can loop through
+        our various artist types later on in the update code.
+        """
+        self.group = artist
+
+    def set_composer(self, artist):
+        """
+        Sets our composer - convenience function so that we can loop through
+        our various artist types later on in the update code.
+        """
+        self.composer = artist
+
+    def set_conductor(self, artist):
+        """
+        Sets our conductor - convenience function so that we can loop through
+        our various artist types later on in the update code.
+        """
+        self.conductor = artist
+
+    def get_group_normname(self):
+        """
+        Gets our group normname, if group is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.group:
+            return self.group.normname
+        else:
+            return ''
+
+    def get_conductor_normname(self):
+        """
+        Gets our conductor normname, if conductor is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.conductor:
+            return self.conductor.normname
+        else:
+            return ''
+
+    def get_composer_normname(self):
+        """
+        Gets our composer normname, if composer is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.composer:
+            return self.composer.normname
+        else:
+            return ''
+
+    def get_group_prefix(self):
+        """
+        Gets our group prefix, if group is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.group:
+            return self.group.prefix
+        else:
+            return ''
+
+    def get_conductor_prefix(self):
+        """
+        Gets our conductor prefix, if conductor is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.conductor:
+            return self.conductor.prefix
+        else:
+            return ''
+
+    def get_composer_prefix(self):
+        """
+        Gets our composer prefix, if composer is defined, or an empty string otherwise.
+        Another convenience function which lets us loop through artist types a bit
+        more easily while udpating.
+        """
+        if self.composer:
+            return self.composer.prefix
+        else:
+            return ''
+
     def update_from_disk(self, retlines=[]):
         """
         Updates what values we can from disk.  Will not process Artist or
@@ -289,8 +400,11 @@ class Song(models.Model):
 
         # Update all our information (don't bother checking to see
         # if it changed, just copy the new values)
-        (artist_full, album, new_song) = song_info
+        (artist_full, group, conductor, composer, album, new_song) = song_info
         self.raw_artist = new_song.raw_artist
+        self.raw_group = new_song.raw_group
+        self.raw_conductor = new_song.raw_conductor
+        self.raw_composer = new_song.raw_composer
         self.year = new_song.year
         self.title = new_song.title
         self.tracknum = new_song.tracknum
@@ -303,7 +417,7 @@ class Song(models.Model):
         self.sha256sum = new_song.sha256sum
 
         # Now return the artist and album we got from the new tags.
-        return (artist_full, album, self)
+        return (artist_full, group, conductor, composer, album, self)
 
     @staticmethod
     def get_sha256sum(filename):
@@ -335,8 +449,11 @@ class Song(models.Model):
         Returns `None` if there is an error in creating the object, or
         a tuple containing:
            1. `artist_full`, the full artist name as a string, taken from tags
-           2. `album`, the full album name as a string, taken from tags
-           3. The new `Song` object itself
+           2. `group`, group/ensemble name as a string
+           3. `conductor`, conductor name as a string
+           4. `composer`, composer name as a string
+           5. `album`, the full album name as a string, taken from tags
+           6. The new `Song` object itself
         
         If you call this method like `(a, b, c) = Song.from_filename()`, you'll
         probably want to catch a `TypeError` to catch the `None` possibility.
@@ -344,8 +461,14 @@ class Song(models.Model):
 
         # Set up some vars
         raw_artist = ''
+        raw_group = ''
+        raw_conductor = ''
+        raw_composer = ''
         artist_full = ''
         artist = ''
+        group = ''
+        conductor = ''
+        composer = ''
         album = ''
         title = ''
         filetype = ''
@@ -371,6 +494,15 @@ class Song(models.Model):
             if 'TPE1' in audio:
                 artist_full = str(audio['TPE1']).strip().strip("\x00")
                 (prefix, raw_artist) = Artist.extract_prefix(artist_full)
+            if 'TPE2' in audio:
+                group = str(audio['TPE2']).strip().strip("\x00")
+                (prefix, raw_group) = Artist.extract_prefix(group)
+            if 'TPE3' in audio:
+                conductor = str(audio['TPE3']).strip().strip("\x00")
+                (prefix, raw_conductor) = Artist.extract_prefix(conductor)
+            if 'TCOM' in audio:
+                composer = str(audio['TCOM']).strip().strip("\x00")
+                (prefix, raw_composer) = Artist.extract_prefix(composer)
             if 'TALB' in audio:
                 album = str(audio['TALB']).strip().strip("\x00")
             if 'TIT2' in audio:
@@ -443,6 +575,9 @@ class Song(models.Model):
         song_obj = Song(
             filename = short_filename,
             raw_artist = raw_artist,
+            raw_group = raw_group,
+            raw_conductor = raw_conductor,
+            raw_composer = raw_composer,
             year = year,
             title = title,
             tracknum = tracknum,
@@ -457,7 +592,7 @@ class Song(models.Model):
         )
 
         # Return
-        return (artist_full, album, song_obj)
+        return (artist_full, group, conductor, composer, album, song_obj)
 
 class App(object):
     """
@@ -736,26 +871,32 @@ class App(object):
             for helper in songlist:
 
                 # Check to see if we know the artist yet, and if not create it.
-                if helper.norm_artist_name not in known_artists:
-                    try:
-                        artist_obj = helper.new_artist()
-                        known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
-                        yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
-                        artists_added += 1
-                    except IntegrityError:
-                        # Apparently in this case we're not associating things according to our
-                        # database's collation values.  We'll just try to load the matching artist
-                        # for now...
-                        artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
-                        known_artists[helper.norm_artist_name] = (artist_obj, {}, {})
-                        yield (App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj))
-                elif helper.artist_prefix != '' and known_artists[helper.norm_artist_name][0].prefix == '':
-                    # While we're at it, if our artist didn't have a prefix originally
-                    # but we see one now, update the artist record with that prefix.
-                    known_artists[helper.norm_artist_name][0].prefix = helper.artist_prefix
-                    known_artists[helper.norm_artist_name][0].save()
-                    yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                        (known_artists[helper.norm_artist_name][0]))
+                for (norm_name, artist_name, artist_prefix) in [
+                        (helper.norm_artist_name, helper.artist_name, helper.artist_prefix),
+                        (helper.norm_group_name, helper.group_name, helper.group_prefix),
+                        (helper.norm_conductor_name, helper.conductor_name, helper.conductor_prefix),
+                        (helper.norm_composer_name, helper.composer_name, helper.composer_prefix)]:
+                    if artist_name != '':
+                        if norm_name not in known_artists:
+                            try:
+                                artist_obj = Artist.objects.create(name=artist_name, prefix=artist_prefix)
+                                known_artists[norm_name] = (artist_obj, {}, {})
+                                yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
+                                artists_added += 1
+                            except IntegrityError:
+                                # Apparently in this case we're not associating things according to our
+                                # database's collation values.  We'll just try to load the matching artist
+                                # for now...
+                                artist_obj = Artist.objects.get(normname=norm_name)
+                                known_artists[norm_name] = (artist_obj, {}, {})
+                                yield (App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj))
+                        elif artist_prefix != '' and known_artists[norm_name][0].prefix == '':
+                            # While we're at it, if our artist didn't have a prefix originally
+                            # but we see one now, update the artist record with that prefix.
+                            known_artists[norm_name][0].prefix = artist_prefix
+                            known_artists[norm_name][0].save()
+                            yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                                (known_artists[norm_name][0]))
 
                 # Check to see if we know the album yet, and if not create it.
                 if helper.miscellaneous_album:
@@ -793,6 +934,12 @@ class App(object):
 
                 # And now, update and save our song_obj
                 helper.song_obj.artist = known_artists[helper.norm_artist_name][0]
+                if helper.norm_group_name != '' and helper.norm_group_name in known_artists:
+                    helper.song_obj.group = known_artists[helper.norm_group_name][0]
+                if helper.norm_conductor_name != '' and helper.norm_conductor_name in known_artists:
+                    helper.song_obj.conductor = known_artists[helper.norm_conductor_name][0]
+                if helper.norm_composer_name != '' and helper.norm_composer_name in known_artists:
+                    helper.song_obj.composer = known_artists[helper.norm_composer_name][0]
                 if helper.miscellaneous_album:
                     helper.song_obj.album = known_artists[helper.norm_album_artist][2]['miscellaneous']
                 else:
@@ -919,40 +1066,52 @@ class App(object):
             helper = SongHelper(*song_info)
 
             # Process an Artist change, if we need to
+            # TODO: processing if a group/composer/conductor gets cleared out.
             artist_changed = False
-            if helper.norm_artist_name == song.artist.normname:
-                # Check for a prefix update, if we have it
-                if helper.artist_prefix != '' and song.artist.prefix == '':
-                    song.artist.prefix = helper.artist_prefix
-                    song.artist.save()
-                    yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                        (song.artist))
-                # Also check to see if the non-normalized artist name matches or not.
-                # If not, we MAY want to update the main artist name to match, though
-                # only if literally all instances of the artist name are equal, in the
-                # DB.
-                if helper.artist_name != song.artist.name:
-                    possible_artist_updates[song.artist.normname] = True
-            else:
-                # Otherwise, try to load in the artist we should be, or create a new one
-                try:
-                    artist_obj = Artist.objects.get(normname=helper.norm_artist_name)
-                    if helper.artist_prefix != '' and artist_obj.prefix == '':
-                        artist_obj.prefix = helper.artist_prefix
-                        artist_obj.save()
-                        yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
-                            (artist_obj))
-                except Artist.DoesNotExist:
-                    artist_obj = helper.new_artist()
-                    yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
-                delete_rel_artists[song.artist] = True
-                song.artist = artist_obj
+            for (is_artist, norm_name, artist_name, artist_prefix, song_norm_name, song_artist_prefix, loop_artist_obj, assign_func) in [
+                    (True, helper.norm_artist_name, helper.artist_name, helper.artist_prefix,
+                        song.artist.normname, song.artist.prefix, song.artist, song.set_artist),
+                    (False, helper.norm_group_name, helper.group_name, helper.group_prefix,
+                        song.get_group_normname(), song.get_group_prefix(), song.group, song.set_group),
+                    (False, helper.norm_conductor_name, helper.conductor_name, helper.conductor_prefix,
+                        song.get_conductor_normname(), song.get_conductor_prefix(), song.conductor, song.set_conductor),
+                    (False, helper.norm_composer_name, helper.composer_name, helper.composer_prefix,
+                        song.get_composer_normname(), song.get_composer_prefix(), song.composer, song.set_composer)]:
+                if artist_name != '':
+                    if norm_name == song_norm_name:
+                        # Check for a prefix update, if we have it
+                        if artist_prefix != '' and song_artist_prefix == '':
+                            loop_artist_obj.prefix = artist_prefix
+                            loop_artist_obj.save()
+                            yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                                (loop_artist_obj))
+                        # Also check to see if the non-normalized artist name matches or not.
+                        # If not, we MAY want to update the main artist name to match, though
+                        # only if literally all instances of the artist name are equal, in the
+                        # DB.
+                        if artist_name != loop_artist_obj.name:
+                            possible_artist_updates[loop_artist_obj.normname] = True
+                    else:
+                        # Otherwise, try to load in the artist we should be, or create a new one
+                        try:
+                            artist_obj = Artist.objects.get(normname=norm_name)
+                            if artist_prefix != '' and artist_obj.prefix == '':
+                                artist_obj.prefix = artist_prefix
+                                artist_obj.save()
+                                yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
+                                    (artist_obj))
+                        except Artist.DoesNotExist:
+                            artist_obj = helper.new_artist()
+                            yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
+                        delete_rel_artists[loop_artist_obj] = True
+                        assign_func(artist_obj)
 
-                # At this point, it generally doesn't matter whether the
-                # album name has changed or not, since the only case in which
-                # we DON'T do an album switch now is if we're a various artists
-                # album.  We'll include this in the next 'if' clause
-                artist_changed = True
+                        # At this point, it generally doesn't matter whether the
+                        # album name has changed or not, since the only case in which
+                        # we DON'T do an album switch now is if we're a various artists
+                        # album.  We'll include this in the next 'if' clause
+                        if is_artist:
+                            artist_changed = True
 
             # Ordinarily we would compare normalized names here, but there's the possibility
             # that all tracks making up an album might have changed the album name to something
@@ -1107,17 +1266,28 @@ class App(object):
                     yield (App.STATUS_INFO, 'Deleted orphaned artist "%s"' % (artist))
                     artist.delete()
 
-        # Now check to see if we need to update any artist names.
+        # Now check to see if we need to update any artist names.  We'll be here
+        # if a normalized name matched but the "real" name didn't.
         for normname in possible_artist_updates.keys():
             try:
                 artist = Artist.objects.get(normname=normname)
                 seen_name = None
                 mismatch = False
-                for song in artist.song_set.all():
-                    if seen_name is None:
-                        seen_name = song.raw_artist
-                    elif seen_name != song.raw_artist:
-                        mismatch = True
+                for song in (artist.song_set.all() | artist.group_set.all() | 
+                        artist.conductor_set.all() | artist.composer_set.all()):
+                    for (song_artist_obj, song_raw_name) in [
+                            (song.artist, song.raw_artist),
+                            (song.group, song.raw_group),
+                            (song.conductor, song.raw_conductor),
+                            (song.composer, song.raw_composer),
+                            ]:
+                        if song_artist_obj is not None and song_artist_obj.normname == artist.normname:
+                            if seen_name is None:
+                                seen_name = song_raw_name
+                            elif seen_name != song_raw_name:
+                                mismatch = True
+                                break
+                    if mismatch:
                         break
                 if not mismatch:
                     yield (App.STATUS_INFO, 'Updated artist name from "%s" to "%s"' % (

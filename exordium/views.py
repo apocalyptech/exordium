@@ -130,7 +130,11 @@ class ArtistView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(ArtistView, self).get_context_data(**kwargs)
         albums = Album.objects.filter(
-            Q(artist=self.object) | Q(pk__in = [song.album.pk for song in Song.objects.filter(artist=self.object)])
+            Q(artist=self.object) |
+            Q(pk__in = [song.album.pk for song in Song.objects.filter(artist=self.object)]) |
+            Q(pk__in = [song.album.pk for song in Song.objects.filter(group=self.object)]) |
+            Q(pk__in = [song.album.pk for song in Song.objects.filter(conductor=self.object)]) |
+            Q(pk__in = [song.album.pk for song in Song.objects.filter(composer=self.object)])
         ).order_by('year')
         table = AlbumTable(albums)
         RequestConfig(self.request).configure(table)
