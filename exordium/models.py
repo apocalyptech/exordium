@@ -9,6 +9,7 @@ from dynamic_preferences.registries import global_preferences_registry
 from django.db import models, transaction
 from django.db.utils import IntegrityError
 from django.utils import timezone
+from django.db.models import Q
 
 # Create your models here.
 
@@ -75,13 +76,6 @@ class SongHelper(object):
         """
         self.album_artist = artist
         self.norm_album_artist = App.norm_name(artist)
-
-    @transaction.atomic
-    def new_artist(self):
-        """
-        Returns a new Artist object based on our data.
-        """
-        return Artist.objects.create(name=self.artist_name, prefix=self.artist_prefix)
 
 class Artist(models.Model):
 
@@ -1039,6 +1033,12 @@ class App(object):
         for song in to_delete.keys():
             delete_rel_albums[song.album] = True
             delete_rel_artists[song.artist] = True
+            if song.group:
+                delete_rel_artists[song.group] = True
+            if song.conductor:
+                delete_rel_artists[song.conductor] = True
+            if song.composer:
+                delete_rel_artists[song.composer] = True
             album_changes[os.path.dirname(song.filename)] = True
             song.delete()
             yield (App.STATUS_INFO, 'Deleted file: %s' % (song.filename))
@@ -1066,7 +1066,6 @@ class App(object):
             helper = SongHelper(*song_info)
 
             # Process an Artist change, if we need to
-            # TODO: processing if a group/composer/conductor gets cleared out.
             artist_changed = False
             for (is_artist, norm_name, artist_name, artist_prefix, song_norm_name, song_artist_prefix, loop_artist_obj, assign_func) in [
                     (True, helper.norm_artist_name, helper.artist_name, helper.artist_prefix,
@@ -1077,7 +1076,11 @@ class App(object):
                         song.get_conductor_normname(), song.get_conductor_prefix(), song.conductor, song.set_conductor),
                     (False, helper.norm_composer_name, helper.composer_name, helper.composer_prefix,
                         song.get_composer_normname(), song.get_composer_prefix(), song.composer, song.set_composer)]:
-                if artist_name != '':
+                if artist_name == '':
+                    if loop_artist_obj is not None:
+                        assign_func(None)
+                        delete_rel_artists[loop_artist_obj] = True
+                else:
                     if norm_name == song_norm_name:
                         # Check for a prefix update, if we have it
                         if artist_prefix != '' and song_artist_prefix == '':
@@ -1101,9 +1104,10 @@ class App(object):
                                 yield (App.STATUS_DEBUG, 'Updated artist to include prefix: "%s"' %
                                     (artist_obj))
                         except Artist.DoesNotExist:
-                            artist_obj = helper.new_artist()
+                            artist_obj = Artist.objects.create(name=artist_name, prefix=artist_prefix)
                             yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
-                        delete_rel_artists[loop_artist_obj] = True
+                        if loop_artist_obj is not None:
+                            delete_rel_artists[loop_artist_obj] = True
                         assign_func(artist_obj)
 
                         # At this point, it generally doesn't matter whether the
@@ -1262,7 +1266,8 @@ class App(object):
                 album.delete()
         for artist in delete_rel_artists.keys():
             if artist.name != 'Various':
-                if artist.album_set.count() == 0 and artist.song_set.count() == 0:
+                if (artist.album_set.count() == 0 and Song.objects.filter(Q(artist=artist) |
+                        Q(group=artist) | Q(conductor=artist) | Q(composer=artist)).count() == 0):
                     yield (App.STATUS_INFO, 'Deleted orphaned artist "%s"' % (artist))
                     artist.delete()
 

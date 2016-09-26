@@ -9,6 +9,11 @@ from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCO
 
 from .models import Artist, Album, Song, App
 
+# These two imports are just here in case we want to examine SQL while running tests.
+# If so, set "settings.DEBUG = True" in the test and then use connection.queries
+from django.conf import settings
+from django.db import connection
+
 # Create your tests here.
 
 # TODO: At the moment all this really does is test the models themselves,
@@ -131,6 +136,10 @@ class ExordiumTests(TestCase):
         be some problems with ID3v2.3 vs. ID3v2.4 tags in here - I don't
         know if mutagen does an auto-convert.  I think it might.
 
+        If group/conductor/composer is a blank string, those fields will
+        be completely removed from the file.  Any of the other fields set
+        to blank will leave the tag in place.
+
         Will ensure that the file's mtime is updated.
         """
 
@@ -158,15 +167,18 @@ class ExordiumTests(TestCase):
 
         if group is not None:
             tags.delall('TPE2')
-            tags.add(TPE2(encoding=3, text=group))
+            if group != '':
+                tags.add(TPE2(encoding=3, text=group))
 
         if conductor is not None:
             tags.delall('TPE3')
-            tags.add(TPE3(encoding=3, text=conductor))
+            if conductor != '':
+                tags.add(TPE3(encoding=3, text=conductor))
 
         if composer is not None:
             tags.delall('TCOM')
-            tags.add(TCOM(encoding=3, text=composer))
+            if composer != '':
+                tags.add(TCOM(encoding=3, text=composer))
 
         if tracknum is not None:
             tags.delall('TRCK')
@@ -1879,6 +1891,261 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song.title, 'Title')
         self.assertEqual(song.artist.name, 'New Artist')
 
+    def test_basic_group_update(self):
+        """
+        Test a simple track update in which the group name changes
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', group='Group',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.group.name, 'Group')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', group='New Group')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='New Group')
+        self.assertEqual(artist.name, 'New Group')
+        song = Song.objects.get()
+        self.assertEqual(song.group.name, 'New Group')
+
+    def test_basic_conductor_update(self):
+        """
+        Test a simple track update in which the conductor name changes
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', conductor='Conductor',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.conductor.name, 'Conductor')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', conductor='New Conductor')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='New Conductor')
+        self.assertEqual(artist.name, 'New Conductor')
+        song = Song.objects.get()
+        self.assertEqual(song.conductor.name, 'New Conductor')
+
+    def test_basic_composer_update(self):
+        """
+        Test a simple track update in which the composer name changes
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', composer='Composer',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.composer.name, 'Composer')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', composer='New Composer')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='New Composer')
+        self.assertEqual(artist.name, 'New Composer')
+        song = Song.objects.get()
+        self.assertEqual(song.composer.name, 'New Composer')
+
+    def test_basic_group_update_removed(self):
+        """
+        Test a simple track update in which the group name gets removed
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', group='Group',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.group.name, 'Group')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', group='')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 2)
+        song = Song.objects.get()
+        self.assertEqual(song.group, None)
+
+    def test_basic_conductor_update_removed(self):
+        """
+        Test a simple track update in which the conductor name gets removed
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', conductor='Conductor',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.conductor.name, 'Conductor')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', conductor='')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 2)
+        song = Song.objects.get()
+        self.assertEqual(song.conductor, None)
+
+    def test_basic_composer_update_removed(self):
+        """
+        Test a simple track update in which the composer name gets removed
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', composer='Composer',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.composer.name, 'Composer')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', composer='')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Artist.objects.all().count(), 2)
+        song = Song.objects.get()
+        self.assertEqual(song.composer, None)
+
+    def test_update_change_from_conductor_to_composer(self):
+        """
+        Test a track update in which a conductor tag moves to composer
+        change around.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist 1', conductor='Artist 2',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        a2 = Artist.objects.get(normname='artist 2')
+        a2_pk = a2.pk
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', composer='artist 2', conductor='')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        a2 = Artist.objects.get(normname='artist 2')
+        self.assertEqual(a2.pk, a2_pk)
+        song = Song.objects.get()
+        self.assertEqual(song.conductor, None)
+        self.assertEqual(song.composer.name, 'Artist 2')
+
+    def test_update_add_classical_fields(self):
+        """
+        Test a track update in which we add all our classical tag
+        fields to a track which previously didn't have them.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3',
+            group='test 1', conductor='test 2', composer='test 3')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+        song = Song.objects.get()
+        self.assertEqual(song.group.normname, 'test 1')
+        self.assertEqual(song.conductor.normname, 'test 2')
+        self.assertEqual(song.composer.normname, 'test 3')
+
+    def test_update_classical_fields_swap(self):
+        """
+        Test a track update in which our classical tag fields all just
+        change around.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist',
+            composer='Test 1', group='Test 2', conductor='Test 3',
+            title='Title', album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+        t1 = Artist.objects.get(normname='test 1')
+        t1_pk = t1.pk
+        t2 = Artist.objects.get(normname='test 2')
+        t2_pk = t2.pk
+        t3 = Artist.objects.get(normname='test 3')
+        t3_pk = t3.pk
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3',
+            group='test 1', conductor='test 2', composer='test 3')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+        t1 = Artist.objects.get(normname='test 1')
+        self.assertEqual(t1.pk, t1_pk)
+        t2 = Artist.objects.get(normname='test 2')
+        self.assertEqual(t2.pk, t2_pk)
+        t3 = Artist.objects.get(normname='test 3')
+        self.assertEqual(t3.pk, t3_pk)
+        song = Song.objects.get()
+        self.assertEqual(song.group.normname, 'test 1')
+        self.assertEqual(song.conductor.normname, 'test 2')
+        self.assertEqual(song.composer.normname, 'test 3')
+
     def test_basic_artist_and_album_update(self):
         """
         Test a simple track update in which the artist and album name changes
@@ -1940,6 +2207,93 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'artist name')
 
+    def test_update_change_group_case_single_track(self):
+        """
+        Test what happens when a track gets updated with the same group
+        name but with a different case.  Since it's the only track with
+        that group name, we want the case of the group to get updated.
+        """
+        self.add_mp3(artist='Artist Name', album='Album', group='Group',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', group='group')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'group')
+
+    def test_update_change_conductor_case_single_track(self):
+        """
+        Test what happens when a track gets updated with the same conductor
+        name but with a different case.  Since it's the only track with
+        that conductor name, we want the case of the conductor to get updated.
+        """
+        self.add_mp3(artist='Artist Name', album='Album', conductor='Conductor',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', conductor='conductor')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'conductor')
+
+    def test_update_change_composer_case_single_track(self):
+        """
+        Test what happens when a track gets updated with the same composer
+        name but with a different case.  Since it's the only track with
+        that composer name, we want the case of the composer to get updated.
+        """
+        self.add_mp3(artist='Artist Name', album='Album', composer='Composer',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', composer='composer')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'composer')
+
     def test_update_change_artist_aesc_single_track(self):
         """
         Test what happens when a track gets updated with the same artist
@@ -1968,6 +2322,93 @@ class BasicUpdateTests(ExordiumTests):
         artist = Artist.objects.get(name='Ærtist Name')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Ærtist Name')
+
+    def test_update_change_group_aesc_single_track(self):
+        """
+        Test what happens when a track gets updated with the same group
+        name but with a different usage of æ.  Since it's the only track with
+        that group name, we want the group name to get updated.
+        """
+        self.add_mp3(artist='Main Artist', album='Album', group='Group AE',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group AE')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', group='Group Æ')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='group ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Group Æ')
+
+    def test_update_change_conductor_aesc_single_track(self):
+        """
+        Test what happens when a track gets updated with the same conductor
+        name but with a different usage of æ.  Since it's the only track with
+        that conductor name, we want the conductor name to get updated.
+        """
+        self.add_mp3(artist='Main Artist', album='Album', conductor='Conductor AE',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor AE')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', conductor='Conductor Æ')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='conductor ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Conductor Æ')
+
+    def test_update_change_composer_aesc_single_track(self):
+        """
+        Test what happens when a track gets updated with the same composer
+        name but with a different usage of æ.  Since it's the only track with
+        that composer name, we want the composer name to get updated.
+        """
+        self.add_mp3(artist='Main Artist', album='Album', composer='Composer AE',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer AE')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song1.mp3', composer='Composer Æ')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='composer ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Composer Æ')
 
     def test_update_change_artist_case_two_tracks(self):
         """
@@ -2001,6 +2442,102 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Artist Name')
 
+    def test_update_change_group_case_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same group
+        name but with a different case.  Since it's only one out of the
+        two tracks track with that group name, we want the case of the
+        group to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', group='Group Name',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', group='Group Name',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', group='group name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Group Name')
+
+    def test_update_change_conductor_case_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same conductor
+        name but with a different case.  Since it's only one out of the
+        two tracks track with that conductor name, we want the case of the
+        conductor to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', conductor='Conductor Name',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', conductor='Conductor Name',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', conductor='conductor name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Conductor Name')
+
+    def test_update_change_composer_case_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same composer
+        name but with a different case.  Since it's only one out of the
+        two tracks track with that composer name, we want the case of the
+        composer to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', composer='Composer Name',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', composer='Composer Name',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer Name')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', composer='composer name')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer Name')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Composer Name')
+
     def test_update_change_artist_aesc_two_tracks(self):
         """
         Test what happens when a track gets updated with the same artist
@@ -2032,6 +2569,102 @@ class BasicUpdateTests(ExordiumTests):
         artist = Artist.objects.get(name='Ærtist Name')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Ærtist Name')
+
+    def test_update_change_group_aesc_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same group
+        name but with a different Æ.  Since it's only one out of the
+        two tracks track with that group name, we want the original
+        artist to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', group='Group Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', group='Group Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Group Æ')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', group='Group AE')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='group ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Group Æ')
+
+    def test_update_change_conductor_aesc_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same conductor
+        name but with a different Æ.  Since it's only one out of the
+        two tracks track with that conductor name, we want the original
+        artist to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', conductor='Conductor Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', conductor='Conductor Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Conductor Æ')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', conductor='Conductor AE')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='conductor ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Conductor Æ')
+
+    def test_update_change_composer_aesc_two_tracks(self):
+        """
+        Test what happens when a track gets updated with the same composer
+        name but with a different Æ.  Since it's only one out of the
+        two tracks track with that composer name, we want the original
+        artist to remain unchanged
+        """
+        self.add_mp3(artist='Artist Name', album='Album', composer='Composer Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Name', album='Album', composer='Composer Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='Composer Æ')
+        artist_pk = artist.pk
+
+        # Update
+        self.update_mp3('song2.mp3', composer='Composer AE')
+        self.run_update()
+
+        # Verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(normname='composer ae')
+        self.assertEqual(artist.pk, artist_pk)
+        self.assertEqual(artist.name, 'Composer Æ')
 
     def test_update_change_album_case_single(self):
         """
@@ -2338,6 +2971,99 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist_pk, artist.pk)
         self.assertEqual(artist.name, 'Umläut')
 
+    def test_update_differing_umlaut_group(self):
+        """
+        Update one of two files to get rid of an umlaut in the group name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', group='Group Ä',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', group='Group Ä',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='group a')
+        artist_pk = artist.pk
+        self.assertEqual(artist.name, 'Group Ä')
+        
+        # Update
+        self.update_mp3('song2.mp3', group='Group A')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='group a')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Group Ä')
+
+    def test_update_differing_umlaut_conductor(self):
+        """
+        Update one of two files to get rid of an umlaut in the conductor name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', conductor='Conductor Ä',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', conductor='Conductor Ä',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='conductor a')
+        artist_pk = artist.pk
+        self.assertEqual(artist.name, 'Conductor Ä')
+        
+        # Update
+        self.update_mp3('song2.mp3', conductor='Conductor A')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='conductor a')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Conductor Ä')
+
+    def test_update_differing_umlaut_composer(self):
+        """
+        Update one of two files to get rid of an umlaut in the composer name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', composer='Composer Ä',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', composer='Composer Ä',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='composer a')
+        artist_pk = artist.pk
+        self.assertEqual(artist.name, 'Composer Ä')
+        
+        # Update
+        self.update_mp3('song2.mp3', composer='Composer A')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='composer a')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Composer Ä')
+
     def test_update_differing_aesc_artist(self):
         """
         Update one of two files to get rid of an Æ in the artist name,
@@ -2367,6 +3093,96 @@ class BasicUpdateTests(ExordiumTests):
         artist = Artist.objects.get(name='Ærtist')
         self.assertEqual(artist_pk, artist.pk)
         self.assertEqual(artist.name, 'Ærtist')
+
+    def test_update_differing_aesc_group(self):
+        """
+        Update one of two files to get rid of an Æ in the group name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', group='Group Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', group='Group Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='Group Æ')
+        artist_pk = artist.pk
+        
+        # Update
+        self.update_mp3('song2.mp3', group='Group AE')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='group ae')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Group Æ')
+
+    def test_update_differing_aesc_conductor(self):
+        """
+        Update one of two files to get rid of an Æ in the conductor name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', conductor='Conductor Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', conductor='Conductor Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='Conductor Æ')
+        artist_pk = artist.pk
+        
+        # Update
+        self.update_mp3('song2.mp3', conductor='Conductor AE')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='conductor ae')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Conductor Æ')
+
+    def test_update_differing_aesc_composer(self):
+        """
+        Update one of two files to get rid of an Æ in the composer name,
+        where there used to be one previously.
+        """
+        self.add_mp3(artist='Artist', album='Album', composer='Composer Æ',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', album='Album', composer='Composer Æ',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(name='Composer Æ')
+        artist_pk = artist.pk
+        
+        # Update
+        self.update_mp3('song2.mp3', composer='Composer AE')
+        self.run_update()
+
+        # Actual checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='composer ae')
+        self.assertEqual(artist_pk, artist.pk)
+        self.assertEqual(artist.name, 'Composer Æ')
 
     def test_update_differing_umlaut_album(self):
         """
@@ -2459,6 +3275,87 @@ class BasicUpdateTests(ExordiumTests):
         artist = Artist.objects.get(name='\u81EA\u52D5\u8ABF')
         self.assertEqual(artist.name, '\u81EA\u52D5\u8ABF')
 
+    def test_update_mismatched_japanese_group(self):
+        """
+        Tests an update where two previously distinct Japanese-named artists
+        should update to become one artist, keyed off of the group field
+        """
+        self.add_mp3(artist='Artist', group='\u81EA\u52D5\u8ABF', album='Album 1',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', group='\u30AB\u30CA\u30C0', album='Album 2',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+        # Now update
+        self.update_mp3('song2.mp3', group='\u81EA\u52D5\u8ABF')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+        artist = Artist.objects.get(name='\u81EA\u52D5\u8ABF')
+        self.assertEqual(artist.name, '\u81EA\u52D5\u8ABF')
+
+    def test_update_mismatched_japanese_conductor(self):
+        """
+        Tests an update where two previously distinct Japanese-named artists
+        should update to become one artist, keyed off of the conductor field
+        """
+        self.add_mp3(artist='Artist', conductor='\u81EA\u52D5\u8ABF', album='Album 1',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', conductor='\u30AB\u30CA\u30C0', album='Album 2',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+        # Now update
+        self.update_mp3('song2.mp3', conductor='\u81EA\u52D5\u8ABF')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+        artist = Artist.objects.get(name='\u81EA\u52D5\u8ABF')
+        self.assertEqual(artist.name, '\u81EA\u52D5\u8ABF')
+
+    def test_update_mismatched_japanese_composer(self):
+        """
+        Tests an update where two previously distinct Japanese-named artists
+        should update to become one artist, keyed off of the composer field
+        """
+        self.add_mp3(artist='Artist', composer='\u81EA\u52D5\u8ABF', album='Album 1',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', composer='\u30AB\u30CA\u30C0', album='Album 2',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+        # Now update
+        self.update_mp3('song2.mp3', composer='\u81EA\u52D5\u8ABF')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+        artist = Artist.objects.get(name='\u81EA\u52D5\u8ABF')
+        self.assertEqual(artist.name, '\u81EA\u52D5\u8ABF')
+
     def test_update_mismatched_japanese_artists_backwards(self):
         """
         Tests an update where two previously joined Japanese-named artist
@@ -2486,6 +3383,81 @@ class BasicUpdateTests(ExordiumTests):
         al1 = Album.objects.get()
         self.assertEqual(al1.artist.name, 'Various')
         self.assertEqual(al1.song_set.count(), 2)
+
+    def test_update_mismatched_japanese_group_backwards(self):
+        """
+        Tests an update where two previously joined Japanese-named group
+        tracks should update to become two artists.  Keyed off of group.
+        """
+        self.add_mp3(artist='Artist', group='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', group='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+        # Now update
+        self.update_mp3('song2.mp3', group='\u30AB\u30CA\u30C0')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_update_mismatched_japanese_conductor_backwards(self):
+        """
+        Tests an update where two previously joined Japanese-named conductor
+        tracks should update to become two artists.  Keyed off of conductor.
+        """
+        self.add_mp3(artist='Artist', conductor='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', conductor='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+        # Now update
+        self.update_mp3('song2.mp3', conductor='\u30AB\u30CA\u30C0')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_update_mismatched_japanese_composer_backwards(self):
+        """
+        Tests an update where two previously joined Japanese-named composer
+        tracks should update to become two artists.  Keyed off of composer.
+        """
+        self.add_mp3(artist='Artist', composer='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', composer='\u81EA\u52D5\u8ABF', album='Album',
+            title='Title 2', filename='song2.mp3')
+        self.run_add()
+
+        # Quick checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+        # Now update
+        self.update_mp3('song2.mp3', composer='\u30AB\u30CA\u30C0')
+        self.run_update()
+
+        # Real checks
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 4)
+        self.assertEqual(Album.objects.all().count(), 1)
 
     def test_update_miscellaneous_tracks_to_different_artist_name(self):
         """
@@ -2712,13 +3684,14 @@ class BasicUpdateTests(ExordiumTests):
         Test a track deletion (also ensures that album+artist records get cleared out)
         """
         self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            group='Group', conductor='Conductor', composer='Composer',
             album = 'Album')
         self.run_add()
 
         # Quick verification
         self.assertEqual(Song.objects.all().count(), 1)
         self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 5)
 
         # Do the delete
         self.delete_file('song.mp3')
@@ -2734,15 +3707,17 @@ class BasicUpdateTests(ExordiumTests):
         Test a track deletion with an album which stays in place
         """
         self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            group='Group', conductor='Conductor', composer='Composer',
             album = 'Album')
         self.add_mp3(filename='song2.mp3', artist='Artist', title='Title 2',
+            group='Group', conductor='Conductor', composer='Composer',
             album = 'Album')
         self.run_add()
 
         # Quick verification
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 5)
 
         # Do the delete
         self.delete_file('song2.mp3')
@@ -2751,7 +3726,7 @@ class BasicUpdateTests(ExordiumTests):
         # Now the real checks
         self.assertEqual(Song.objects.all().count(), 1)
         self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 5)
         album = Album.objects.get()
         self.assertEqual(album.song_set.count(), 1)
         song = album.song_set.get()
@@ -2762,13 +3737,15 @@ class BasicUpdateTests(ExordiumTests):
         Test a move of a file from one location to another other.
         """
         self.add_mp3(path='starting', filename='song.mp3',
-            artist='Artist', title='Title', album = 'Album')
+            artist='Artist', title='Title', album = 'Album',
+            group='Group', conductor='Conductor', composer='Composer',
+            )
         self.run_add()
 
         # Quick verification
         self.assertEqual(Song.objects.all().count(), 1)
         self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 5)
 
         artist = Artist.objects.get(name='Artist')
         artist_pk = artist.pk
@@ -2782,6 +3759,9 @@ class BasicUpdateTests(ExordiumTests):
         song_pk = song.pk
         song_album = song.album.name
         song_artist = song.artist.name
+        song_group = song.group.name
+        song_conductor = song.conductor.name
+        song_composer = song.composer.name
         song_title = song.title
         song_year = song.year
         song_tracknum = song.tracknum
@@ -2801,7 +3781,7 @@ class BasicUpdateTests(ExordiumTests):
         # Check the data
         self.assertEqual(Song.objects.all().count(), 1)
         self.assertEqual(Album.objects.all().count(), 1)
-        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 5)
 
         artist = Artist.objects.get(name='Artist')
         self.assertEqual(artist_pk, artist.pk)
@@ -2816,6 +3796,9 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song_pk, song.pk)
         self.assertEqual(song_album, song.album.name)
         self.assertEqual(song_artist, song.artist.name)
+        self.assertEqual(song_group, song.group.name)
+        self.assertEqual(song_conductor, song.conductor.name)
+        self.assertEqual(song_composer, song.composer.name)
         self.assertEqual(song_title, song.title)
         self.assertEqual(song_year, song.year)
         self.assertEqual(song_tracknum, song.tracknum)
@@ -2859,6 +3842,99 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist.name, 'Artist')
         self.assertEqual(artist.prefix, 'The')
 
+    def test_update_change_prefix_group(self):
+        """
+        Test an update of a file which adds a previously-unknown
+        prefix to an artist, on the group record
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='Artist', title='Title 1', album = 'Album', group='Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='Artist', title='Title 1', album = 'Album', group='Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', group='The Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_update_change_prefix_conductor(self):
+        """
+        Test an update of a file which adds a previously-unknown
+        prefix to an artist, on the conductor record
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='Artist', title='Title 1', album = 'Album', conductor='Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='Artist', title='Title 1', album = 'Album', conductor='Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', conductor='The Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_update_change_prefix_composer(self):
+        """
+        Test an update of a file which adds a previously-unknown
+        prefix to an artist, on the composer record
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='Artist', title='Title 1', album = 'Album', composer='Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='Artist', title='Title 1', album = 'Album', composer='Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', composer='The Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
     def test_update_no_change_prefix(self):
         """
         Test an update of a file which removes the artist prefix on the
@@ -2892,6 +3968,108 @@ class BasicUpdateTests(ExordiumTests):
         song = Song.objects.get(filename='2-second.mp3')
         self.assertEqual(song.artist.name, 'Artist')
         self.assertEqual(song.artist.prefix, 'The')
+
+    def test_update_no_change_prefix_group(self):
+        """
+        Test an update of a file which removes the group prefix on the
+        tags - initial prefix on group should remain in place.
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', group='The Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', group='The Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', group='Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='2-second.mp3')
+        self.assertEqual(song.group.name, 'Artist')
+        self.assertEqual(song.group.prefix, 'The')
+
+    def test_update_no_change_prefix_conductor(self):
+        """
+        Test an update of a file which removes the conductor prefix on the
+        tags - initial prefix on conductor should remain in place.
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', conductor='The Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', conductor='The Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', conductor='Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='2-second.mp3')
+        self.assertEqual(song.conductor.name, 'Artist')
+        self.assertEqual(song.conductor.prefix, 'The')
+
+    def test_update_no_change_prefix_composer(self):
+        """
+        Test an update of a file which removes the composer prefix on the
+        tags - initial prefix on composer should remain in place.
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', composer='The Artist')
+        self.add_mp3(filename='2-second.mp3',
+            artist='The Artist', title='Title 1', album = 'Album', composer='The Artist')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', composer='Artist')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='2-second.mp3')
+        self.assertEqual(song.composer.name, 'Artist')
+        self.assertEqual(song.composer.prefix, 'The')
 
     def test_update_single_artist_to_various(self):
         """
