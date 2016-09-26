@@ -5,7 +5,7 @@ from dynamic_preferences.registries import global_preferences_registry
 
 import os
 import shutil
-from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL
+from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 
 from .models import Artist, Album, Song, App
 
@@ -55,6 +55,7 @@ class ExordiumTests(TestCase):
 
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
             title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
+            group='', conductor='', composer='',
             basefile='silence-vbr.mp3', save_as_v23=False,
             apply_tags=True):
         """
@@ -95,6 +96,13 @@ class ExordiumTests(TestCase):
         tags.add(TALB(encoding=3, text=album))
         tags.add(TIT2(encoding=3, text=title))
 
+        if group != '':
+            tags.add(TPE2(encoding=3, text=group))
+        if conductor != '':
+            tags.add(TPE3(encoding=3, text=conductor))
+        if composer != '':
+            tags.add(TCOM(encoding=3, text=composer))
+
         if maxtracks is None:
             tags.add(TRCK(encoding=3, text=str(tracknum)))
         else:
@@ -115,7 +123,8 @@ class ExordiumTests(TestCase):
         tags.save(full_filename)
 
     def update_mp3(self, filename, artist=None, album=None,
-            title=None, tracknum=None, maxtracks=None, year=None):
+            title=None, tracknum=None, maxtracks=None, year=None,
+            group=None, conductor=None, composer=None):
         """
         Updates an on-disk mp3 with the given tag data.  Any passed-in
         variable set to None will be ignored.  It's possible there could
@@ -146,6 +155,18 @@ class ExordiumTests(TestCase):
         if title is not None:
             tags.delall('TIT2')
             tags.add(TIT2(encoding=3, text=title))
+
+        if group is not None:
+            tags.delall('TPE2')
+            tags.add(TPE2(encoding=3, text=group))
+
+        if conductor is not None:
+            tags.delall('TPE3')
+            tags.add(TPE3(encoding=3, text=conductor))
+
+        if composer is not None:
+            tags.delall('TCOM')
+            tags.add(TCOM(encoding=3, text=composer))
 
         if tracknum is not None:
             tags.delall('TRCK')
@@ -331,6 +352,51 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(song.album.name, 'Album')
         self.assertEqual(song.artist.name, 'Artist')
 
+    def test_add_classical_simple_tag_check(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_mp3(artist='Artist', title='Title', album='Album',
+            group='Group', conductor='Conductor', composer='Composer',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.name, 'Group')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.name, 'Conductor')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.group.name, 'Group')
+        self.assertEqual(song.conductor.name, 'Conductor')
+        self.assertEqual(song.composer.name, 'Composer')
+
     def test_add_mp3_total_track_tag_check(self):
         """
         Adds a single track to check for the alternate tracknum format
@@ -424,6 +490,16 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 1)
         self.assertEqual(Album.objects.all().count(), 0)
 
+    def test_add_mp3_no_artist_tag(self):
+        """
+        Test adding an mp3 file which has no title tag specified
+        """
+        self.add_mp3(title='Title', composer='Composer', album='Album')
+        self.run_add_errors()
+        self.assertEqual(Song.objects.all().count(), 0)
+        self.assertEqual(Artist.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 0)
+
     def test_add_mp3s_different_artist_case(self):
         """
         Adds two tracks by the same artist, but with different capitalization
@@ -440,6 +516,111 @@ class BasicAddTests(ExordiumTests):
         # Note the mixed-case in the query, just checking that too.
         artist = Artist.objects.get(name='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
+
+    def test_add_song_different_composer_case(self):
+        """
+        Add a track with the same artist and composer but with different capitalization.
+        Should only have one artist for it.
+        """
+        self.add_mp3(artist='Artist Name', composer='artist name', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='artist Name')
+        self.assertEqual(artist.name.lower(), 'artist name')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name.lower(), 'artist name')
+        self.assertEqual(song.composer.name.lower(), 'artist name')
+
+    def test_add_song_different_group_case(self):
+        """
+        Add a track with the same artist and group but with different capitalization.
+        Should only have one artist for it.
+        """
+        self.add_mp3(artist='Artist Name', group='artist name', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='artist Name')
+        self.assertEqual(artist.name.lower(), 'artist name')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name.lower(), 'artist name')
+        self.assertEqual(song.group.name.lower(), 'artist name')
+
+    def test_add_song_different_conductor_case(self):
+        """
+        Add a track with the same artist and conductor but with different capitalization.
+        Should only have one artist for it.
+        """
+        self.add_mp3(artist='Artist Name', conductor='artist name', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        artist = Artist.objects.get(name='artist Name')
+        self.assertEqual(artist.name.lower(), 'artist name')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name.lower(), 'artist name')
+        self.assertEqual(song.conductor.name.lower(), 'artist name')
+
+    def test_add_songs_different_group_cases(self):
+        """
+        Add two tracks with alternating artist/group names, both with different cases.
+        """
+        self.add_mp3(artist='Artist One', group='artist two', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Two', group='artist one', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='artist One')
+        self.assertEqual(artist.name.lower(), 'artist one')
+        artist = Artist.objects.get(name='artist Two')
+        self.assertEqual(artist.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist one')
+        self.assertEqual(song.group.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist two')
+        self.assertEqual(song.group.name.lower(), 'artist one')
+
+    def test_add_songs_different_conductor_cases(self):
+        """
+        Add two tracks with alternating artist/conductor names, both with different cases.
+        """
+        self.add_mp3(artist='Artist One', conductor='artist two', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Two', conductor='artist one', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='artist One')
+        self.assertEqual(artist.name.lower(), 'artist one')
+        artist = Artist.objects.get(name='artist Two')
+        self.assertEqual(artist.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist one')
+        self.assertEqual(song.conductor.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist two')
+        self.assertEqual(song.conductor.name.lower(), 'artist one')
+
+    def test_add_songs_different_composer_cases(self):
+        """
+        Add two tracks with alternating artist/composer names, both with different cases.
+        """
+        self.add_mp3(artist='Artist One', composer='artist two', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist Two', composer='artist one', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        artist = Artist.objects.get(name='artist One')
+        self.assertEqual(artist.name.lower(), 'artist one')
+        artist = Artist.objects.get(name='artist Two')
+        self.assertEqual(artist.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist one')
+        self.assertEqual(song.composer.name.lower(), 'artist two')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.name.lower(), 'artist two')
+        self.assertEqual(song.composer.name.lower(), 'artist one')
 
     def test_add_mp3s_different_album_case(self):
         """
@@ -500,6 +681,108 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 2)
         self.assertEqual(Album.objects.all().count(), 1)
 
+    def test_add_song_differing_umlaut_group(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        artist name.
+        """
+        self.add_mp3(artist='Umläut', group='Umlaut', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='umlaut')
+        self.assertEqual(artist.name, 'Umläut')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.normname, 'umlaut')
+        self.assertEqual(song.group.normname, 'umlaut')
+
+    def test_add_song_differing_umlaut_conductor(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        artist name.
+        """
+        self.add_mp3(artist='Umläut', conductor='Umlaut', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='umlaut')
+        self.assertEqual(artist.name, 'Umläut')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.normname, 'umlaut')
+        self.assertEqual(song.conductor.normname, 'umlaut')
+
+    def test_add_song_differing_umlaut_composer(self):
+        """
+        Add two mp3s with the same artist but differing umlauts for the
+        artist name.
+        """
+        self.add_mp3(artist='Umläut', composer='Umlaut', album='Album',
+            title='Title 1', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+        artist = Artist.objects.get(normname='umlaut')
+        self.assertEqual(artist.name, 'Umläut')
+        song = Song.objects.get()
+        self.assertEqual(song.artist.normname, 'umlaut')
+        self.assertEqual(song.composer.normname, 'umlaut')
+
+    def test_add_songs_different_group_umlaut(self):
+        """
+        Add two tracks with alternating artist/group names, both with different umlauts.
+        """
+        self.add_mp3(artist='Umläut 1', group='Umlaut 2', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umläut 2', group='Umlaut 1', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 1')
+        self.assertEqual(song.group.normname, 'umlaut 2')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 2')
+        self.assertEqual(song.group.normname, 'umlaut 1')
+
+    def test_add_songs_different_conductor_umlaut(self):
+        """
+        Add two tracks with alternating artist/conductor names, both with different umlauts.
+        """
+        self.add_mp3(artist='Umläut 1', conductor='Umlaut 2', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umläut 2', conductor='Umlaut 1', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 1')
+        self.assertEqual(song.conductor.normname, 'umlaut 2')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 2')
+        self.assertEqual(song.conductor.normname, 'umlaut 1')
+
+    def test_add_songs_different_composer_umlaut(self):
+        """
+        Add two tracks with alternating artist/composer names, both with different umlauts.
+        """
+        self.add_mp3(artist='Umläut 1', composer='Umlaut 2', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Umläut 2', composer='Umlaut 1', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        song = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 1')
+        self.assertEqual(song.composer.normname, 'umlaut 2')
+        song = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song.artist.normname, 'umlaut 2')
+        self.assertEqual(song.composer.normname, 'umlaut 1')
+
     def test_add_mp3s_differing_umlaut_album(self):
         """
         Add two mp3s with the same artist but differing umlauts for the
@@ -548,6 +831,63 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.all().count(), 3)
         self.assertEqual(Album.objects.all().count(), 2)
 
+    def test_add_mp3s_mismatched_japanese_artists_group(self):
+        """
+        Adds two files with different artist names using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        separate instead of collapsing them into a single artist.  Also tests
+        the same functionality with groups.
+
+        Characters taken from a search for "test" at google.co.jp,
+        hopefully they are nothing offensive.  :)
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', group='\u30AB\u30CA\u30C0',
+            album='Album', title='Title 1', filename='song1.mp3', path='Album1')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', group='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3', path='Album2')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+    def test_add_mp3s_mismatched_japanese_artists_conductor(self):
+        """
+        Adds two files with different artist names using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        separate instead of collapsing them into a single artist.  Also tests
+        the same functionality with conductors.
+
+        Characters taken from a search for "test" at google.co.jp,
+        hopefully they are nothing offensive.  :)
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', conductor='\u30AB\u30CA\u30C0',
+            album='Album', title='Title 1', filename='song1.mp3', path='Album1')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', conductor='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3', path='Album2')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+
+    def test_add_mp3s_mismatched_japanese_artists_composer(self):
+        """
+        Adds two files with different artist names using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        separate instead of collapsing them into a single artist.  Also tests
+        the same functionality with composers.
+
+        Characters taken from a search for "test" at google.co.jp,
+        hopefully they are nothing offensive.  :)
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', composer='\u30AB\u30CA\u30C0',
+            album='Album', title='Title 1', filename='song1.mp3', path='Album1')
+        self.add_mp3(artist='\u30AB\u30CA\u30C0', composer='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3', path='Album2')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 3)
+        self.assertEqual(Album.objects.all().count(), 2)
+
     def test_add_mp3s_same_japanese_artists(self):
         """
         Adds two files with the same artist name using Japanese characters,
@@ -558,6 +898,90 @@ class BasicAddTests(ExordiumTests):
             title='Title 1', filename='song1.mp3')
         self.add_mp3(artist='\u81EA\u52D5\u8ABF', album='Album',
             title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_song_same_japanese_artist_group(self):
+        """
+        Adds one files with the same artist/group name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', group='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_song_same_japanese_artist_conductor(self):
+        """
+        Adds one files with the same artist/conductor name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', conductor='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_song_same_japanese_artist_composer(self):
+        """
+        Adds one files with the same artist/composer name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', composer='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_songs_same_japanese_artists_and_groups(self):
+        """
+        Adds two files with the same artist name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.  Also test groups.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', group='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', group='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_songs_same_japanese_artists_and_conductors(self):
+        """
+        Adds two files with the same artist name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.  Also test conductors.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', conductor='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', conductor='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+        self.assertEqual(Album.objects.all().count(), 1)
+
+    def test_add_songs_same_japanese_artists_and_composers(self):
+        """
+        Adds two files with the same artist name using Japanese characters,
+        to ensure that our artist-comparison normalization stuff keeps them
+        together.  Also test composers.
+        """
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', composer='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='\u81EA\u52D5\u8ABF', composer='\u81EA\u52D5\u8ABF',
+            album='Album', title='Title 2', filename='song2.mp3')
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 2)
@@ -588,6 +1012,69 @@ class BasicAddTests(ExordiumTests):
         """
         self.add_mp3(artist='Mediæval', title='Title 1', filename='song1.mp3')
         self.add_mp3(artist='Mediaeval', title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_song_mismatched_aesc_artist_group(self):
+        """
+        Adds one files with artist/group names which differ in that one uses an
+        "æ" char and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', group='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_song_mismatched_aesc_artist_conductor(self):
+        """
+        Adds one files with artist/conductor names which differ in that one uses an
+        "æ" char and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', conductor='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_song_mismatched_aesc_artist_composer(self):
+        """
+        Adds one files with artist/composer names which differ in that one uses an
+        "æ" char and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', composer='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_songs_mismatched_aesc_artist_and_group(self):
+        """
+        Adds two files with artist/group names which differ in that one uses an "æ" char
+        and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', group='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Mediaeval', group='Mediæval',title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_songs_mismatched_aesc_artist_and_conductor(self):
+        """
+        Adds two files with artist/conductor names which differ in that one uses an "æ" char
+        and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', conductor='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Mediaeval', conductor='Mediæval',title='Title 2', filename='song2.mp3')
+        self.run_add()
+        self.assertEqual(Song.objects.all().count(), 2)
+        self.assertEqual(Artist.objects.all().count(), 2)
+
+    def test_add_songs_mismatched_aesc_artist_and_composer(self):
+        """
+        Adds two files with artist/composer names which differ in that one uses an "æ" char
+        and the other uses "ae".  Should both normalize to the same artist.
+        """
+        self.add_mp3(artist='Mediæval', composer='Mediaeval',title='Title 1', filename='song1.mp3')
+        self.add_mp3(artist='Mediaeval', composer='Mediæval',title='Title 2', filename='song2.mp3')
         self.run_add()
         self.assertEqual(Song.objects.all().count(), 2)
         self.assertEqual(Artist.objects.all().count(), 2)
@@ -643,6 +1130,37 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(artist.name, 'Artist')
         self.assertEqual(artist.prefix, 'The')
 
+    def test_add_classical_simple_tag_check_prefixes(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly.  This time with a prefix on all
+        the artist fields.
+        """
+        self.add_mp3(artist='The Artist', title='Title', album='Album',
+            group='The Group', conductor='The Conductor', composer='The Composer',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.name, 'Group')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.name, 'Conductor')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
+        self.assertEqual(artist.prefix, 'The')
+
     def test_add_mp3_artist_prefix_double_spaces(self):
         """
         Adds a single track with an artist name "The  Artist" to check for
@@ -654,6 +1172,35 @@ class BasicAddTests(ExordiumTests):
 
         artist = Artist.objects.get(name='Artist')
         self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_add_classical_prfix_double_spaces_full(self):
+        """
+        Adds a single fully-tagged track with some improper spaces between
+        prefix and artist name - clean out the space and do the right thing.
+        """
+        self.add_mp3(artist='The  Artist', title='Title', group='The  Group',
+                conductor='The  Conductor', composer='The  Composer')
+        self.run_add()
+
+        self.assertEqual(Song.objects.all().count(), 1)
+        self.assertEqual(Album.objects.all().count(), 1)
+        self.assertEqual(Artist.objects.all().count(), 5)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.name, 'Group')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.name, 'Conductor')
+        self.assertEqual(artist.prefix, 'The')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
         self.assertEqual(artist.prefix, 'The')
 
     def test_add_mp3_with_exterior_spaces(self):
@@ -806,6 +1353,69 @@ class BasicAddTests(ExordiumTests):
         for song in Song.objects.all():
             self.assertEqual(song.artist.name, 'Artist')
 
+    def test_add_mp3_two_alternating_prefix_group(self):
+        """
+        Add one mp3 with the artist name "The Artist"
+        and then a second with a group name "Artist".
+        Both should be associated with the same base
+        Artist name.
+        """
+        self.add_mp3(artist='The Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+        self.add_mp3(artist='The Artist', group='Artist',
+            title='Title 2', album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        for artist in Artist.objects.all():
+            if artist.name != 'Various':
+                self.assertEqual(artist.name, 'Artist')
+                self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='album_2.mp3')
+        self.assertEqual(song.group.name, 'Artist')
+
+    def test_add_mp3_two_alternating_prefix_conductor(self):
+        """
+        Add one mp3 with the artist name "The Artist"
+        and then a second with a conductor name "Artist".
+        Both should be associated with the same base
+        Artist name.
+        """
+        self.add_mp3(artist='The Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+        self.add_mp3(artist='The Artist', conductor='Artist',
+            title='Title 2', album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        for artist in Artist.objects.all():
+            if artist.name != 'Various':
+                self.assertEqual(artist.name, 'Artist')
+                self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='album_2.mp3')
+        self.assertEqual(song.conductor.name, 'Artist')
+
+    def test_add_mp3_two_alternating_prefix_composer(self):
+        """
+        Add one mp3 with the artist name "The Artist"
+        and then a second with a composer name "Artist".
+        Both should be associated with the same base
+        Artist name.
+        """
+        self.add_mp3(artist='The Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+        self.add_mp3(artist='The Artist', composer='Artist',
+            title='Title 2', album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        for artist in Artist.objects.all():
+            if artist.name != 'Various':
+                self.assertEqual(artist.name, 'Artist')
+                self.assertEqual(artist.prefix, 'The')
+        song = Song.objects.get(filename='album_2.mp3')
+        self.assertEqual(song.composer.name, 'Artist')
+
     def test_add_mp3_two_alternating_prefix_reverse(self):
         """
         Add one mp3 with the artist name "Artist" and
@@ -822,6 +1432,78 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(artist.prefix, '')
 
         self.add_mp3(artist='The Artist', title='Title 2',
+            album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_add_mp3_two_alternating_prefix_reverse_by_group(self):
+        """
+        Add one mp3 with the artist name "Artist" and
+        then a second one with a group name "The Artist".
+        The artist record should be updated to have a
+        prefix.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        self.add_mp3(artist='Artist', title='Title 2',
+            group='The Artist',
+            album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_add_mp3_two_alternating_prefix_reverse_by_conductor(self):
+        """
+        Add one mp3 with the artist name "Artist" and
+        then a second one with a conductor name "The Artist".
+        The artist record should be updated to have a
+        prefix.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        self.add_mp3(artist='Artist', title='Title 2',
+            conductor='The Artist',
+            album='Album 2', filename='album_2.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, 'The')
+
+    def test_add_mp3_two_alternating_prefix_reverse_by_composer(self):
+        """
+        Add one mp3 with the artist name "Artist" and
+        then a second one with a composer name "The Artist".
+        The artist record should be updated to have a
+        prefix.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='album_1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        self.add_mp3(artist='Artist', title='Title 2',
+            composer='The Artist',
             album='Album 2', filename='album_2.mp3')
         self.run_add()
 
