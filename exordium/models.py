@@ -418,6 +418,8 @@ class AlbumArt(models.Model):
                 image_in = io.BytesIO(image_data)
                 with Image.open(image_in) as img:
                     img.thumbnail((res, res))
+                    if img.mode not in ['L', 'RGB', 'CMYK']:
+                        img = img.convert('RGB')
                     image_out = io.BytesIO()
                     img.save(image_out, format='JPEG')
                     image_out.seek(0)
