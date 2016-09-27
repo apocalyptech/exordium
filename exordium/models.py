@@ -168,10 +168,10 @@ class Album(models.Model):
     # with art without having to bring in possibly-expensive JOINs.
     # Also lets us just pass through original files from the filesystem
     # rather than unnecessarily bloating our database.
-    art_filename = models.CharField(max_length=4096, default=None)
-    art_mtime = models.IntegerField(default=0)
-    art_ext = models.CharField(max_length=4, default=None)
-    art_mime = models.CharField(max_length=64, default=None)
+    art_filename = models.CharField(max_length=4096, null=True, default=None)
+    art_mtime = models.IntegerField(null=True, default=0)
+    art_ext = models.CharField(max_length=4, null=True, default=None)
+    art_mime = models.CharField(max_length=64, null=True, default=None)
 
     class Meta:
         unique_together = ('artist', 'name')
@@ -1190,6 +1190,7 @@ class App(object):
                                 (known_artists[norm_name][0]))
 
                 # Check to see if we know the album yet, and if not create it.
+                album_obj = None
                 if helper.miscellaneous_album:
                     if 'miscellaneous' not in known_artists[helper.norm_album_artist][2]:
                         try:
@@ -1224,7 +1225,7 @@ class App(object):
                             yield (App.STATUS_DEBUG, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj))
 
                 # Mark this album as possibly needing an album art update
-                if not album_obj.art_filename:
+                if album_obj and not album_obj.art_filename:
                     album_art_needed.append(album_obj)
                 
                 # And now, update and save our song_obj
@@ -1568,6 +1569,7 @@ class App(object):
         # deleted, and delete the album/artist if there's no more dependent data
         for album in delete_rel_albums.keys():
             if album.song_set.count() == 0:
+                AlbumArt.objects.filter(album=album).delete()
                 yield (App.STATUS_INFO, 'Deleted orphaned album "%s / %s"' % (album, album.artist))
                 album.delete()
         for artist in delete_rel_artists.keys():
