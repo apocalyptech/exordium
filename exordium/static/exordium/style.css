@@ -30,3 +30,13 @@ h1 {
 .searchform {
     width: 100%;
 }
+.album_info {
+    margin-bottom: 1em;
+}
+.album_info tr td {
+    padding: 1em;
+}
+
+.album_info_cell {
+    vertical-align: top;
+}

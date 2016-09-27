@@ -4,9 +4,38 @@
 {% load static %}
 
 {% block body %}
+<table class="album_info">
+    <tr>
+        <td class="album_art_cell">
 {% if album.art_filename and album.art_filename != '' %}<a href="{% url 'exordium:origalbumart' album.pk album.art_ext %}"><img src="{% url 'exordium:albumart' album.pk 'album' %}" border="0"/></a>{% else %}<img src="{% static 'exordium/no_album_art.png' %}">{% endif %}
+        </td>
+        <td class="album_info_cell">
 <p>Artist: <strong><a href="{% url 'exordium:artist' album.artist.pk %}">{{ album.artist }}</a></strong></p>
+
+{% for artist in groups %}
+{% if forloop.first %}<p>Ensemble{{ groups|pluralize }}: {% endif %}
+<strong><a href="{% url 'exordium:artist' artist.pk %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
+{% if forloop.last %}</p>{% endif %}
+{% endfor %}
+
+{% for artist in conductors %}
+{% if forloop.first %}<p>Conductor{{ conductors|pluralize }}: {% endif %}
+<strong><a href="{% url 'exordium:artist' artist.pk %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
+{% if forloop.last %}</p>{% endif %}
+{% endfor %}
+
+{% for artist in composers %}
+{% if forloop.first %}<p>Composer{{ composers|pluralize }}: {% endif %}
+<strong><a href="{% url 'exordium:artist' artist.pk %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
+{% if forloop.last %}</p>{% endif %}
+{% endfor %}
+
 <p>Album: <strong>{{ album }}</strong></p>
-<p>Year: <strong>{{ album.year }}</strong></p>
+{% if album.year != 0 %}<p>Year: <strong>{{ album.year }}</strong></p>{% endif %}
+
+</td>
+</tr>
+</table>
+
 {% render_table songs %}
 {% endblock %}

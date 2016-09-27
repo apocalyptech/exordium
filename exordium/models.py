@@ -119,6 +119,12 @@ class Artist(models.Model):
         self.normname = App.norm_name(self.name)
         super(Artist, self).save(*args, **kwargs)
 
+    def __lt__(self, other):
+        """
+        For sorting
+        """
+        return self.normname < other.normname
+
     # TODO: dynamic prefixes via the admin interface?
     # TODO: prefix exceptions ("The The")
     @staticmethod
@@ -186,6 +192,28 @@ class Album(models.Model):
         """
         self.normname = App.norm_name(self.name)
         super(Album, self).save(*args, **kwargs)
+
+    def get_secondary_artists(self):
+        """
+        Returns a tuple containing lists of artists who are in our
+        "secondary" artist fields of group, conductor, and composer.
+        Since these are inherent to Songs, not Albums, the best we
+        can really do is just loop through 'em.
+
+        The tuple order is: (groups, conductors, composers)
+        """
+        groups = {}
+        conductors = {}
+        composers = {}
+        for song in self.song_set.all():
+            if song.group and song.group not in groups:
+                groups[song.group] = True
+            if song.conductor and song.conductor not in conductors:
+                conductors[song.conductor] = True
+            if song.composer and song.composer not in composers:
+                composers[song.composer] = True
+        return (sorted(groups.keys()), sorted(conductors.keys()),
+                sorted(composers.keys()))
 
     def get_album_image(self):
         """

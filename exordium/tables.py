@@ -39,11 +39,6 @@ class AlbumTable(tables.Table):
 class SongTable(tables.Table):
 
     artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
-    album = tables.LinkColumn(
-        'exordium:album',
-        verbose_name='Album',
-        args=[tables.A('album.pk')]
-    )
     length = tables.Column(
         footer=lambda table: table.render_length(sum(x.length for x in table.data))
     )
@@ -57,9 +52,24 @@ class SongTable(tables.Table):
     def render_length(self, value):
         return '%d:%02d' % (value/60, value%60)
 
-    class Meta:
+class SongTableWithAlbum(SongTable):
 
+    album = tables.LinkColumn(
+        'exordium:album',
+        verbose_name='Album',
+        args=[tables.A('album.pk')]
+    )
+
+    class Meta:
         model = Song
         attrs = {'class': 'paleblue'}
-        fields = ['tracknum', 'artist', 'album', 'title', 'length', 'dl']
         show_footer = True
+        fields = ['tracknum', 'artist', 'album', 'title', 'length', 'dl']
+
+class SongTableNoAlbum(SongTable):
+
+    class Meta:
+        model = Song
+        attrs = {'class': 'paleblue'}
+        show_footer = True
+        fields = ['tracknum', 'artist', 'title', 'length', 'dl']

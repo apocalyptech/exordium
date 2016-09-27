@@ -12,7 +12,7 @@ from django_tables2 import RequestConfig
 from dynamic_preferences.registries import global_preferences_registry
 
 from .models import Artist, Album, Song, App, AlbumArt
-from .tables import ArtistTable, AlbumTable, SongTable
+from .tables import ArtistTable, AlbumTable, SongTableWithAlbum, SongTableNoAlbum
 
 # Create your views here.
 
@@ -114,7 +114,7 @@ class SearchView(TitleTemplateView):
         songs = Song.objects.filter(title__icontains=search)
         if songs.count() > 0:
             show_songs = True
-            table = SongTable(songs, prefix='song-')
+            table = SongTableWithAlbum(songs, prefix='song-')
             RequestConfig(self.request).configure(table)
             context['song_results'] = table
 
@@ -149,10 +149,14 @@ class AlbumView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(AlbumView, self).get_context_data(**kwargs)
         songs = Song.objects.filter(album=self.object).order_by('tracknum')
-        table = SongTable(songs)
+        table = SongTableNoAlbum(songs)
         RequestConfig(self.request).configure(table)
+        (groups, conductors, composers) = self.object.get_secondary_artists()
         context['songs'] = table
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
+        context['groups'] = groups
+        context['conductors'] = conductors
+        context['composers'] = composers
         return context
 
 class BrowseArtistView(TitleListView):
