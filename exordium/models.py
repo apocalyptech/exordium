@@ -256,6 +256,10 @@ class Album(models.Model):
         a list of tuples in the format (loglevel, text) like the
         static App.add() and App.update() functions.
 
+        Note that like those other funcs, since we're yielding things as we go,
+        something needs to loop through our output in order for things to
+        actually happen here.
+
         `filename` is the full path to the image, whereas `short_filename`
         is what will get stored in the DB
         """
@@ -1036,6 +1040,10 @@ class App(object):
         about yet.  Yields its entire processing status log as a generator,
         as tuples of the form (status, text).
 
+        Note that because we're using `yield`, something NEEDS to loop
+        through the output of this function in order for it to actually
+        do anything.
+
         `status` will be one of `info`, `debug`, `success`, or `error`, so can
         be processed appropriately by whatever calls this method.
 
@@ -1301,6 +1309,10 @@ class App(object):
 
         Yields its entire processing status log as a generator, as tuples of the
         form (status, text).
+
+        Note that because we're using `yield`, something NEEDS to loop
+        through the output of this function in order for it to actually
+        do anything.
 
         `status` will be one of `info`, `debug`, `success`, or `error`, so can
         be processed appropriately by whatever calls this method.
@@ -1734,6 +1746,10 @@ class App(object):
 
         Yields its entire processing status log as a generator, as tuples of the form
         (status, text).
+
+        Note that because we're using `yield`, something NEEDS to loop
+        through the output of this function in order for it to actually
+        do anything.
 
         `status` will be one of `info`, `debug`, `success`, or `error`, so can
         be processed appropriately by whatever calls this method.
