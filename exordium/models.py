@@ -241,6 +241,8 @@ class Album(models.Model):
         is done in some static methods from App.  Will return None
         if no album art was found.
         """
+        if self.miscellaneous:
+            return None
         if self.song_set.count() > 0:
             song = self.song_set.all()[0]
             base_dir = song.full_base_dir()
@@ -257,6 +259,8 @@ class Album(models.Model):
         `filename` is the full path to the image, whereas `short_filename`
         is what will get stored in the DB
         """
+        if self.miscellaneous:
+            return False
         valid_extension = False
         for ext in App.cover_extensions:
             if filename[-len(ext):] == ext:
@@ -292,24 +296,50 @@ class Album(models.Model):
             yield (App.STATUS_ERROR, 'Cover image %s found but not readable' % (filename))
             return False
 
-    def update_album_art(self):
+    def update_album_art(self, full_refresh=False):
         """
         Updates our album art based on what we find on-disk.  Yields a list of
         tuples like our App.add() and App.update() functions.
+
+        Note that like those other funcs, since we're yielding things as we go,
+        something needs to loop through our output in order for things to
+        actually happen here.
         """
+        # If we've not ben told to do a full refresh and we have
+        # an existing album art record, check its mtime and exit if
+        # there's no work to do.
+        if not full_refresh and self.has_album_art():
+            try:
+                stat_result = os.stat(self.get_original_art_filename())
+                if int(stat_result.st_mtime) == self.art_mtime:
+                    return
+            except (FileNotFoundError, PermissionError):
+                pass
+        
+        # If we got here, do a full refresh of the directory
+        if self.miscellaneous:
+            return
         art_filename = self.get_album_image()
         if art_filename:
             yield (App.STATUS_DEBUG, 'Found art at %s' % (art_filename))
-            short_filename = art_filename[len(base_path)+1:]
+            short_filename = art_filename[len(App.prefs['exordium__base_path'])+1:]
             for retline in self.import_album_image_from_filename(art_filename, short_filename):
                 yield retline
-        elif self.art_filename is not None and self.art_filename != '':
-            self.art_filename = ''
-            self.art_ext = ''
-            self.art_mime = ''
+        elif self.has_album_art():
+            self.art_filename = None
+            self.art_ext = None
+            self.art_mime = None
             self.art_mtime = 0
             self.save()
             yield (App.STATUS_INFO, 'Removed art from "%s / %s"' % (self.artist, self))
+
+        return
+
+    def has_album_art(self):
+        """
+        Returns True if we have an album art record.
+        """
+        return self.art_filename and self.art_filename != ''
 
     def get_original_art_filename(self):
         """
@@ -320,7 +350,7 @@ class Album(models.Model):
         # loading things all the way?  Dunno, but App.prefs[''] ends up throwing a
         # TypeError saying that 'NoneType' object is not scriptable, so whatever.
         prefs = global_preferences_registry.manager()
-        if self.art_filename and self.art_filename != '':
+        if self.has_album_art():
             return os.path.join(prefs['exordium__base_path'], self.art_filename)
         else:
             return None
@@ -379,7 +409,7 @@ class AlbumArt(models.Model):
 
         # Check to make sure the album has a base filename
         # to begin with.
-        if album.art_filename is None or album.art_filename == '':
+        if not album.has_album_art():
             return None
 
         # Also check to make sure we've been asked for a
@@ -405,10 +435,12 @@ class AlbumArt(models.Model):
         except AlbumArt.DoesNotExist:
             pass
 
-        # We could argue that here we should tell the Album object to
-        # update its album art.  After all, the mtime on disk may not
-        # match the mtime in the DB.  For now I'm saying to hell with
-        # it, but we'll see how long that attitude lasts.
+        # Doublecheck to see if the album's album art is still valid,
+        # and update if need be.  Note that we'll have to check to make
+        # sure that we DO still have album art after this.
+        album.update_album_art()
+        if not album.has_album_art():
+            return None
 
         # If we got here, we need to create a new AlbumArt object
         # based on the album's original art.
@@ -1249,7 +1281,7 @@ class App(object):
         if not updating:
 
             # Get album art
-            for retline in App.find_album_art(album_art_needed):
+            for retline in App.update_album_art(album_art_needed):
                 yield retline
 
             yield (App.STATUS_SUCCESS, 'Finished adding new music!')
@@ -1614,7 +1646,7 @@ class App(object):
                 pass
 
         # Get album art
-        for retline in App.find_album_art():
+        for retline in App.update_album_art():
             yield retline
 
         # Finally, return
@@ -1622,13 +1654,13 @@ class App(object):
         return
 
     @staticmethod
-    def get_directory_cover_images(directory):
+    def get_cover_images(filelist):
         """
-        Scans a directory to find a likely album art.  Returns a
-        list of all available album art in the directory, in order
-        of our preference.  (In general you'll only really be
-        interested in the very first item in the list.)  Note that
-        the returned filenames will NOT include the directory
+        Loops through a list of files to find a likely album art.
+        Returns a list of all available album art in the directory,
+        in order of our preference.  (In general you'll only really
+        be interested in the very first item in the list.)  Note
+        that the returned filenames will NOT include any directory
         component.
 
         The sorting here works as follows:
@@ -1650,7 +1682,7 @@ class App(object):
             extensions[ext] = ([], [], [])
 
         # Loop through filenames
-        for filename in os.listdir(directory):
+        for filename in filelist:
             for ext in App.cover_extensions:
                 if filename[-len(ext):] == ext:
                     if filename == 'cover%s' % (ext):
@@ -1679,23 +1711,26 @@ class App(object):
         parent directory if no image files are found in the given
         directory.
         """
-        images = App.get_directory_cover_images(directory)
+        images = App.get_cover_images(os.listdir(directory))
         if len(images) == 0:
-            images = App.get_directory_cover_images(os.path.join(directory, '..'))
-            if len(images) == 0:
+            # Make sure we don't try to go outside of our library
+            if os.path.normpath(directory) == os.path.normpath(App.prefs['exordium__base_path']):
                 return None
             else:
-                return os.path.normpath(os.path.join(directory, '..', images[0]))
+                images = App.get_cover_images(os.listdir(os.path.join(directory, '..')))
+                if len(images) == 0:
+                    return None
+                else:
+                    return os.path.normpath(os.path.join(directory, '..', images[0]))
         else:
             return os.path.join(directory, images[0])
 
     @staticmethod
-    def find_album_art(albums=None):
+    def update_album_art(albums=None):
         """
-        Finds album art for any album which doesn't currently have it.  Will not touch
-        any album which already has album art defined.  If `albums` is passed as a
-        list of album objects, only those albums will be checked for album art, rather
-        than looping through the whole database
+        Imports/Updates album art.  If `albums` is passed as a list of album objects,
+        only those albums will be checked for album art, rather than looping through the
+        whole database
 
         Yields its entire processing status log as a generator, as tuples of the form
         (status, text).
@@ -1705,7 +1740,7 @@ class App(object):
         """
 
         if albums is None:
-            albums = Album.objects.filter(Q(art_filename=None) | Q(art_filename=''))
+            albums = Album.objects.all()
 
         if len(albums) == 0:
             return
@@ -1714,15 +1749,21 @@ class App(object):
 
         base_path = App.prefs['exordium__base_path']
         for album in albums:
-            art_filename = album.get_album_image()
-            if art_filename:
-                yield (App.STATUS_DEBUG, 'Found art at %s' % (art_filename))
-                short_filename = art_filename[len(base_path)+1:]
-                for retline in album.import_album_image_from_filename(art_filename, short_filename):
+            if album.miscellaneous:
+                continue
+            if album.has_album_art():
+                for retline in album.update_album_art():
                     yield retline
             else:
-                yield (App.STATUS_DEBUG, 'No album art found for "%s / %s"' %
-                    (album.artist, album))
+                art_filename = album.get_album_image()
+                if art_filename:
+                    yield (App.STATUS_DEBUG, 'Found art at %s' % (art_filename))
+                    short_filename = art_filename[len(base_path)+1:]
+                    for retline in album.import_album_image_from_filename(art_filename, short_filename):
+                        yield retline
+                else:
+                    yield (App.STATUS_DEBUG, 'No album art found for "%s / %s"' %
+                        (album.artist, album))
 
         yield (App.STATUS_INFO, 'Album art scanning finished')
         return

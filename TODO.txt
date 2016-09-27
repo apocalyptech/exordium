@@ -11,19 +11,17 @@ be good to keep track of what I've been thinking about.
   * # of tracks and length in album table, too
   * # of albums, songs in artist table
   * Omit track number for song table in searches (and probably on
-    Artist page, once we have that in there)
+    Artist page, once we have that in there) (and also on non-
+    album track "albums")
 * Album downloads as zipfiles
-* Tests for album art
+* Tests for AlbumArt objects
 * Tests for views
 * Streaming (html5 player)
 * Hide "live" albums (implies user preferences, too)
-* Album art refresh via library upkeep
-  * Also via Album page itself, for admins
-* No album art for non-album-tracks
+* Album Art updates via Album page itself, for admins
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * ETA on library add
-* Auto-refresh of album art when generating thumbnails
 * Searching fixes (should go after normnames as well)
 * Extra details on album song list (format, bitrate, etc)
   (something else for user prefs, possibly)

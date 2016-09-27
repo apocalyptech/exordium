@@ -5,6 +5,7 @@ from dynamic_preferences.registries import global_preferences_registry
 
 import os
 import shutil
+import pathlib
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 
 from .models import Artist, Album, Song, App
@@ -41,7 +42,8 @@ class ExordiumTests(TestCase):
         library hanging around in our testdata dir, ensure that our base
         testing files exist, and then set up the base library path.
         """
-        for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3']:
+        for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
+                'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         if os.path.exists(self.library_path):
@@ -239,6 +241,48 @@ class ExordiumTests(TestCase):
 
         dest_filename = os.path.join(full_destination, os.path.basename(filename))
         self.assertEqual(os.path.exists(dest_filename), True)
+
+    def touch_file(self, filename):
+        """
+        'touches' a file to have the current modification time, with the extra
+        guarantee that the mtime WILL change.  Will set the time one second
+        in the future if need be.
+        """
+
+        if len(filename) < 3 or '..' in filename or filename[0] == '/':
+            raise Exception('Given filename "%s" is invalid' % (filename))
+
+        full_filename = os.path.join(self.library_path, filename)
+
+        starting_mtime = int(os.stat(full_filename).st_mtime)
+
+        pathlib.Path(full_filename).touch(exist_ok=True)
+
+        stat_result = os.stat(full_filename)
+        ending_mtime = int(stat_result.st_mtime)
+        if starting_mtime == ending_mtime:
+            new_mtime = ending_mtime + 1
+            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+
+    def add_art(self, path='', filename='cover.jpg', basefile='cover_400.jpg'):
+        """
+        Adds a new cover image to our library in the specified dir.
+        """
+        if path != '' and ('..' in path or path[0] == '/'):
+            raise Exception('Given path "%s" is invalid' % (path))
+
+        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
+            raise Exception('Invalid basefile name: %s' % (basefile))
+
+        src_filename = os.path.join(self.testdata_path, basefile)
+        if not os.path.exists(src_filename):
+            raise Exception('Source filename %s is not found' % (src_filename))
+
+        full_path = os.path.join(self.library_path, path)
+        full_filename = os.path.join(full_path, filename)
+        os.makedirs(full_path, exist_ok=True)
+        shutil.copyfile(src_filename, full_filename)
+        self.assertEqual(os.path.exists(full_filename), True)
 
     def assertNoErrors(self, appresults):
         """
@@ -4534,3 +4578,349 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get()
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.live, True)
+
+class AlbumArtTests(ExordiumTests):
+    """
+    Tests about album art specifically
+    """
+
+    def test_basic_add_album_art_gif(self):
+        """
+        Test a simple case where we have a gif album art.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.gif', filename='cover.gif')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.gif')
+        self.assertEqual(al.art_mime, 'image/gif')
+        self.assertEqual(al.art_ext, 'gif')
+
+    def test_basic_add_album_art_png(self):
+        """
+        Test a simple case where we have a png album art.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.png', filename='cover.png')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.png')
+        self.assertEqual(al.art_mime, 'image/png')
+        self.assertEqual(al.art_ext, 'png')
+
+    def test_basic_add_album_art_jpg(self):
+        """
+        Test a simple case where we have a jpg album art.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.jpg', filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(al.art_mime, 'image/jpeg')
+        self.assertEqual(al.art_ext, 'jpg')
+
+    def test_basic_update_add_album_art(self):
+        """
+        Test a simple case where we add album art during an update,
+        rather than in the add.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.add_art(basefile='cover_400.jpg', filename='cover.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(al.art_mime, 'image/jpeg')
+        self.assertEqual(al.art_ext, 'jpg')
+
+    def test_basic_add_album_art_parent_dir(self):
+        """
+        Tests associating an album cover which is in the song's parent dir.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Album')
+        self.add_art(basefile='cover_400.jpg', filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(al.art_mime, 'image/jpeg')
+        self.assertEqual(al.art_ext, 'jpg')
+
+    def test_basic_add_album_art_two_dirs_up(self):
+        """
+        Tests associating an album cover which is two directories
+        above - or in other words should NOT be found.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Artist/Album')
+        self.add_art(basefile='cover_400.jpg', filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+
+    def test_basic_add_album_art_mismatched_extension(self):
+        """
+        Tests associating an album cover which has an improper
+        extension.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.png', filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(al.art_mime, 'image/png')
+        self.assertEqual(al.art_ext, 'png')
+
+    def test_basic_add_album_art_invalid_file(self):
+        """
+        Test a cover file which isn't actually an image we support.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='silence-vbr.mp3', filename='cover.jpg')
+        self.run_add_errors()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+        self.assertEqual(al.art_mime, None)
+        self.assertEqual(al.art_ext, None)
+        self.assertEqual(al.art_mtime, 0)
+
+    def test_album_art_removal(self):
+        """
+        Tests removal of album art during an update()
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+        self.delete_file('cover.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+
+    def test_non_album_art(self):
+        """
+        Tests what happens when there's an image alongside a non-album
+        track.  The art should NOT be associated!  The special "non-album"
+        albums don't get album art.
+        """
+        self.add_mp3(artist='Artist', title='Title 1', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+
+    def test_album_art_update_no_changes(self):
+        """
+        Tests what happens on an update when the album art hasn't changed.
+        Nothing should change in the record.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        orig_mtime = al.art_mtime
+        orig_filename = al.art_filename
+        orig_mime = al.art_mime
+        orig_ext = al.art_ext
+
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(orig_mtime, al.art_mtime)
+        self.assertEqual(orig_filename, al.art_filename)
+        self.assertEqual(orig_mime, al.art_mime)
+        self.assertEqual(orig_ext, al.art_ext)
+
+    def test_album_art_update_mtime(self):
+        """
+        Tests what happens when an album art file is updated
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        orig_mtime = al.art_mtime
+
+        self.touch_file('cover.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertNotEqual(orig_mtime, al.art_mtime)
+
+    def test_album_art_update_different_file(self):
+        """
+        Tests what happens when an album art file changes filenames.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='cover-orig.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover-orig.jpg')
+
+        self.delete_file('cover-orig.jpg')
+        self.add_art(filename='cover-new.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover-new.jpg')
+
+    def test_album_art_update_better_filename(self):
+        """
+        Tests what happens when a new album art file turns up during
+        an update which we consider "better" than the one we're using.
+        (ie: moving from GIF to PNG, or moving from "whatever.jpg" to
+        "cover.jpg").  Nothing should happen, since the regular update
+        will only do something if the mtime on the existing file changes,
+        or the file disappears.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='blah.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+        self.add_art(filename='cover.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+    def test_album_art_update_better_filename_direct(self):
+        """
+        Tests what happens when a new album art file turns up during
+        an update which we consider "better" than the one we're using.
+        (ie: moving from GIF to PNG, or moving from "whatever.jpg" to
+        "cover.jpg").  As with the previous test, we expect nothing to
+        change, but instead of going through a full update we're calling
+        Album.update_album_art() directly.  This shouldn't be any
+        different unless we also pass in full_refresh=True to that
+        function, so the album art should remain.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='blah.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+        self.add_art(filename='cover.jpg')
+        self.assertNoErrors(list(al.update_album_art()))
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+    def test_album_art_update_better_filename_forced(self):
+        """
+        Tests what happens when a new album art file turns up during
+        an update which we consider "better" than the one we're using.
+        (ie: moving from GIF to PNG, or moving from "whatever.jpg" to
+        "cover.jpg").  This time we are going to simulate a force of
+        that update.  Ordinarily this'll only happen direct from an
+        admin page click, and is a separate action from add() and update()
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='blah.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+        self.add_art(filename='cover.jpg')
+        self.assertNoErrors(list(al.update_album_art(full_refresh=True)))
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+class BasicAlbumArtTests(TestCase):
+    """
+    Album art related tests which don't actually require our full
+    fake library test setup, since they don't use add() or update().
+    """
+
+    def test_album_art_ordering(self):
+        """
+        Various tests for finding out if our album art preference sorting
+        works how we hope.
+        """
+        order_tests = [
+                (['cover.gif', 'cover.png'], ['cover.png', 'cover.gif']),
+                (['cover.jpg', 'cover.png'], ['cover.png', 'cover.jpg']),
+                (['cover-back.jpg', 'cover.jpg'], ['cover.jpg', 'cover-back.jpg']),
+                (['cover-back.png', 'cover.jpg'], ['cover.jpg', 'cover-back.png']),
+                (['cover-test.png', 'cover.gif'], ['cover.gif', 'cover-test.png']),
+                (['other.png', 'cover.gif'], ['cover.gif', 'other.png']),
+                (['other.png', 'cover-back.jpg'], ['cover-back.jpg', 'other.png']),
+                (['cover-back.gif', 'cover-back.jpg'], ['cover-back.jpg', 'cover-back.gif']),
+                (['cover-back.jpg', 'cover-back.png'], ['cover-back.png', 'cover-back.jpg']),
+                (['zzz.jpg', 'aaa.jpg'], ['aaa.jpg', 'zzz.jpg']),
+                (['zzz.png', 'aaa.jpg'], ['zzz.png', 'aaa.jpg']),
+                (['foo.mp3', 'cover.png'], ['cover.png']),
+                (['foo.mp3', 'cover.png', 'bar.txt'], ['cover.png']),
+                (['foo.mp3', 'baz.gif', 'bar.txt'], ['baz.gif']),
+                (['foo.mp3', 'baz.gif', 'bar.txt', 'frobozz.png'], ['frobozz.png', 'baz.gif']),
+                (['foo.mp3', 'baz.aiff', 'bar.txt', 'frobozz.ogg'], []),
+            ]
+
+        # Loop through and test!
+        for (before, after) in order_tests:
+            self.assertEqual(App.get_cover_images(before), after)
+
