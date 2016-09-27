@@ -5,6 +5,10 @@
 <p><strong>Base Path:</strong> {{ base_path }}<br />
 <strong>Media URL Prefix:</strong> {{ media_url }}</p>
 
+<p>This catalog currently contains {{ count_artists }} artist{{ count_artists|pluralize }},
+{{ count_albums }} album{{ count_albums|pluralize }}, and
+{{ count_songs }} song{{ count_songs|pluralize }}.</p>
+
 <p><a href="{% url 'exordium:library_add' %}">Add new music</a></p>
 <p><a href="{% url 'exordium:library_update' %}">Update/Clean music (will also add)</a></p>
 

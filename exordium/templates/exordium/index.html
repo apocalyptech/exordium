@@ -4,9 +4,6 @@
 
 {% block body %}
 <p>Welcome to Exordium, CJ's newest online music library app.</p>
-<p>This catalog currently contains {{ count_artists }} artist{{ count_artists|pluralize }},
-{{ count_albums }} album{{ count_albums|pluralize }}, and
-{{ count_songs }} song{{ count_songs|pluralize }}.</p>
 <h3>Recently-Added Albums</h3>
 {% render_table album_list %}
 {% endblock %}

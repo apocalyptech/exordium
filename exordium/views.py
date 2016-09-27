@@ -71,9 +71,6 @@ class IndexView(TitleTemplateView):
         table = AlbumTable(albums)
         RequestConfig(self.request).configure(table)
         context['album_list'] = table
-        context['count_artists'] = Artist.objects.all().count()
-        context['count_albums'] = Album.objects.all().count()
-        context['count_songs'] = Song.objects.all().count()
         return context
 
 class SearchView(TitleTemplateView):
@@ -200,6 +197,9 @@ class LibraryView(TitleTemplateView):
         prefs = global_preferences_registry.manager()
         context['base_path'] = prefs['exordium__base_path']
         context['media_url'] = prefs['exordium__media_url']
+        context['count_artists'] = Artist.objects.all().count()
+        context['count_albums'] = Album.objects.all().count()
+        context['count_songs'] = Song.objects.all().count()
         return context
 
 class LibraryActionView(generic.View):
