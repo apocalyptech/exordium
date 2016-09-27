@@ -1,0 +1,27 @@
+Now that my mental "TODO" contains a few more things than just
+"make this app at least marginally functional," I figure it'll
+be good to keep track of what I've been thinking about.
+
+* Number of tracks and length (and "added") on album summary page
+* Various sorting/table fixes on most of our views
+  * Album lists should sort Various below everything else,
+    and in most cases should sort by title, not year.
+  * Max records should probably be increased to 100 or so
+  * Include songs in Artist view
+* Album downloads as zipfiles
+* Tests for album art
+* Tests for views
+* Streaming (html5 player)
+* Hide "live" albums (implies user preferences, too)
+* Album art refresh via library upkeep
+* No album art for non-album-tracks
+* More precise summary text for classical
+  * "Composer, tracks 1-5, 8: foo", etc.
+* ETA on library add
+* Auto-refresh of album art when generating thumbnails
+* Searching fixes (should go after normnames as well)
+* Extra details on album song list (format, bitrate, etc)
+  (something else for user prefs, possibly)
+* Album art is being loaded multiple times for the same
+  album during add()
+* Ogg support
