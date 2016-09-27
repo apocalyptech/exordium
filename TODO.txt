@@ -8,12 +8,17 @@ be good to keep track of what I've been thinking about.
     and in most cases should sort by title, not year.
   * Max records should probably be increased to 100 or so
   * Include songs in Artist view
+  * # of tracks and length in album table, too
+  * # of albums, songs in artist table
+  * Omit track number for song table in searches (and probably on
+    Artist page, once we have that in there)
 * Album downloads as zipfiles
 * Tests for album art
 * Tests for views
 * Streaming (html5 player)
 * Hide "live" albums (implies user preferences, too)
 * Album art refresh via library upkeep
+  * Also via Album page itself, for admins
 * No album art for non-album-tracks
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
@@ -25,3 +30,18 @@ be good to keep track of what I've been thinking about.
 * Album art is being loaded multiple times for the same
   album during add()
 * Ogg support
+* Use normnames in URLs rather than IDs?
+* Improve the Django admin area and make it actually-useful
+* Might be nice to support some artist groupings.
+  ("Amanda Palmer and the Grand Theft Orchestra" albums
+  should probably show up alongside "Amanda Palmer" albums,
+  etc.  I assume this would be something manual-only from
+  the admin area.  The "correct" thing to do might be to
+  find a tag to use, instead, but I'm guessing that'd
+  overly-complicate the backend, which I think I'd like
+  to keep cleaner.  But it might be a monster anyway.)
+* Performance - loading the NIN artist page, for instance,
+  takes a number of seconds.  Would be interesting to find
+  out if it's album art slowing us down, or the classical
+  tag querying, or if it's Django object overhead.
+* General query cleanup in views.
