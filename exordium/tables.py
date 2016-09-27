@@ -36,6 +36,16 @@ class AlbumTable(tables.Table):
         template_name='exordium/album_image_list.html',
     )
 
+    def render_year(self, value=0, **kwargs):
+        """
+        Custom formatting for year (ie: don't display anything if the
+        year is zero)
+        """
+        if value == 0:
+            return ''
+        else:
+            return '%d' % (value)
+
     class Meta:
 
         model = Album
