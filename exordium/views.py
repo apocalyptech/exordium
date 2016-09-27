@@ -149,9 +149,14 @@ class AlbumView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(AlbumView, self).get_context_data(**kwargs)
         songs = Song.objects.filter(album=self.object).order_by('tracknum')
-        table = SongTableNoAlbum(songs)
-        RequestConfig(self.request).configure(table)
         (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
+        data = []
+        for song in songs:
+            song.set_album_secondary_artist_counts(num_groups=len(groups),
+                num_conductors=len(conductors), num_composers=len(composers))
+            data.append(song)
+        table = SongTableNoAlbum(data)
+        RequestConfig(self.request).configure(table)
         context['songs'] = table
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
         context['groups'] = groups

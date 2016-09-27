@@ -502,6 +502,11 @@ class Song(models.Model):
     # Checksum
     sha256sum = models.CharField(max_length=64)
 
+    # See set_album_secondary_artist_counts(), below
+    num_groups = 0
+    num_conductors = 0
+    num_composers = 0
+
     def __str__(self):
         """
         Returns a string representation of ourselves
@@ -681,6 +686,21 @@ class Song(models.Model):
 
         # Now return the artist and album we got from the new tags.
         return (artist_full, group, conductor, composer, album, self)
+
+    def set_album_secondary_artist_counts(self, num_groups=0, num_conductors=0, num_composers=0):
+        """
+        This function is stupid, and just in support of showing tracklists
+        on the frontend UI in the single-album view.  Basically we don't
+        want our Artist column to show group/conductor/composer if there's
+        only one of those on the album, since it's repetitive information
+        at that point, and looks pretty messy in that context.  I haven't
+        had any luck figuring out a way to pass extra information in through
+        a Table object into a Column, though, and in the end I just decided
+        to add that information directly into the song objects.
+        """
+        self.num_groups = num_groups
+        self.num_conductors = num_conductors
+        self.num_composers = num_composers
 
     @staticmethod
     def get_sha256sum(filename):

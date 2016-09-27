@@ -21,7 +21,7 @@ class AlbumTable(tables.Table):
     artist = tables.TemplateColumn(
         verbose_name='Artist',
         orderable=True,
-        order_by=('artist'),
+        order_by=('artist.name'),
         template_name='exordium/album_artist_column.html',
     )
     name = tables.LinkColumn('exordium:album', args=[tables.A('pk')])
@@ -44,7 +44,13 @@ class AlbumTable(tables.Table):
 
 class SongTable(tables.Table):
 
-    artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
+    #artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
+    artist = tables.TemplateColumn(
+        verbose_name='Artist',
+        orderable=True,
+        order_by=('artist.name'),
+        template_name='exordium/song_artist_column.html',
+    )
     length = tables.Column(
         footer=lambda table: table.render_length(sum(x.length for x in table.data))
     )
