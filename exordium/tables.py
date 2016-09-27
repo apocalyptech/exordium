@@ -17,7 +17,13 @@ class ArtistTable(tables.Table):
 
 class AlbumTable(tables.Table):
 
-    artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
+    #artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
+    artist = tables.TemplateColumn(
+        verbose_name='Artist',
+        orderable=True,
+        order_by=('artist'),
+        template_name='exordium/album_artist_column.html',
+    )
     name = tables.LinkColumn('exordium:album', args=[tables.A('pk')])
     time_added = tables.DateTimeColumn(
         verbose_name = 'Date Added',

@@ -151,7 +151,7 @@ class AlbumView(TitleDetailView):
         songs = Song.objects.filter(album=self.object).order_by('tracknum')
         table = SongTableNoAlbum(songs)
         RequestConfig(self.request).configure(table)
-        (groups, conductors, composers) = self.object.get_secondary_artists()
+        (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
         context['songs'] = table
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
         context['groups'] = groups

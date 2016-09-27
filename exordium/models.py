@@ -193,7 +193,27 @@ class Album(models.Model):
         self.normname = App.norm_name(self.name)
         super(Album, self).save(*args, **kwargs)
 
-    def get_secondary_artists(self):
+    def get_secondary_artists_list(self):
+        """
+        Returns a list of all artists contained in songs in this
+        album, including groups, conductors, and composers.  Since
+        these are inherent to Songs, not Albums, the best we can
+        really do is just loop through 'em.
+        """
+        artists = {}
+        for song in self.song_set.all():
+            if (song.group and song.group.normname != self.artist.normname and
+                    song.group not in artists):
+                artists[song.group] = True
+            if (song.conductor and song.conductor.normname != self.artist.normname and
+                    song.conductor not in artists):
+                artists[song.conductor] = True
+            if (song.composer and song.composer.normname != self.artist.normname and
+                    song.composer not in artists):
+                artists[song.composer] = True
+        return sorted(artists.keys())
+
+    def get_secondary_artists_tuple(self):
         """
         Returns a tuple containing lists of artists who are in our
         "secondary" artist fields of group, conductor, and composer.
