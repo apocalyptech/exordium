@@ -1,4 +1,5 @@
 django
 mutagen
+Pillow
 django-tables2
 django-dynamic-preferences

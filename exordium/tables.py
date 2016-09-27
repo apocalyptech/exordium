@@ -24,12 +24,17 @@ class AlbumTable(tables.Table):
         format='F j, Y',
         #format='F j, Y g:i A',
     )
+    img = tables.TemplateColumn(
+        verbose_name='',
+        orderable=False,
+        template_name='exordium/album_image_list.html',
+    )
 
     class Meta:
 
         model = Album
         attrs = {'class': 'paleblue'}
-        fields = ['artist', 'name', 'year', 'time_added']
+        fields = ['img', 'artist', 'name', 'year', 'time_added']
 
 class SongTable(tables.Table):
 

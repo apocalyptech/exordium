@@ -1,17 +1,17 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views import generic
 from django.utils.decorators import method_decorator
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.urls import reverse
 from django.template import loader, Context
-from django.http import StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, Http404
 
 from django_tables2 import RequestConfig
 
 from dynamic_preferences.registries import global_preferences_registry
 
-from .models import Artist, Album, Song, App
+from .models import Artist, Album, Song, App, AlbumArt
 from .tables import ArtistTable, AlbumTable, SongTable
 
 # Create your views here.
@@ -234,3 +234,61 @@ class LibraryUpdateView(LibraryActionView):
     exordium_title = 'Update/Clean Libraries'
     update_func = staticmethod(App.update)
 
+class OriginalAlbumArtView(generic.View):
+    """
+    Class to handle showing the original album art for an
+    album.  Just a weird passthrough to the filesystem.
+    Not Django-approved!
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        The main request!
+        """
+
+        # We don't actually care about the extension
+        extension = kwargs['extension']
+
+        # Grab the album.  Send a 404 if it doesn't exist.
+        try:
+            albumid = int(kwargs['albumid'])
+        except ValueError:
+            albumid = -1
+        album = get_object_or_404(Album, pk=albumid)
+
+        filename = album.get_original_art_filename()
+        if filename:
+            with open(filename, 'rb') as df:
+                return HttpResponse(df.read(), content_type=album.art_mime)
+        else:
+            return HttpResponse('Nothing doing')
+
+class AlbumArtView(generic.View):
+    """
+    Class to handle showing album art.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        The main request!
+        """
+
+        # What size have we been requested
+        size = kwargs['size']
+        if size not in [t[0] for t in AlbumArt.SIZE_CHOICES]:
+            # TODO: this should do something more intelligent
+            raise Http404('Invalid size choice: %s' % (size))
+
+        # Grab the album.  Send a 404 if it doesn't exist.
+        try:
+            albumid = int(kwargs['albumid'])
+        except ValueError:
+            albumid = -1
+        album = get_object_or_404(Album, pk=albumid)
+
+        # Try to grab the album art and display it
+        art = AlbumArt.get_or_create(album, size)
+        if art:
+            return HttpResponse(art.image, content_type='image/jpeg')
+        else:
+            return HttpResponse('Nothing doing')
