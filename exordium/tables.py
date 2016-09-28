@@ -179,6 +179,7 @@ class SongTableNoAlbum(SongTable):
         attrs = {'class': 'paleblue', 'id': 'songtable'}
         show_footer = True
         fields = ['tracknum', 'artist', 'title', 'length', 'dl']
+        per_page = 100
 
 class SongTableNoAlbumNoTracknum(SongTable):
 
@@ -187,3 +188,4 @@ class SongTableNoAlbumNoTracknum(SongTable):
         attrs = {'class': 'paleblue', 'id': 'songtable'}
         show_footer = True
         fields = ['artist', 'title', 'length', 'dl']
+        per_page = 100
