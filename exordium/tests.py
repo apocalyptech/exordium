@@ -424,6 +424,7 @@ class BasicAddTests(ExordiumTests):
 
         song = Song.objects.get()
         self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.normtitle, 'title')
         self.assertEqual(song.year, 1970)
         self.assertEqual(song.tracknum, 1)
         self.assertEqual(song.album.name, 'Album')
@@ -1318,6 +1319,18 @@ class BasicAddTests(ExordiumTests):
         song = Song.objects.get()
         self.assertEqual(song.title, 'Title')
 
+    def test_add_mp3_normalize_title(self):
+        """
+        Test to ensure that song title normalization is working properly.
+        """
+        self.add_mp3(artist='Artist', title='Title: øÆ & ü')
+        self.run_add()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title: øÆ & ü')
+        self.assertEqual(song.normtitle, 'title: oae and u')
+
     def test_add_mp3_no_album(self):
         """
         Adds an mp3 without an album to check that it's properly sorted
@@ -1891,13 +1904,14 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song.title, 'Title')
 
         # Now make some changes.
-        self.update_mp3(filename='song.mp3', title='New Title')
+        self.update_mp3(filename='song.mp3', title='New Title Æ')
         self.run_update()
 
         # Now the real verifications
         song = Song.objects.get()
         self.assertEqual(song.artist.name, 'Artist')
-        self.assertEqual(song.title, 'New Title')
+        self.assertEqual(song.title, 'New Title Æ')
+        self.assertEqual(song.normtitle, 'new title ae')
 
     def test_basic_album_update(self):
         """

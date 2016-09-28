@@ -122,7 +122,10 @@ class SearchView(TitleTemplateView):
             RequestConfig(self.request).configure(table)
             context['album_results'] = table
 
-        songs = Song.objects.filter(title__icontains=search).order_by('title')
+        songs = Song.objects.filter(
+            Q(title__icontains=search) |
+            Q(normtitle__icontains=App.norm_name(search))
+        ).order_by('title')
         if songs.count() > 0:
             show_songs = True
             table = SongTableWithAlbumNoTracknum(songs, prefix='song-')

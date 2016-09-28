@@ -13,7 +13,6 @@ be good to keep track of what I've been thinking about.
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * ETA on library add
-* Searching fixes (should go after normnames as well, sorting, etc)
 * Extra details on album song list (format, bitrate, etc)
   (something else for user prefs, possibly)
 * Album art is being loaded multiple times for the same

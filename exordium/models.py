@@ -516,6 +516,7 @@ class Song(models.Model):
     artist.verbose_name = 'Artist'
     title = models.CharField(max_length=255)
     title.verbose_name = 'Title'
+    normtitle = models.CharField(max_length=255)
     year = models.IntegerField()
     tracknum = models.SmallIntegerField('#')
     group = models.ForeignKey(Artist, on_delete=models.CASCADE,
@@ -605,6 +606,14 @@ class Song(models.Model):
         full_filename = self.full_filename()
         stat_result = os.stat(full_filename)
         return int(stat_result.st_mtime) != self.time_updated
+
+    def set_title(self, title):
+        """
+        Sets our title, and also sets the normalized version (used for
+        searching via the web UI)
+        """
+        self.title = title
+        self.normtitle = App.norm_name(title)
 
     def set_artist(self, artist):
         """
@@ -732,7 +741,7 @@ class Song(models.Model):
         self.raw_conductor = new_song.raw_conductor
         self.raw_composer = new_song.raw_composer
         self.year = new_song.year
-        self.title = new_song.title
+        self.set_title(new_song.title)
         self.tracknum = new_song.tracknum
         self.bitrate = new_song.bitrate
         self.mode = new_song.mode
@@ -921,6 +930,7 @@ class Song(models.Model):
             raw_composer = raw_composer,
             year = year,
             title = title,
+            normtitle = App.norm_name(title),
             tracknum = tracknum,
             bitrate = bitrate,
             mode = mode,
