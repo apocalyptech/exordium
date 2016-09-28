@@ -2,9 +2,6 @@ Now that my mental "TODO" contains a few more things than just
 "make this app at least marginally functional," I figure it'll
 be good to keep track of what I've been thinking about.
 
-* Various sorting/table fixes on most of our views
-  * Max records should probably be increased to 100 or so
-  * Include songs in Artist view
 * Album downloads as zipfiles
 * Tests for views
 * Streaming (html5 player)
@@ -32,3 +29,6 @@ be good to keep track of what I've been thinking about.
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
 * "Random albums" page?
+* Should probably be using tmpdir stuff for test library,
+  rather than a subdir of 'testdata'.  Works well enough
+  for development but would fail if installed For Real.

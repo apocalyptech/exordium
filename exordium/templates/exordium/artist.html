@@ -4,4 +4,10 @@
 
 {% block body %}
 {% render_table albums %}
+
+{% if have_songs %}
+<h2>Songs by {{ artist }}</h2>
+{% render_table songs %}
+{% endif %}
+
 {% endblock %}

@@ -142,6 +142,7 @@ class ArtistView(TitleDetailView):
 
     def get_context_data(self, **kwargs):
         context = super(ArtistView, self).get_context_data(**kwargs)
+
         albums = Album.objects.filter(
             Q(artist=self.object) |
             Q(song__artist=self.object) |
@@ -149,9 +150,28 @@ class ArtistView(TitleDetailView):
             Q(song__conductor=self.object) |
             Q(song__composer=self.object)
         ).distinct().order_by('artist__various', 'miscellaneous', 'name')
-        table = AlbumTable(albums)
+        table = AlbumTable(albums, prefix='album-')
         RequestConfig(self.request).configure(table)
         context['albums'] = table
+
+        # If the artist has too many songs, this query takes forever.
+        # Only show songs if we've got <= 500 tracks.
+        song_query = Song.objects.filter(
+            Q(artist=self.object) |
+            Q(group=self.object) |
+            Q(conductor=self.object) |
+            Q(composer=self.object)
+        )
+        num_songs = song_query.count()
+        if num_songs <= 500:
+            songs = song_query.order_by('title')
+            song_table = SongTableWithAlbumNoTracknum(songs, prefix='song-')
+            RequestConfig(self.request).configure(song_table)
+            context['songs'] = song_table
+            context['have_songs'] = True
+        else:
+            context['have_songs'] = False
+
         context['exordium_title'] = 'Albums by %s' % (self.object)
         return context
 
