@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # vim: set expandtab tabstop=4 shiftwidth=4:
 
+import datetime
 from django.contrib.staticfiles.templatetags.staticfiles import static
 import django_tables2 as tables
 from .models import Artist, Album, Song
@@ -35,6 +36,16 @@ class AlbumTable(tables.Table):
         orderable=False,
         template_name='exordium/album_image_list.html',
     )
+    tracks = tables.Column(
+        verbose_name='Tracks',
+        orderable=False,
+        empty_values=(),
+    )
+    time = tables.Column(
+        verbose_name='Length',
+        orderable=False,
+        empty_values=(),
+    )
 
     def render_year(self, value=0, **kwargs):
         """
@@ -46,11 +57,31 @@ class AlbumTable(tables.Table):
         else:
             return '%d' % (value)
 
+    def render_tracks(self, record, **kwargs):
+        """
+        Get a count of tracks for this album
+        """
+        return(record.song_set.count())
+
+    def render_time(self, record, **kwargs):
+        """
+        Get a total time for this album
+        """
+        #delta = datetime.timedelta(seconds=record.get_total_time())
+        length = record.get_total_time()
+        minutes, seconds = divmod(length, 60)
+        if minutes > 60:
+            hours, minutes = divmod(minutes, 60)
+            return('%dh%dm' % (hours, minutes))
+        else:
+            return('%dm' % (minutes))
+
     class Meta:
 
         model = Album
-        attrs = {'class': 'paleblue'}
-        fields = ['img', 'artist', 'name', 'year', 'time_added']
+        per_page = 50
+        attrs = {'class': 'paleblue', 'id': 'albumtable'}
+        fields = ['img', 'artist', 'name', 'tracks', 'time', 'year', 'time_added']
 
 class SongTable(tables.Table):
 

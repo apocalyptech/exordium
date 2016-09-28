@@ -359,6 +359,14 @@ class Album(models.Model):
         else:
             return None
 
+    def get_total_time(self):
+        """
+        Returns the total time taken up by the tracks in this album
+        """
+        return self.song_set.aggregate(
+                album_length=models.Sum(models.F('length'),
+                    output_field=models.IntegerField()))['album_length']
+
 class AlbumArt(models.Model):
     """
     Class to hold album art.  Contrary to every objection that the Django

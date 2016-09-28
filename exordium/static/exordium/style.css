@@ -40,3 +40,6 @@ h1 {
 .album_info_cell {
     vertical-align: top;
 }
+#albumtable .tracks, #albumtable .time, #albumtable .year {
+    text-align: center;
+}

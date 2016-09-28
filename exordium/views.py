@@ -128,11 +128,11 @@ class ArtistView(TitleDetailView):
         context = super(ArtistView, self).get_context_data(**kwargs)
         albums = Album.objects.filter(
             Q(artist=self.object) |
-            Q(pk__in = [song.album.pk for song in Song.objects.filter(artist=self.object)]) |
-            Q(pk__in = [song.album.pk for song in Song.objects.filter(group=self.object)]) |
-            Q(pk__in = [song.album.pk for song in Song.objects.filter(conductor=self.object)]) |
-            Q(pk__in = [song.album.pk for song in Song.objects.filter(composer=self.object)])
-        ).order_by('year')
+            Q(song__artist=self.object) |
+            Q(song__group=self.object) |
+            Q(song__conductor=self.object) |
+            Q(song__composer=self.object)
+        ).distinct().order_by('artist__various', 'miscellaneous', 'name')
         table = AlbumTable(albums)
         RequestConfig(self.request).configure(table)
         context['albums'] = table
@@ -197,9 +197,9 @@ class LibraryView(TitleTemplateView):
         prefs = global_preferences_registry.manager()
         context['base_path'] = prefs['exordium__base_path']
         context['media_url'] = prefs['exordium__media_url']
-        context['count_artists'] = Artist.objects.all().count()
-        context['count_albums'] = Album.objects.all().count()
-        context['count_songs'] = Song.objects.all().count()
+        context['count_artists'] = Artist.objects.count()
+        context['count_albums'] = Album.objects.count()
+        context['count_songs'] = Song.objects.count()
         return context
 
 class LibraryActionView(generic.View):
