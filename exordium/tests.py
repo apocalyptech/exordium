@@ -9,6 +9,7 @@ import shutil
 import pathlib
 
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
+from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
 from .models import Artist, Album, Song, App, AlbumArt
@@ -46,7 +47,7 @@ class ExordiumTests(TestCase):
         testing files exist, and then set up the base library path.
         """
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
-                'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_100.jpg']:
+                'silence.ogg', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         if os.path.exists(self.library_path):
@@ -202,6 +203,152 @@ class ExordiumTests(TestCase):
             tags.delall('TDRL')
             tags.delall('TYER')
             tags.add(TDRC(encoding=3, text=str(year)))
+
+        # Save
+        tags.save()
+
+        # Check on mtime update and manually fix it if it's not updated
+        stat_result = os.stat(full_filename)
+        ending_mtime = int(stat_result.st_mtime)
+        if starting_mtime == ending_mtime:
+            new_mtime = ending_mtime + 1
+            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+
+    def add_ogg(self, path='', filename='file.ogg', artist='', album='',
+            title='', tracknum=None, year=None, group='', conductor='', composer='',
+            basefile='silence.ogg', apply_tags=True):
+        """
+        Adds a new ogg with the given parameters to our library.
+
+        Pass in `False` for `apply_tags` to only use whatever tags happen to
+        be present in the source basefile.
+        """
+        if path != '' and ('..' in path or path[0] == '/'):
+            raise Exception('Given path "%s" is invalid' % (path))
+
+        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
+            raise Exception('Invalid basefile name: %s' % (basefile))
+
+        src_filename = os.path.join(self.testdata_path, basefile)
+        if not os.path.exists(src_filename):
+            raise Exception('Source filename %s is not found' % (src_filename))
+
+        full_path = os.path.join(self.library_path, path)
+        full_filename = os.path.join(full_path, filename)
+        os.makedirs(full_path, exist_ok=True)
+        shutil.copyfile(src_filename, full_filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        # Finish here if we've been told to.
+        if not apply_tags:
+            return
+
+        # Apply the tags as specified
+        tags = OggVorbis(full_filename)
+        tags['ARTIST'] = artist
+        tags['ALBUM'] = album
+        tags['TITLE'] = title
+
+        if group != '':
+            tags['ENSEMBLE'] = group
+        if conductor != '':
+            tags['CONDUCTOR'] = conductor
+        if composer != '':
+            tags['COMPOSER'] = composer
+        if tracknum is not None:
+            tags['TRACKNUMBER'] = str(tracknum)
+        if year is not None:
+            tags['DATE'] = str(year)
+
+        # Save to our filename
+        tags.save()
+
+    def update_ogg(self, filename, artist=None, album=None,
+            title=None, tracknum=None, year=None,
+            group=None, conductor=None, composer=None):
+        """
+        Updates an on-disk ogg with the given tag data.  Any passed-in
+        variable set to None will be ignored.
+
+        If group/conductor/composer is a blank string, those fields will
+        be completely removed from the file.  Any of the other fields set
+        to blank will leave the tag in place.
+
+        Will ensure that the file's mtime is updated.
+        """
+
+        if len(filename) < 3 or '..' in filename or filename[0] == '/':
+            raise Exception('Given filename "%s" is invalid' % (filename))
+
+        full_filename = os.path.join(self.library_path, filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        starting_mtime = int(os.stat(full_filename).st_mtime)
+
+        tags = OggVorbis(full_filename)
+
+        if artist is not None:
+            try:
+                del tags['ARTIST']
+            except KeyError:
+                pass
+            tags['ARTIST'] = artist
+
+        if album is not None:
+            try:
+                del tags['ALBUM']
+            except KeyError:
+                pass
+            tags['ALBUM'] = album
+
+        if title is not None:
+            try:
+                del tags['TITLE']
+            except KeyError:
+                pass
+            tags['TITLE'] = title
+
+        if group is not None:
+            try:
+                del tags['ENSEMBLE']
+            except KeyError:
+                pass
+            if group != '':
+                tags['ENSEMBLE'] = group
+
+        if conductor is not None:
+            try:
+                del tags['CONDUCTOR']
+            except KeyError:
+                pass
+            if conductor != '':
+                tags['CONDUCTOR'] = conductor
+
+        if composer is not None:
+            try:
+                del tags['COMPOSER']
+            except KeyError:
+                pass
+            if composer != '':
+                tags['COMPOSER'] = composer
+
+        if tracknum is not None:
+            try:
+                del tags['TRACKNUMBER']
+            except KeyError:
+                pass
+            tags['TRACKNUMBER'] = str(tracknum)
+
+        if year is not None:
+            try:
+                del tags['DATE']
+            except KeyError:
+                pass
+            try:
+                del tags['YEAR']
+            except KeyError:
+                pass
+            tags['DATE'] = str(year)
 
         # Save
         tags.save()
@@ -436,6 +583,77 @@ class BasicAddTests(ExordiumTests):
         objects are all populated properly
         """
         self.add_mp3(artist='Artist', title='Title', album='Album',
+            group='Group', conductor='Conductor', composer='Composer',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        self.assertEqual(Song.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Artist.objects.count(), 5)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.name, 'Group')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.name, 'Conductor')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.group.name, 'Group')
+        self.assertEqual(song.conductor.name, 'Conductor')
+        self.assertEqual(song.composer.name, 'Composer')
+
+    def test_add_ogg_simple_tag_check(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_ogg(artist='Artist', title='Title', album='Album',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.normtitle, 'title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+
+    def test_add_classical_simple_tag_check_ogg(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_ogg(artist='Artist', title='Title', album='Album',
             group='Group', conductor='Conductor', composer='Composer',
             year=1970, tracknum=1)
         self.run_add()
@@ -1905,6 +2123,30 @@ class BasicUpdateTests(ExordiumTests):
 
         # Now make some changes.
         self.update_mp3(filename='song.mp3', title='New Title Æ')
+        self.run_update()
+
+        # Now the real verifications
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'New Title Æ')
+        self.assertEqual(song.normtitle, 'new title ae')
+
+    def test_basic_update_ogg(self):
+        """
+        Test a simple track update to the title, on an ogg file.  (This
+        is really more testing our ogg update function than it is Exordium,
+        at this point.)
+        """
+        self.add_ogg(filename='song.ogg', artist='Artist', title='Title')
+        self.run_add()
+
+        # Quick verification
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+
+        # Now make some changes.
+        self.update_ogg(filename='song.ogg', title='New Title Æ')
         self.run_update()
 
         # Now the real verifications

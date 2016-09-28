@@ -10,10 +10,12 @@ be good to keep track of what I've been thinking about.
   * "Composer, tracks 1-5, 8: foo", etc.
 * ETA on library add
 * Extra details on album song list (format, bitrate, etc)
-  (something else for user prefs, possibly)
+  (something else for user prefs.  Will have to wait until
+  I figure out a *reasonable* way to have dynamic column
+  definitions in django-tables2.  I don't want to define
+  a different class for each possibility.)
 * Album art is being loaded multiple times for the same
   album during add()
-* Ogg support
 * Use normnames in URLs rather than IDs?
 * Improve the Django admin area and make it actually-useful
 * Might be nice to support some artist groupings.

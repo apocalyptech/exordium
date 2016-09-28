@@ -885,7 +885,55 @@ class Song(models.Model):
                 mode = Song.ABR
             else:
                 mode = Song.CBR
+
+        elif str(type(audio)) == "<class 'mutagen.oggvorbis.OggVorbis'>":
+
+            if 'artist' in audio:
+                artist_full = str(audio['artist'][0]).strip().strip("\x00")
+                (prefix, raw_artist) = Artist.extract_prefix(artist_full)
+            if 'ensemble' in audio:
+                group = str(audio['ensemble'][0]).strip().strip("\x00")
+                (prefix, raw_group) = Artist.extract_prefix(group)
+            if 'conductor' in audio:
+                conductor = str(audio['conductor'][0]).strip().strip("\x00")
+                (prefix, raw_conductor) = Artist.extract_prefix(conductor)
+            if 'composer' in audio:
+                composer = str(audio['composer'][0]).strip().strip("\x00")
+                (prefix, raw_composer) = Artist.extract_prefix(composer)
+            if 'album' in audio:
+                album = str(audio['album'][0]).strip().strip("\x00")
+            if 'title' in audio:
+                title = str(audio['title'][0]).strip().strip("\x00")
+            if 'tracknumber' in audio:
+                tracknum = str(audio['tracknumber'][0]).strip().strip("\x00")
+                # Not sure if slashes like this will ever show up in Ogg tags,
+                # but we'll process it anyway.
+                if '/' in tracknum:
+                    tracknum = tracknum.split('/', 2)[0]
+                try:
+                    tracknum = int(tracknum)
+                except ValueError:
+                    tracknum = 0
+
+            try:
+                if 'date' in audio:
+                    year = int(str(audio['date'][0]).strip().strip("\x00"))
+                elif 'year' in audio:
+                    # Not sure if 'year' is a tag which'll ever show up, but just
+                    # in case, here it is.
+                    year = int(str(audio['year'][0]).strip().strip("\x00"))
+            except ValueError:
+                year = 0
+
+            filetype = Song.OGG
+            length = audio.info.length
+            bitrate = audio.info.bitrate
+            
+            # Ogg Vorbis is always VBR
+            mode = Song.VBR
+
         else:
+
             retlines.append((App.STATUS_ERROR,
                 'ERROR: audio type of %s not yet understood: %s' % (
                     short_filename, type(audio))))
