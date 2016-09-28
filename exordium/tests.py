@@ -3,12 +3,15 @@ from django.urls import reverse
 
 from dynamic_preferences.registries import global_preferences_registry
 
+import io
 import os
 import shutil
 import pathlib
-from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 
-from .models import Artist, Album, Song, App
+from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
+from PIL import Image
+
+from .models import Artist, Album, Song, App, AlbumArt
 
 # These two imports are just here in case we want to examine SQL while running tests.
 # If so, set "settings.DEBUG = True" in the test and then use connection.queries
@@ -53,12 +56,17 @@ class ExordiumTests(TestCase):
         self.prefs = global_preferences_registry.manager()
         self.prefs['exordium__base_path'] = self.library_path
 
+        # We have one test which alters the following value, which
+        # will stay changed between tests unless we restore it.
+        self.saved_album_size = AlbumArt.resolutions[AlbumArt.SZ_ALBUM]
+
     def tearDown(self):
         """
         Run automatically at the test conclusion.  Get rid of our base
         library.
         """
         shutil.rmtree(self.library_path)
+        AlbumArt.resolutions[AlbumArt.SZ_ALBUM] = self.saved_album_size
 
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
             title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
@@ -263,6 +271,19 @@ class ExordiumTests(TestCase):
         if starting_mtime == ending_mtime:
             new_mtime = ending_mtime + 1
             os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+
+    def get_file_contents(self, filename):
+        """
+        Retrieves file contents from the named file in the library
+        """
+
+        if len(filename) < 3 or '..' in filename or filename[0] == '/':
+            raise Exception('Given filename "%s" is invalid' % (filename))
+
+        full_filename = os.path.join(self.library_path, filename)
+
+        with open(full_filename, 'rb') as df:
+            return df.read()
 
     def add_art(self, path='', filename='cover.jpg', basefile='cover_400.jpg'):
         """
@@ -4889,6 +4910,340 @@ class AlbumArtTests(ExordiumTests):
         self.assertEqual(Album.objects.all().count(), 1)
         al = Album.objects.get()
         self.assertEqual(al.art_filename, 'cover.jpg')
+
+    def test_album_art_view_retrieve_original_jpg(self):
+        """
+        Test retrieval of the fullsize cover art from a URL
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.jpg', filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:origalbumart', args=(al.pk, al.art_ext))
+        response = self.client.get(url)
+        filedata = self.get_file_contents('cover.jpg')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertEqual(response.content, filedata, 'File data differs')
+
+    def test_album_art_view_retrieve_original_gif(self):
+        """
+        Test retrieval of the fullsize cover art from a URL
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.gif', filename='cover.gif')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:origalbumart', args=(al.pk, al.art_ext))
+        response = self.client.get(url)
+        filedata = self.get_file_contents('cover.gif')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/gif')
+        self.assertEqual(response.content, filedata, 'File data differs')
+
+    def test_album_art_view_retrieve_original_png(self):
+        """
+        Test retrieval of the fullsize cover art from a URL
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.png', filename='cover.png')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:origalbumart', args=(al.pk, al.art_ext))
+        response = self.client.get(url)
+        filedata = self.get_file_contents('cover.png')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertEqual(response.content, filedata, 'File data differs')
+
+    def test_album_art_view_retrieve_original_no_cover(self):
+        """
+        Test retrieval of the fullsize cover art from a URL, when we don't
+        actually have an image to return.  Should throw a 404 (our "no
+        album art found" graphic is displayed via templates, not code)
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+        url = reverse('exordium:origalbumart', args=(al.pk, 'jpg'))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_album_art_view_retrieve_original_extension_mismatch(self):
+        """
+        Test retrieval of the fullsize cover art from a URL, with
+        a mismatched extension on the original filename
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(basefile='cover_400.jpg', filename='cover.png')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:origalbumart', args=(al.pk, al.art_ext))
+        response = self.client.get(url)
+        filedata = self.get_file_contents('cover.png')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertEqual(response.content, filedata, 'File data differs')
+
+    def test_album_art_generate_album_thumb(self):
+        """
+        Test the creation of an album-sized thumbnail for our art
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        size = AlbumArt.SZ_ALBUM
+        resolution = AlbumArt.resolutions[size]
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:albumart', args=(al.pk, size))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        data = io.BytesIO(response.content)
+        im = Image.open(data)
+        self.assertEqual(im.width, resolution)
+        self.assertEqual(im.height, resolution)
+
+        data.seek(0)
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get(album=al, size=size)
+        self.assertEqual(art.resolution, resolution)
+        self.assertEqual(art.from_mtime, al.art_mtime)
+        self.assertEqual(art.image, data.read())
+
+    def test_album_art_generate_list_thumb(self):
+        """
+        Test the creation of a list-sized thumbnail for our art
+        """
+        self.longMessage = False
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        size = AlbumArt.SZ_LIST
+        resolution = AlbumArt.resolutions[size]
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        url = reverse('exordium:albumart', args=(al.pk, size))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        data = io.BytesIO(response.content)
+        im = Image.open(data)
+        self.assertEqual(im.width, resolution)
+        self.assertEqual(im.height, resolution)
+
+        data.seek(0)
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get(album=al, size=size)
+        self.assertEqual(art.resolution, resolution)
+        self.assertEqual(art.from_mtime, al.art_mtime)
+        self.assertEqual(art.image, data.read())
+
+    def test_album_art_attempt_invalid_thumb_generation(self):
+        """
+        Test the creation of an album art thumbnail for a type of
+        thumbnail we don't actually support.  Should generate a 404.
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        url = reverse('exordium:albumart', args=(al.pk, 'foobar'))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(AlbumArt.objects.count(), 0)
+
+    def test_album_art_attempt_unknown_album_thumb_retrieval(self):
+        """
+        Test the retrieval of an album art thumbnail for an album
+        which doesn't exist.  Should generate a 404.
+        """
+        self.assertEqual(Album.objects.all().count(), 0)
+        url = reverse('exordium:albumart', args=(42, AlbumArt.SZ_ALBUM))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(AlbumArt.objects.count(), 0)
+
+    def test_album_art_attempt_album_thumb_generation_without_art(self):
+        """
+        Test the creation of an album art thumbnail for an album which
+        doesn't have album art.  Will throw a 404.  (Our "no album art
+        found" graphic is shown via templates, not code.)
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.all().count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, None)
+        url = reverse('exordium:albumart', args=(al.pk, AlbumArt.SZ_ALBUM))
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_album_art_resolution_preset_change(self):
+        """
+        Test what happens when we have an thumbnail but then our
+        preset resolution size changes.  The thumbnail should get
+        regenerated when it's re-requested.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        size = AlbumArt.SZ_ALBUM
+        resolution = AlbumArt.resolutions[size]
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+        url = reverse('exordium:albumart', args=(al.pk, size))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        orig_data = io.BytesIO(response.content)
+        im = Image.open(orig_data)
+        self.assertEqual(im.width, resolution)
+        self.assertEqual(im.height, resolution)
+
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get()
+        self.assertEqual(art.resolution, resolution)
+        art_pk = art.pk
+
+        AlbumArt.resolutions[size] = resolution - 50
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        new_data = io.BytesIO(response.content)
+        im = Image.open(new_data)
+        self.assertEqual(im.width, resolution - 50)
+        self.assertEqual(im.height, resolution - 50)
+
+        orig_data.seek(0)
+        new_data.seek(0)
+        self.assertNotEqual(orig_data, new_data)
+
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get(album=al, size=size)
+        self.assertEqual(art.resolution, resolution - 50)
+        self.assertNotEqual(art_pk, art.pk)
+
+        # Reset the resolutions dict, though we also do this in
+        # the test tearDown, in case our test fails before we
+        # get here.
+        AlbumArt.resolutions[size] = resolution
+
+    def test_album_art_update_after_source_update(self):
+        """
+        Test what happens when we have an thumbnail but then our
+        preset resolution size changes.  The thumbnail should get
+        regenerated when it's re-requested.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        size = AlbumArt.SZ_ALBUM
+        resolution = AlbumArt.resolutions[size]
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+        url = reverse('exordium:albumart', args=(al.pk, size))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        orig_data = io.BytesIO(response.content)
+        im = Image.open(orig_data)
+        self.assertEqual(im.width, resolution)
+        self.assertEqual(im.height, resolution)
+
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get()
+        self.assertEqual(art.resolution, resolution)
+        art_pk = art.pk
+
+        self.touch_file('cover.jpg')
+        self.run_update()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+
+        new_data = io.BytesIO(response.content)
+        im = Image.open(new_data)
+        self.assertEqual(im.width, resolution)
+        self.assertEqual(im.height, resolution)
+
+        orig_data.seek(0)
+        new_data.seek(0)
+        self.assertNotEqual(orig_data, new_data)
+
+        self.assertEqual(AlbumArt.objects.count(), 1)
+        art = AlbumArt.objects.get(album=al, size=size)
+        self.assertEqual(art.resolution, resolution)
+        self.assertNotEqual(art_pk, art.pk)
 
 class BasicAlbumArtTests(TestCase):
     """

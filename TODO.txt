@@ -14,7 +14,6 @@ be good to keep track of what I've been thinking about.
     Artist page, once we have that in there) (and also on non-
     album track "albums")
 * Album downloads as zipfiles
-* Tests for AlbumArt objects
 * Tests for views
 * Streaming (html5 player)
 * Hide "live" albums (implies user preferences, too)

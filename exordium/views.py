@@ -270,7 +270,7 @@ class OriginalAlbumArtView(generic.View):
             with open(filename, 'rb') as df:
                 return HttpResponse(df.read(), content_type=album.art_mime)
         else:
-            return HttpResponse('Nothing doing')
+            raise Http404('Album art not found for album "%s / %s"' % (album.artist, album))
 
 class AlbumArtView(generic.View):
     """
@@ -300,4 +300,4 @@ class AlbumArtView(generic.View):
         if art:
             return HttpResponse(art.image, content_type='image/jpeg')
         else:
-            return HttpResponse('Nothing doing')
+            raise Http404('Album art not found for album "%s / %s"' % (album.artist, album))
