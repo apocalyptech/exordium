@@ -221,6 +221,8 @@ class AlbumDownloadView(TitleDetailView):
                 (filenames, zipfile) = self.object.create_zip()
                 context['filenames'] = filenames
                 context['zip_file'] = zipfile
+            except App.AlbumZipfileError as e:
+                context['error'] = 'There was a problem generating the zipfile: %s' % (e.orig_exception)
             except App.AlbumZipfileNotSupported:
                 context['error'] = 'Exordium is not currently configured to allow zipfile creation'
             except App.AlbumZipfileAlreadyExists as e:

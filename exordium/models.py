@@ -420,22 +420,40 @@ class Album(models.Model):
         # like upgrading.  So, if the common prefix doesn't end with a /,
         # don't even bother.  Just pretend we don't have a common path at all.
         common_dir = os.path.commonprefix(filenames_raw)
-        zip_container = None
-        if common_dir == '' or common_dir[-1] != '/':
-            common_dir = ''
+        if len(common_dir) > 0:
+            common_dir = os.path.dirname(common_dir)
+        if common_dir == '':
             for filename in filenames_raw:
                 filenames_inzip.append(filename)
         else:
-            zip_container = os.path.basename(common_dir[:-1])
+            zip_container = os.path.basename(common_dir)
             for filename in filenames_raw:
                 filenames_inzip.append(
-                    os.path.join(zip_container, filename[len(common_dir):])
+                    os.path.join(zip_container, filename[len(common_dir)+1:])
                 )
 
         # Now actually get to work
-        with zipfile.ZipFile(zip_full, 'w') as zf:
-            for (raw, inzip) in zip(filenames_raw, filenames_inzip):
-                zf.write(raw, arcname=inzip)
+        try:
+            with zipfile.ZipFile(zip_full, 'w') as zf:
+                for (raw, inzip) in zip(filenames_raw, filenames_inzip):
+                    try:
+                        zf.write(raw, arcname=inzip)
+                    except ValueError:
+                        # Zipfiles can't support dates before 1980, and it seems
+                        # that I've got at least a file or two whose date is before
+                        # then.  Those should be updated, certainly, but this is
+                        # an annoying exception with no GOOD way to go about it
+                        # apart from loading in the file data ourself.  Lame.  Would
+                        # be nice if there was a flag that said "give invalid dates
+                        # some fake info" instead.
+                        with open(raw, 'rb') as df:
+                            zf.writestr(inzip, df.read())
+        except Exception as e:
+            try:
+                os.remove(zip_full)
+            except Exception:
+                pass
+            raise App.AlbumZipfileError(e)
 
         # Now get out of here
         return (filenames_inzip, zip_filename)
@@ -815,6 +833,14 @@ class Song(models.Model):
         # Now return the artist and album we got from the new tags.
         return (artist_full, group, conductor, composer, album, self)
 
+    def get_download_url(self):
+        """
+        Returns a URL direct to this track for downloading, based on
+        our prefs.
+        """
+        App.ensure_prefs()
+        return '%s/%s' % (App.prefs['exordium__media_url'], self.filename)
+
     def set_album_secondary_artist_counts(self, num_groups=0, num_conductors=0, num_composers=0):
         """
         This function is stupid, and just in support of showing tracklists
@@ -1082,6 +1108,15 @@ class App(object):
         'JPEG': ('image/jpeg', 'jpg'),
         'GIF': ('image/gif', 'gif'),
     }
+
+    class AlbumZipfileError(Exception):
+        """
+        Custom exception to indicate that there was a problem zipping
+        """
+
+        def __init__(self, orig_exception, *args, **kwargs):
+            super(App.AlbumZipfileError, self).__init__(*args, **kwargs)
+            self.orig_exception = orig_exception
 
     class AlbumZipfileNotSupported(Exception):
         """
