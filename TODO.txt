@@ -37,4 +37,10 @@ be good to keep track of what I've been thinking about.
   threading?  For instance for a bit I could pretty
   repeatably go back and forth between home/artistbrowse
   and have one with show_live and the other without.
+  edit: yep, I'm guessing it's to do with having multiple
+  WSGI threads running.  Global options can end up not
+  "taking" on the other thread as well, it looks like.
+  The easiest to play with is probably the zipfile
+  path - change it to something invalid and note that
+  sometimes you'll get links, sometimes you won't.
 * Make 404s look nicer

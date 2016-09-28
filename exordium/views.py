@@ -199,6 +199,8 @@ class AlbumView(TitleDetailView):
         else:
             table = SongTableNoAlbum(data)
         RequestConfig(self.request).configure(table)
+        if App.support_zipfile():
+            context['show_download_button'] = True
         context['songs'] = table
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
         context['groups'] = groups
@@ -212,7 +214,7 @@ class AlbumDownloadView(TitleDetailView):
 
     def get_context_data(self, **kwargs):
         context = super(AlbumDownloadView, self).get_context_data(**kwargs)
-        context['is_download'] = True
+        context['show_download_button'] = False
         (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
         if App.support_zipfile():
             try:

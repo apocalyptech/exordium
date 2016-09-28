@@ -38,7 +38,7 @@
 
 <p>Added on: <strong>{{ album.time_added }}</strong></p>
 
-{% if not is_download %}
+{% if show_download_button %}
 <form method="GET" action="{% url 'exordium:albumdownload' album.pk %}">
     <input type="submit" value="Download as Zipfile" />
 </form>
