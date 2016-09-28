@@ -89,19 +89,33 @@ class SearchView(TitleTemplateView):
         if len(search) > 80:
             search = search[:80]
 
+        # Add our query to the context
+        context['q'] = search
+
+        # Require at least three characters in the search string
+        if len(search) < 3:
+            context['length_error'] = True
+            return context
+
         # Now do some searching
         show_artists = False
         show_albums = False
         show_songs = False
 
-        artists = Artist.objects.filter(name__icontains=search).order_by('name')
+        artists = Artist.objects.filter(
+            Q(name__icontains=search) |
+            Q(normname__icontains=App.norm_name(search))
+        ).order_by('name')
         if artists.count() > 0:
             show_artists = True
             table = ArtistTable(artists, prefix='artist-')
             RequestConfig(self.request).configure(table)
             context['artist_results'] = table
 
-        albums = Album.objects.filter(name__icontains=search).order_by('name')
+        albums = Album.objects.filter(
+            Q(name__icontains=search) |
+            Q(normname__icontains=App.norm_name(search))
+        ).order_by('name')
         if albums.count() > 0:
             show_albums = True
             table = AlbumTable(albums, prefix='album-')
@@ -117,7 +131,6 @@ class SearchView(TitleTemplateView):
 
         context['found_results'] = (show_artists or show_albums or show_songs)
 
-        context['q'] = search
         return context
 
 class ArtistView(TitleDetailView):

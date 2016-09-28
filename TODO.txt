@@ -32,3 +32,4 @@ be good to keep track of what I've been thinking about.
 * General query cleanup in views.
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
+* "Random albums" page?

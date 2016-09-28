@@ -4,6 +4,9 @@
 
 {% block body %}
 <p>Search results for <strong>"{{ q }}"</strong></p>
+{% if length_error %}
+<p class="red">Search strings must be at least three characters</p>
+{% else %}
 {% if found_results %}
 
 {% if artist_results %}
@@ -23,5 +26,6 @@
 
 {% else %}
 <p class="red">No results found!</p>
+{% endif %}
 {% endif %}
 {% endblock %}
