@@ -183,7 +183,7 @@ class ArtistView(TitleDetailView):
 
 class AlbumView(TitleDetailView):
     model = Album
-    template_name = 'exordium/album.html'
+    template_name = 'exordium/album_info.html'
 
     def get_context_data(self, **kwargs):
         context = super(AlbumView, self).get_context_data(**kwargs)
@@ -200,6 +200,36 @@ class AlbumView(TitleDetailView):
             table = SongTableNoAlbum(data)
         RequestConfig(self.request).configure(table)
         context['songs'] = table
+        context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
+        context['groups'] = groups
+        context['conductors'] = conductors
+        context['composers'] = composers
+        return context
+
+class AlbumDownloadView(TitleDetailView):
+    model = Album
+    template_name = 'exordium/album_download.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(AlbumDownloadView, self).get_context_data(**kwargs)
+        context['is_download'] = True
+        (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
+        if App.support_zipfile():
+            try:
+                (filenames, zipfile) = self.object.create_zip()
+                context['filenames'] = filenames
+                context['zip_file'] = zipfile
+            except App.AlbumZipfileNotSupported:
+                context['error'] = 'Exordium is not currently configured to allow zipfile creation'
+            except App.AlbumZipfileAlreadyExists as e:
+                context['error'] = 'Zipfile already exists.  You should be able to download with the link below.'
+                context['zip_file'] = e.filename
+                context['zip_mtime'] = e.timestamp
+            finally:
+                if 'zip_file' in context:
+                    context['zip_url'] = '%s/%s' % (App.prefs['exordium__zipfile_url'], context['zip_file'])
+        else:
+            context['error'] = 'Exordium is not currently configured to allow zipfile creation'
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
         context['groups'] = groups
         context['conductors'] = conductors

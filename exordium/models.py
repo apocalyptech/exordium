@@ -3,6 +3,7 @@ import re
 import io
 import hashlib
 import mutagen
+import zipfile
 import datetime
 
 from dynamic_preferences.registries import global_preferences_registry
@@ -378,6 +379,66 @@ class Album(models.Model):
             return '%d:%02d:%02d' % (hours, minutes, seconds)
         else:
             return '%d:%02d' % (minutes, seconds)
+
+    def create_zip(self):
+        """
+        Creates a zipfile of ourselves (if possible) and returns a tuple
+        containing:
+            1) filenames in the zip
+            2) zip filename
+        Can raise one of a few exceptions if things go awry.
+        """
+        
+        # Check to ensure that we're okay to even try this.
+        App.ensure_prefs()
+        if not App.support_zipfile():
+            raise App.AlbumZipfileNotSupported()
+
+        # Then make sure that the file doesn't already exist
+        # (provide a link if it does)
+        zip_dir = App.prefs['exordium__zipfile_path']
+        zip_filename = '%s_-_%s.zip' % (
+            App.norm_filename(str(self.artist)),
+            App.norm_filename(self.name),
+        )
+        zip_full = os.path.join(zip_dir, zip_filename)
+        if os.path.exists(zip_full):
+            timestamp = datetime.datetime.fromtimestamp(os.path.getmtime(zip_full))
+            raise App.AlbumZipfileAlreadyExists(zip_filename, timestamp)
+
+        # Loop through and collect raw filenames
+        songs = self.song_set.order_by('tracknum')
+        filenames_raw = []
+        filenames_inzip = []
+        for song in songs:
+            filenames_raw.append(song.full_filename())
+        if self.has_album_art():
+            filenames_raw.append(self.get_original_art_filename())
+
+        # Find a common directory between all our files.  os.path.commondir()
+        # would be better, but I'm currently on Python 3.4, and don't feel
+        # like upgrading.  So, if the common prefix doesn't end with a /,
+        # don't even bother.  Just pretend we don't have a common path at all.
+        common_dir = os.path.commonprefix(filenames_raw)
+        zip_container = None
+        if common_dir == '' or common_dir[-1] != '/':
+            common_dir = ''
+            for filename in filenames_raw:
+                filenames_inzip.append(filename)
+        else:
+            zip_container = os.path.basename(common_dir[:-1])
+            for filename in filenames_raw:
+                filenames_inzip.append(
+                    os.path.join(zip_container, filename[len(common_dir):])
+                )
+
+        # Now actually get to work
+        with zipfile.ZipFile(zip_full, 'w') as zf:
+            for (raw, inzip) in zip(filenames_raw, filenames_inzip):
+                zf.write(raw, arcname=inzip)
+
+        # Now get out of here
+        return (filenames_inzip, zip_filename)
 
 class AlbumArt(models.Model):
     """
@@ -1010,6 +1071,10 @@ class App(object):
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
     norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðçř“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydcr""\'\'')
+    norm_translation_filename = str.maketrans(
+        'äÄáÁàÀâÂãÃåÅëËéÉèÈêÊẽẼïÏíÍìÌîÎĩĨöÖóÓòÒôÔõÕøØüÜúÚùÙûÛũŨůŮÿŸýÝỳỲŷŶỹỸðÐçřŘ',
+        'aAaAaAaAaAaAeEeEeEeEeEiIiIiIiIiIoOoOoOoOoOoOuuuUuUuUuUuUyYyYyYyYyYdDcrR'
+    )
 
     cover_extensions = ['.png', '.jpg', '.gif']
     image_format_to_mime = {
@@ -1017,6 +1082,23 @@ class App(object):
         'JPEG': ('image/jpeg', 'jpg'),
         'GIF': ('image/gif', 'gif'),
     }
+
+    class AlbumZipfileNotSupported(Exception):
+        """
+        Custom exception to indicate that we're not set up to deal with
+        zipfile creation
+        """
+
+    class AlbumZipfileAlreadyExists(Exception):
+        """
+        Custom exception to indicate that an attempted zipfile creation
+        has already taken place.
+        """
+
+        def __init__(self, filename, timestamp, *args, **kwargs):
+            super(App.AlbumZipfileAlreadyExists, self).__init__(*args, **kwargs)
+            self.filename = filename
+            self.timestamp = timestamp
 
     @staticmethod
     def norm_name(name):
@@ -1066,6 +1148,22 @@ class App(object):
         #    return final
 
     @staticmethod
+    def norm_filename(name):
+        """
+        Extremely similar to norm_name, above, except that our goal is a
+        filename rather than something to match on in our own processing.
+        So no lowercasing will be done, spaces will become underscores, etc.
+        """
+        name = name.strip().translate(App.norm_translation_filename).replace(
+            'æ', 'ae').replace('Æ', 'Ae').replace(
+            'þ', 'th').replace('Þ', 'Th').replace(
+            'œ', 'oe').replace('Œ', 'Oe').replace(
+            '&', 'and').replace('ß', 'ss')
+        name = re.sub('[ \\\/=<>]', '_', name)
+        name = re.sub('[\'"\[\]\(\)\?\%\$\!\.\+,:;#]', '', name)
+        return re.sub('[^a-zA-Z0-9_-]', '', name)
+
+    @staticmethod
     def ensure_prefs():
         """
         Loads our preferences in the root context of the App object.  We
@@ -1096,6 +1194,22 @@ class App(object):
                     short_filename = os.path.join(dirpath, filename)[len(base_path)+1:]
                     all_files.append(short_filename)
         return all_files
+
+    @staticmethod
+    def support_zipfile():
+        """
+        Returns True if we're capable of creating and serving zipfiles.
+        Note that for the serving checks, we're just making sure our global
+        preference isn't blank - we don't actually try to retrieve anything.
+        """
+        App.ensure_prefs()
+        if App.prefs['exordium__zipfile_url'] == '':
+            return False
+        if App.prefs['exordium__zipfile_path'] == '':
+            return False
+        if not os.access(App.prefs['exordium__zipfile_path'], os.R_OK | os.W_OK):
+            return False
+        return True
 
     @staticmethod
     def ensure_various_artists():

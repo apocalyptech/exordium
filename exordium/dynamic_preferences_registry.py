@@ -22,6 +22,22 @@ class LibraryUrl(StringPreference):
     verbose_name = 'Exordium Media URL'
     help_text = 'What is a direct URL to the media directory?'
 
+@global_preferences_registry.register
+class ZipfileCreationPath(StringPreference):
+    section = exordium
+    name = 'zipfile_path'
+    default = ''
+    verbose_name = 'Exordium Zip File Generation Path'
+    help_text = 'Where on the filesystem can we write zipfiles?'
+
+@global_preferences_registry.register
+class ZipfileUrl(StringPreference):
+    section = exordium
+    name = 'zipfile_url'
+    default = ''
+    verbose_name = 'Exordium Zip File Retrieval URL'
+    help_text = 'What is a direct URL to where zipfiles can be found?'
+
 @user_preferences_registry.register
 class ShowLiveRecordings(BooleanPreference):
     section = exordium

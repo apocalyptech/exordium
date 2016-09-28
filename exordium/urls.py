@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^browse/album/$', views.BrowseAlbumView.as_view(), name='browse_album'),
     url(r'^artist/(?P<pk>[0-9]+)/$', views.ArtistView.as_view(), name='artist'),
     url(r'^album/(?P<pk>[0-9]+)/$', views.AlbumView.as_view(), name='album'),
+    url(r'^album/(?P<pk>[0-9]+)/download/$', views.AlbumDownloadView.as_view(), name='albumdownload'),
     url(r'^album/(?P<albumid>[0-9]+)/cover.(?P<extension>[a-z]+)$', views.OriginalAlbumArtView.as_view(), name='origalbumart'),
     url(r'^album/(?P<albumid>[0-9]+)/cover-(?P<size>[a-z]+).jpg$', views.AlbumArtView.as_view(), name='albumart'),
     url(r'^library/$', views.LibraryView.as_view(), name='library'),

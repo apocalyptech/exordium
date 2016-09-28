@@ -1,0 +1,7 @@
+{# vim: set syntax=htmldjango: #}
+{% extends "exordium/album.html" %}
+{% load render_table from django_tables2 %}
+
+{% block albumbody %}
+{% render_table songs %}
+{% endblock %}

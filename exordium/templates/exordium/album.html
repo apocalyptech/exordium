@@ -1,6 +1,5 @@
 {# vim: set syntax=htmldjango: #}
 {% extends "exordium/base.html" %}
-{% load render_table from django_tables2 %}
 {% load static %}
 
 {% block body %}
@@ -39,9 +38,17 @@
 
 <p>Added on: <strong>{{ album.time_added }}</strong></p>
 
+{% if not is_download %}
+<form method="GET" action="{% url 'exordium:albumdownload' album.pk %}">
+    <input type="submit" value="Download as Zipfile" />
+</form>
+{% endif %}
+
 </td>
 </tr>
 </table>
 
-{% render_table songs %}
+{% block albumbody %}
+{% endblock %}
+
 {% endblock %}
