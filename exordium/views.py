@@ -67,9 +67,9 @@ class IndexView(TitleTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        albums = list(Album.objects.all().order_by('-time_added')[:20])
+        albums = Album.objects.all().order_by('-time_added')
         table = AlbumTable(albums)
-        RequestConfig(self.request).configure(table)
+        RequestConfig(self.request, paginate={'per_page': 20}).configure(table)
         context['album_list'] = table
         return context
 
