@@ -2,7 +2,6 @@ Now that my mental "TODO" contains a few more things than just
 "make this app at least marginally functional," I figure it'll
 be good to keep track of what I've been thinking about.
 
-* Number of tracks and length (and "added") on album summary page
 * Various sorting/table fixes on most of our views
   * Album lists should sort Various below everything else,
     and in most cases should sort by title, not year.

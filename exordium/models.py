@@ -361,11 +361,23 @@ class Album(models.Model):
 
     def get_total_time(self):
         """
-        Returns the total time taken up by the tracks in this album
+        Returns the total time taken up by the tracks in this album, as seconds.
         """
         return self.song_set.aggregate(
                 album_length=models.Sum(models.F('length'),
                     output_field=models.IntegerField()))['album_length']
+
+    def get_total_time_str(self):
+        """
+        Returns a human-readable total length of the tracks in this album
+        """
+        seconds = self.get_total_time()
+        (minutes, seconds) = divmod(seconds, 60)
+        if minutes > 60:
+            (hours, minutes) = divmod(minutes, 60)
+            return '%d:%02d:%02d' % (hours, minutes, seconds)
+        else:
+            return '%d:%02d' % (minutes, seconds)
 
 class AlbumArt(models.Model):
     """

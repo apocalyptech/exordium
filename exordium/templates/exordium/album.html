@@ -33,6 +33,12 @@
 <p>Album: <strong>{{ album }}</strong></p>
 {% if album.year != 0 %}<p>Year: <strong>{{ album.year }}</strong></p>{% endif %}
 
+<p>Tracks: <strong>{{ album.song_set.count }}</strong></p>
+
+<p>Length: <strong>{{ album.get_total_time_str }}</strong></p>
+
+<p>Added on: <strong>{{ album.time_added }}</strong></p>
+
 </td>
 </tr>
 </table>
