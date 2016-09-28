@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.urls import reverse
 from django.template import loader, Context
-from django.http import HttpResponse, StreamingHttpResponse, Http404
+from django.http import HttpResponse, StreamingHttpResponse, Http404, HttpResponseRedirect
 
 from django_tables2 import RequestConfig
 
@@ -67,7 +67,10 @@ class IndexView(TitleTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        albums = Album.objects.all().order_by('-time_added')
+        if self.request.user.preferences['exordium__show_live']:
+            albums = Album.objects.all().order_by('-time_added')
+        else:
+            albums = Album.objects.filter(live=False).order_by('-time_added')
         table = AlbumTable(albums)
         RequestConfig(self.request, paginate={'per_page': 20}).configure(table)
         context['album_list'] = table
@@ -108,24 +111,24 @@ class SearchView(TitleTemplateView):
         ).order_by('name')
         if artists.count() > 0:
             show_artists = True
-            table = ArtistTable(artists, prefix='artist-')
+            table = ArtistTable(artists, user=self.request.user, prefix='artist-')
             RequestConfig(self.request).configure(table)
             context['artist_results'] = table
 
-        albums = Album.objects.filter(
-            Q(name__icontains=search) |
-            Q(normname__icontains=App.norm_name(search))
-        ).order_by('name')
+        album_filter = [(Q(name__icontains=search) | Q(normname__icontains=App.norm_name(search)))]
+        if not self.request.user.preferences['exordium__show_live']:
+            album_filter.append(Q(live=False))
+        albums = Album.objects.filter(*album_filter).order_by('name')
         if albums.count() > 0:
             show_albums = True
             table = AlbumTable(albums, prefix='album-')
             RequestConfig(self.request).configure(table)
             context['album_results'] = table
 
-        songs = Song.objects.filter(
-            Q(title__icontains=search) |
-            Q(normtitle__icontains=App.norm_name(search))
-        ).order_by('title')
+        song_filter = [(Q(title__icontains=search) | Q(normtitle__icontains=App.norm_name(search)))]
+        if not self.request.user.preferences['exordium__show_live']:
+            song_filter.append(Q(album__live=False))
+        songs = Song.objects.filter(*song_filter).order_by('title')
         if songs.count() > 0:
             show_songs = True
             table = SongTableWithAlbumNoTracknum(songs, prefix='song-')
@@ -143,25 +146,28 @@ class ArtistView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(ArtistView, self).get_context_data(**kwargs)
 
-        albums = Album.objects.filter(
-            Q(artist=self.object) |
+        album_filter=[(Q(artist=self.object) |
             Q(song__artist=self.object) |
             Q(song__group=self.object) |
             Q(song__conductor=self.object) |
-            Q(song__composer=self.object)
-        ).distinct().order_by('artist__various', 'miscellaneous', 'name')
+            Q(song__composer=self.object))]
+        if not self.request.user.preferences['exordium__show_live']:
+            album_filter.append(Q(live=False))
+        albums = Album.objects.filter(*album_filter).distinct().order_by(
+            'artist__various', 'miscellaneous', 'name')
         table = AlbumTable(albums, prefix='album-')
         RequestConfig(self.request).configure(table)
         context['albums'] = table
 
         # If the artist has too many songs, this query takes forever.
         # Only show songs if we've got <= 500 tracks.
-        song_query = Song.objects.filter(
-            Q(artist=self.object) |
+        song_filter=[(Q(artist=self.object) |
             Q(group=self.object) |
             Q(conductor=self.object) |
-            Q(composer=self.object)
-        )
+            Q(composer=self.object))]
+        if not self.request.user.preferences['exordium__show_live']:
+            song_filter.append(Q(album__live=False))
+        song_query = Song.objects.filter(*song_filter)
         num_songs = song_query.count()
         if num_songs <= 500:
             songs = song_query.order_by('title')
@@ -208,7 +214,7 @@ class BrowseArtistView(TitleListView):
     def get_context_data(self, **kwargs):
         context = super(BrowseArtistView, self).get_context_data(**kwargs)
         artists = Artist.objects.all().order_by('name')
-        table = ArtistTable(artists)
+        table = ArtistTable(artists, user=self.request.user)
         RequestConfig(self.request).configure(table)
         context['table'] = table
         return context
@@ -220,7 +226,10 @@ class BrowseAlbumView(TitleListView):
 
     def get_context_data(self, **kwargs):
         context = super(BrowseAlbumView, self).get_context_data(**kwargs)
-        albums = Album.objects.all().order_by('artist__name','name')
+        if self.request.user.preferences['exordium__show_live']:
+            albums = Album.objects.all().order_by('artist__name','name')
+        else:
+            albums = Album.objects.filter(live=False).order_by('artist__name','name')
         table = AlbumTable(albums)
         RequestConfig(self.request).configure(table)
         context['table'] = table
@@ -340,3 +349,18 @@ class AlbumArtView(generic.View):
             return HttpResponse(art.image, content_type='image/jpeg')
         else:
             raise Http404('Album art not found for album "%s / %s"' % (album.artist, album))
+
+def updateprefs(request):
+    """
+    Handler to update our preferences.  Will redirect back to the page we were just on.
+    """
+    if 'show_live' in request.POST:
+        request.user.preferences['exordium__show_live'] = True
+    else:
+        request.user.preferences['exordium__show_live'] = False
+
+    # Redirect back to our previous page
+    if 'HTTP_REFERER' in request.META:
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    else:
+        return HttpResponseRedirect(reverse('exordium:index'))

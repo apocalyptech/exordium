@@ -5,7 +5,6 @@ be good to keep track of what I've been thinking about.
 * Album downloads as zipfiles
 * Tests for views
 * Streaming (html5 player)
-* Hide "live" albums (implies user preferences, too)
 * Album Art updates via Album page itself, for admins
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
@@ -32,3 +31,8 @@ be good to keep track of what I've been thinking about.
 * Should probably be using tmpdir stuff for test library,
   rather than a subdir of 'testdata'.  Works well enough
   for development but would fail if installed For Real.
+* User preferences don't seem to always get applied quite
+  right?  I wonder if it's something to do with
+  threading?  For instance for a bit I could pretty
+  repeatably go back and forth between home/artistbrowse
+  and have one with show_live and the other without.

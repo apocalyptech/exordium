@@ -8,6 +8,7 @@ from . import views
 app_name = 'exordium'
 urlpatterns = [
     url(r'^$', views.IndexView.as_view(), name='index'),
+    url(r'^updateprefs/$', views.updateprefs, name='updateprefs'),
     url(r'^search/$', views.SearchView.as_view(), name='search'),
     url(r'^browse/artist/$', views.BrowseArtistView.as_view(), name='browse_artist'),
     url(r'^browse/album/$', views.BrowseAlbumView.as_view(), name='browse_album'),

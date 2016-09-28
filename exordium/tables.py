@@ -25,28 +25,34 @@ class ArtistTable(tables.Table):
         """
         Show the number of albums this artist has.
         """
-        return Album.objects.filter(
-            Q(artist=record) |
+        album_filter = [(Q(artist=record) |
             Q(song__artist=record) |
             Q(song__group=record) |
             Q(song__conductor=record) |
-            Q(song__composer=record)
-        ).distinct().count()
+            Q(song__composer=record))]
+        if not self.user.preferences['exordium__show_live']:
+            album_filter.append(Q(live=False))
+        return Album.objects.filter(*album_filter).distinct().count()
 
     def render_tracks(self, record, **kwargs):
         """
         Show the number of tracks this artist has
         """
-        return Song.objects.filter(
-            Q(artist=record) | Q(group=record) |
-            Q(conductor=record) | Q(composer=record)
-        ).count()
+        song_filter = [(Q(artist=record) | Q(group=record) |
+            Q(conductor=record) | Q(composer=record))]
+        if not self.user.preferences['exordium__show_live']:
+            song_filter.append(Q(album__live=False))
+        return Song.objects.filter(*song_filter).count()
 
     class Meta:
 
         model = Artist
         attrs = {'class': 'paleblue', 'id': 'artisttable'}
         fields = ['name']
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super(ArtistTable, self).__init__(*args, **kwargs)
 
 class AlbumTable(tables.Table):
 

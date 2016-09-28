@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # vim: set expandtab tabstop=4 shiftwidth=4:
 
-from dynamic_preferences.types import StringPreference, Section
-from dynamic_preferences.registries import global_preferences_registry
+from dynamic_preferences.types import StringPreference, BooleanPreference, Section
+from dynamic_preferences.registries import global_preferences_registry, user_preferences_registry
 
 exordium = Section('exordium')
 
@@ -21,3 +21,12 @@ class LibraryUrl(StringPreference):
     default = 'http://localhost/media'
     verbose_name = 'Exordium Media URL'
     help_text = 'What is a direct URL to the media directory?'
+
+@user_preferences_registry.register
+class ShowLiveRecordings(BooleanPreference):
+    section = exordium
+    name = 'show_live'
+    default = False
+    verbose_name = 'Show Live Recordings'
+    help_text = 'Do we show live recordings in album lists?'
+

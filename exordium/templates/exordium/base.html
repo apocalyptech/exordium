@@ -20,6 +20,14 @@
         <input type="text" name="q" id="searchstr" class="searchform" maxlength="80" />
         <input type="submit" id="searchbut" class="searchform" value="Search" />
     </form>
+    <hr />
+    <div class="userprefs">
+        <form action="{% url 'exordium:updateprefs' %}" method="post">
+            {% csrf_token %}
+            <nobr><input type="checkbox" name="show_live" id="show_live"{% if request.user.preferences.exordium__show_live %} checked{% endif %}> Include live recordings?</nobr><br />
+            <input type="submit" id="prefbut" class="prefsform" value="Update Preferences" />
+        </form>
+    </div>
 {% if request.user.is_staff %}
 <hr />
 <div class="adminlinks">
