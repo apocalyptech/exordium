@@ -43,6 +43,9 @@ h1 {
 #albumtable .tracks, #albumtable .time, #albumtable .year {
     text-align: center;
 }
-#songtable .tracks, #songtable .albums {
+#artisttable .tracks, #artisttable .albums {
+    text-align: center;
+}
+#songtable .length {
     text-align: center;
 }

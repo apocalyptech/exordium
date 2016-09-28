@@ -45,7 +45,7 @@ class ArtistTable(tables.Table):
     class Meta:
 
         model = Artist
-        attrs = {'class': 'paleblue', 'id': 'songtable'}
+        attrs = {'class': 'paleblue', 'id': 'artisttable'}
         fields = ['name']
 
 class AlbumTable(tables.Table):
@@ -127,7 +127,6 @@ class SongTable(tables.Table):
     length = tables.Column(
         footer=lambda table: table.render_length(sum(x.length for x in table.data))
     )
-    # TODO: This template currently hardcodes our direct URL path
     dl = tables.TemplateColumn(
         verbose_name='',
         orderable=False,
@@ -135,7 +134,15 @@ class SongTable(tables.Table):
     )
 
     def render_length(self, value):
-        return '%d:%02d' % (value/60, value%60)
+        (minutes, seconds) = divmod(value, 60)
+        if minutes > 60:
+            (hours, minutes) = divmod(minutes, 60)
+            return '%d:%02d:%02d' % (hours, minutes, seconds)
+        else:
+            return '%d:%02d' % (minutes, seconds)
+
+# TODO: I wish I could find a better way of having "dynamic" fields than
+# this, but everything else I've tried has failed.
 
 class SongTableWithAlbum(SongTable):
 
@@ -147,14 +154,36 @@ class SongTableWithAlbum(SongTable):
 
     class Meta:
         model = Song
-        attrs = {'class': 'paleblue'}
+        attrs = {'class': 'paleblue', 'id': 'songtable'}
         show_footer = True
         fields = ['tracknum', 'artist', 'album', 'title', 'length', 'dl']
+
+class SongTableWithAlbumNoTracknum(SongTable):
+
+    album = tables.LinkColumn(
+        'exordium:album',
+        verbose_name='Album',
+        args=[tables.A('album.pk')]
+    )
+
+    class Meta:
+        model = Song
+        attrs = {'class': 'paleblue', 'id': 'songtable'}
+        show_footer = True
+        fields = ['artist', 'album', 'title', 'length', 'dl']
 
 class SongTableNoAlbum(SongTable):
 
     class Meta:
         model = Song
-        attrs = {'class': 'paleblue'}
+        attrs = {'class': 'paleblue', 'id': 'songtable'}
         show_footer = True
         fields = ['tracknum', 'artist', 'title', 'length', 'dl']
+
+class SongTableNoAlbumNoTracknum(SongTable):
+
+    class Meta:
+        model = Song
+        attrs = {'class': 'paleblue', 'id': 'songtable'}
+        show_footer = True
+        fields = ['artist', 'title', 'length', 'dl']

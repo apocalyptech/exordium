@@ -12,7 +12,7 @@ from django_tables2 import RequestConfig
 from dynamic_preferences.registries import global_preferences_registry
 
 from .models import Artist, Album, Song, App, AlbumArt
-from .tables import ArtistTable, AlbumTable, SongTableWithAlbum, SongTableNoAlbum
+from .tables import ArtistTable, AlbumTable, SongTableWithAlbum, SongTableNoAlbum, SongTableWithAlbumNoTracknum, SongTableNoAlbumNoTracknum
 
 # Create your views here.
 
@@ -94,24 +94,24 @@ class SearchView(TitleTemplateView):
         show_albums = False
         show_songs = False
 
-        artists = Artist.objects.filter(name__icontains=search)
+        artists = Artist.objects.filter(name__icontains=search).order_by('name')
         if artists.count() > 0:
             show_artists = True
             table = ArtistTable(artists, prefix='artist-')
             RequestConfig(self.request).configure(table)
             context['artist_results'] = table
 
-        albums = Album.objects.filter(name__icontains=search)
+        albums = Album.objects.filter(name__icontains=search).order_by('name')
         if albums.count() > 0:
             show_albums = True
             table = AlbumTable(albums, prefix='album-')
             RequestConfig(self.request).configure(table)
             context['album_results'] = table
 
-        songs = Song.objects.filter(title__icontains=search)
+        songs = Song.objects.filter(title__icontains=search).order_by('title')
         if songs.count() > 0:
             show_songs = True
-            table = SongTableWithAlbum(songs, prefix='song-')
+            table = SongTableWithAlbumNoTracknum(songs, prefix='song-')
             RequestConfig(self.request).configure(table)
             context['song_results'] = table
 
@@ -152,7 +152,10 @@ class AlbumView(TitleDetailView):
             song.set_album_secondary_artist_counts(num_groups=len(groups),
                 num_conductors=len(conductors), num_composers=len(composers))
             data.append(song)
-        table = SongTableNoAlbum(data)
+        if self.object.miscellaneous:
+            table = SongTableNoAlbumNoTracknum(data)
+        else:
+            table = SongTableNoAlbum(data)
         RequestConfig(self.request).configure(table)
         context['songs'] = table
         context['exordium_title'] = '%s / %s' % (self.object.artist, self.object)
