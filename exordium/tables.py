@@ -3,17 +3,49 @@
 
 import datetime
 from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.db.models import Q
 import django_tables2 as tables
 from .models import Artist, Album, Song
 
 class ArtistTable(tables.Table):
 
     name = tables.LinkColumn('exordium:artist', args=[tables.A('pk')])
+    albums = tables.Column(
+        verbose_name='Albums',
+        orderable=False,
+        empty_values=(),
+    )
+    tracks = tables.Column(
+        verbose_name='Tracks',
+        orderable=False,
+        empty_values=(),
+    )
+
+    def render_albums(self, record, **kwargs):
+        """
+        Show the number of albums this artist has.
+        """
+        return Album.objects.filter(
+            Q(artist=record) |
+            Q(song__artist=record) |
+            Q(song__group=record) |
+            Q(song__conductor=record) |
+            Q(song__composer=record)
+        ).distinct().count()
+
+    def render_tracks(self, record, **kwargs):
+        """
+        Show the number of tracks this artist has
+        """
+        return Song.objects.filter(
+            Q(artist=record) | Q(group=record) |
+            Q(conductor=record) | Q(composer=record)
+        ).count()
 
     class Meta:
 
         model = Artist
-        attrs = {'class': 'paleblue'}
+        attrs = {'class': 'paleblue', 'id': 'songtable'}
         fields = ['name']
 
 class AlbumTable(tables.Table):

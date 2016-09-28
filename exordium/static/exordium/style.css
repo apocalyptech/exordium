@@ -43,3 +43,6 @@ h1 {
 #albumtable .tracks, #albumtable .time, #albumtable .year {
     text-align: center;
 }
+#songtable .tracks, #songtable .albums {
+    text-align: center;
+}

@@ -7,7 +7,6 @@ be good to keep track of what I've been thinking about.
     and in most cases should sort by title, not year.
   * Max records should probably be increased to 100 or so
   * Include songs in Artist view
-  * # of albums, songs in artist table
   * Omit track number for song table in searches (and probably on
     Artist page, once we have that in there) (and also on non-
     album track "albums")
