@@ -16,7 +16,7 @@ function jplayerAdd(tracks) {
         jplayerWindow.focus();
         for (var i=0; i < tracks.length; i++) {
             track = tracks[i];
-            dict = {title: track['title'], artist: track['artist'], poster: track['poster']};
+            dict = {title: track['title'], artist: track['artist'], poster: track['poster'], free: true};
             if (track['type'] == 'mp3') {
                 dict['mp3'] = track['url'];
             } else if (track['type'] == 'ogg') {
