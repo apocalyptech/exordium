@@ -72,8 +72,8 @@ Exordium requires the following additional third-party modules:
   - six (built on 1.10.0)
   - persisting_theory (built on 0.2.1)
 
-The tests in `test.py` make use of the `exist_ok` parameter to Python's
-`os.makedirs()`, which was not introduced until Python 3.2, so the
+The tests in ``test.py`` make use of the ``exist_ok`` parameter to Python's
+``os.makedirs()``, which was not introduced until Python 3.2, so the
 tests at least currently require at least Python 3.2.
 
 A Note for WSGI Deployments
@@ -83,7 +83,7 @@ If deploying via WSGI, there's a serious problem which can occur if any
 non-ASCII characters are found in your filenames.  Basically, by default
 the WSGI process will be launched with a $LANG of "C", making ascii
 the default encoding for various things, including the filesystem encoding
-as reported by `sys.getfilesystemencoding()`.  If you try and import
+as reported by ``sys.getfilesystemencoding()``.  If you try and import
 any files with non-ASCII characters in the filename, you can end up with
 absurd errors like this in your logs:
 
@@ -126,22 +126,22 @@ Quick start
 
    url(r'^exordium', include('exordium.urls')),
 
-3. Run `python manage.py migrate exordium` to create the Exordium models.
+3. Run ``python manage.py migrate exordium`` to create the Exordium models.
    
-4. Run `python manage.py migrate dynamic_preferences` to create the
+4. Run ``python manage.py migrate dynamic_preferences`` to create the
    Dynamic Preferences models, if this wasn't already configured on your
    Django install.
 
-5. Run `python manage.py loaddata --app exordium initial_data` to load
+5. Run ``python manage.py loaddata --app exordium initial_data`` to load
    some initial data into the database.  (This is not actually strictly
    speaking necessary.)
 
 6. If running this from a webserver with static files present, make sure
-   to run `python manage.py collectstatic` at some point to get the
+   to run ``python manage.py collectstatic`` at some point to get the
    static files put in place properly, or otherwise configure your static
    file delivery solution.
 
-7. Either start the development server with `python manage.py runserver`
+7. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Visit the administrative area in
    "Dynamic Preferences > Global preferences" and set the values for
    "Exordium Library Base Path" and "Exordium Media URL".

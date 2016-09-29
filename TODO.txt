@@ -52,3 +52,6 @@ be good to keep track of what I've been thinking about.
   some UI differences to differentiate, if so.  Maybe
   italics or something for the special artist?
 * m3u playlist generation from album page
+* Theme support might be nice, and should be pretty
+  trivial, though I doubt I'll take the time to figure
+  it out.

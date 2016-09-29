@@ -132,7 +132,7 @@ class Artist(models.Model):
     def extract_prefix(name):
         """
         Extracts a prefix from the given name, if one exists.  Returns
-        a tuple of `(prefix, name)`, where `prefix` may be an empty string.
+        a tuple of ``(prefix, name)``, where ``prefix`` may be an empty string.
         """
         if name == '':
             return ('', '')
@@ -268,7 +268,7 @@ class Album(models.Model):
         something needs to loop through our output in order for things to
         actually happen here.
 
-        `filename` is the full path to the image, whereas `short_filename`
+        ``filename`` is the full path to the image, whereas ``short_filename``
         is what will get stored in the DB
         """
         if self.miscellaneous:
@@ -799,17 +799,17 @@ class Song(models.Model):
         """
         Updates what values we can from disk.  Will not process Artist or
         Album changes, though, since those depend on a lot of other factors
-        this object won't know about.  Does NOT call `.save()` on ourself,
+        this object won't know about.  Does NOT call ``.save()`` on ourself,
         since we might be processing Artist and Album further.
 
-        `retlines` can be passed in as a list of status lines which we can
+        ``retlines`` can be passed in as a list of status lines which we can
         feel free to add to.  If not passed in, any logging information will
         be lost.
 
-        Returns `None` if there is an error in updating the object, or
+        Returns ``None`` if there is an error in updating the object, or
         a tuple containing:
-           1. `artist_full`, the "new" full artist name as a string, taken from tags
-           2. `album`, the "new" full album name as a string, taken from tags
+           1. ``artist_full``, the "new" full artist name as a string, taken from tags
+           2. ``album``, the "new" full album name as a string, taken from tags
            3. Ourself - a bit silly, but enables us to take some syntax shortcuts
         """
 
@@ -877,30 +877,30 @@ class Song(models.Model):
     @staticmethod
     def from_filename(full_filename, short_filename, retlines=[], sha256sum=None):
         """
-        Initializes a new Song object given its `full_filename` and the
-        related `short_filename` which will actually be stored with the
-        object.  Does NOT call `.save()` on the new object, since the
+        Initializes a new Song object given its ``full_filename`` and the
+        related ``short_filename`` which will actually be stored with the
+        object.  Does NOT call ``.save()`` on the new object, since the
         artist and album data points will NOT be populated in this routine
         (since that information is subject to processing while doing
         global imports/updates).
 
-        `retlines` can be passed in as a list of status lines which we can
+        ``retlines`` can be passed in as a list of status lines which we can
         feel free to add to.  If not passed in, any logging information will
         be lost.
 
-        `sha256sum` can be passed in if you've already computed a checksum.
+        ``sha256sum`` can be passed in if you've already computed a checksum.
 
-        Returns `None` if there is an error in creating the object, or
+        Returns ``None`` if there is an error in creating the object, or
         a tuple containing:
-           1. `artist_full`, the full artist name as a string, taken from tags
-           2. `group`, group/ensemble name as a string
-           3. `conductor`, conductor name as a string
-           4. `composer`, composer name as a string
-           5. `album`, the full album name as a string, taken from tags
-           6. The new `Song` object itself
+           1. ``artist_full``, the full artist name as a string, taken from tags
+           2. ``group``, group/ensemble name as a string
+           3. ``conductor``, conductor name as a string
+           4. ``composer``, composer name as a string
+           5. ``album``, the full album name as a string, taken from tags
+           6. The new ``Song`` object itself
         
-        If you call this method like `(a, b, c) = Song.from_filename()`, you'll
-        probably want to catch a `TypeError` to catch the `None` possibility.
+        If you call this method like ``(a, b, c) = Song.from_filename()``, you'll
+        probably want to catch a ``TypeError`` to catch the ``None`` possibility.
         """
 
         # Set up some vars
@@ -1150,7 +1150,7 @@ class App(object):
         and the like.
 
         This process used to do a few things which aren't done anymore.
-        We used to use `unicodedata.normalize('NFKD', name)` in here
+        We used to use ``unicodedata.normalize('NFKD', name)`` in here
         but was running into problems such as the following:
 
             >>> len('umläut')
@@ -1220,7 +1220,7 @@ class App(object):
     def get_filesystem_media(extra_base=None):
         """
         Returns a list of all media found on the filesystem.  Optionally
-        also only find files within `extra_base`.
+        also only find files within ``extra_base``.
         """
         App.ensure_prefs()
         base_path = App.prefs['exordium__base_path']
@@ -1274,19 +1274,19 @@ class App(object):
         about yet.  Yields its entire processing status log as a generator,
         as tuples of the form (status, text).
 
-        Note that because we're using `yield`, something NEEDS to loop
+        Note that because we're using ``yield``, something NEEDS to loop
         through the output of this function in order for it to actually
         do anything.
 
-        `status` will be one of `info`, `debug`, `success`, or `error`, so can
+        ``status`` will be one of ``info``, ``debug``, ``success``, or ``error``, so can
         be processed appropriately by whatever calls this method.
 
-        Optionally, pass in `to_add` to have this method process given a list
+        Optionally, pass in ``to_add`` to have this method process given a list
         of tuples containing filenames and sha256sums.  This way we can be
         called from update()
 
-        `to_add` should be a list of tuples, where the first field is the
-        filename and the second is either the sha256sum or `None`, if the
+        ``to_add`` should be a list of tuples, where the first field is the
+        filename and the second is either the sha256sum or ``None``, if the
         checksum has not yet been computed.
         """
 
@@ -1538,20 +1538,20 @@ class App(object):
     def update():
         """
         Looks through our base_dir for any files which may have been changed,
-        deleted, moved, or added (will call out to `add()` to handle the latter,
+        deleted, moved, or added (will call out to ``add()`` to handle the latter,
         if needed).
 
         Yields its entire processing status log as a generator, as tuples of the
         form (status, text).
 
-        Note that because we're using `yield`, something NEEDS to loop
+        Note that because we're using ``yield``, something NEEDS to loop
         through the output of this function in order for it to actually
         do anything.
 
-        `status` will be one of `info`, `debug`, `success`, or `error`, so can
+        ``status`` will be one of ``info``, ``debug``, ``success``, or ``error``, so can
         be processed appropriately by whatever calls this method.
 
-        There's a fair amount of duplicated code between this and `add()`.
+        There's a fair amount of duplicated code between this and ``add()``.
         Arguably there should only be one function, and adds in specific would
         just be a subset of that.
 
@@ -1572,14 +1572,14 @@ class App(object):
             yield (App.STATUS_INFO, 'Created new artist "Various" (meta-artist)')
 
         # Step one - loop through the database and find any files which are missing
-        # or have been updated.  Create `digest_dict` which is a mapping of sha256sums
-        # to the database Song object, and `db_paths` which is a mapping of filenames
+        # or have been updated.  Create ``digest_dict`` which is a mapping of sha256sums
+        # to the database Song object, and ``db_paths`` which is a mapping of filenames
         # to database Song objects, used below to find out which new files have been
         # added.
         #
-        # Also populates the `to_update` list with files whose mtimes have changed, and
-        # the `to_delete` dict which at this point is technically only *possible*
-        # deletions - our `digest_dict` structure will be used to determine below if
+        # Also populates the ``to_update`` list with files whose mtimes have changed, and
+        # the ``to_delete`` dict which at this point is technically only *possible*
+        # deletions - our ``digest_dict`` structure will be used to determine below if
         # that deleted file has merely moved
         db_paths = {}
         digest_dict = {}
@@ -1974,18 +1974,18 @@ class App(object):
     @staticmethod
     def update_album_art(albums=None):
         """
-        Imports/Updates album art.  If `albums` is passed as a list of album objects,
+        Imports/Updates album art.  If ``albums`` is passed as a list of album objects,
         only those albums will be checked for album art, rather than looping through the
         whole database
 
         Yields its entire processing status log as a generator, as tuples of the form
         (status, text).
 
-        Note that because we're using `yield`, something NEEDS to loop
+        Note that because we're using ``yield``, something NEEDS to loop
         through the output of this function in order for it to actually
         do anything.
 
-        `status` will be one of `info`, `debug`, `success`, or `error`, so can
+        ``status`` will be one of ``info``, ``debug``, ``success``, or ``error``, so can
         be processed appropriately by whatever calls this method.
         """
 

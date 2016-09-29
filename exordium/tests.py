@@ -27,9 +27,9 @@ from django.db import connection
 
 class ExordiumTests(TestCase):
     """
-    Custom TestCase class for Exordium.  Includes our `initial_data`
-    fixture and sets up a pretend library under `testdata`.  Uses
-    the sample mp3 files in `testdata` as the basis for all the files
+    Custom TestCase class for Exordium.  Includes our ``initial_data``
+    fixture and sets up a pretend library under ``testdata``.  Uses
+    the sample mp3 files in ``testdata`` as the basis for all the files
     that we'll be testing with.
     """
 
@@ -77,13 +77,13 @@ class ExordiumTests(TestCase):
         """
         Adds a new mp3 with the given parameters to our library.
 
-        Pass in `save_as_v23` as `True` to have the file save with an ID3v2.3
+        Pass in ``save_as_v23`` as ``True`` to have the file save with an ID3v2.3
         tag, instead of ID3v2.4.  One of the main tag-level changes which
         will happen there is conversion of the year tag to TYER, which
-        we'll otherwise not be specifying directly.  `yeartag` is effectively
-        ignored when `save_as_v23` is True.
+        we'll otherwise not be specifying directly.  ``yeartag`` is effectively
+        ignored when ``save_as_v23`` is True.
 
-        Pass in `False` for `apply_tags` to only use whatever tags happen to
+        Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
         be present in the source basefile.
         """
         if path != '' and ('..' in path or path[0] == '/'):
@@ -220,7 +220,7 @@ class ExordiumTests(TestCase):
         """
         Adds a new ogg with the given parameters to our library.
 
-        Pass in `False` for `apply_tags` to only use whatever tags happen to
+        Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
         be present in the source basefile.
         """
         if path != '' and ('..' in path or path[0] == '/'):
@@ -454,7 +454,7 @@ class ExordiumTests(TestCase):
 
     def assertNoErrors(self, appresults):
         """
-        Given a list of tuples (as returned from `App.add()` or `App.update()`),
+        Given a list of tuples (as returned from ``App.add()`` or ``App.update()``),
         ensure that none of the lines have status App.STATUS_ERROR
         """
         for (status, line) in appresults:
@@ -463,8 +463,8 @@ class ExordiumTests(TestCase):
 
     def assertErrors(self, appresults, errors_min=1):
         """
-        Given a list of tuples (as returned from `App.add()` or `App.update()`),
-        ensure that we have at least `errors_min` with a status of App.STATUS_ERROR
+        Given a list of tuples (as returned from ``App.add()`` or ``App.update()``),
+        ensure that we have at least ``errors_min`` with a status of App.STATUS_ERROR
         """
         error_count = 0
         for (status, line) in appresults:
@@ -475,26 +475,26 @@ class ExordiumTests(TestCase):
 
     def run_add(self):
         """
-        Runs an `add` operation on our library, and checks for errors.
+        Runs an ``add`` operation on our library, and checks for errors.
         """
         return self.assertNoErrors(list(App.add()))
 
     def run_add_errors(self, errors_min=1):
         """
-        Runs an `add` operation on our library, and expect to see at least
+        Runs an ``add`` operation on our library, and expect to see at least
         one error.
         """
         return self.assertErrors(list(App.add()), errors_min)
 
     def run_update(self):
         """
-        Runs an `update` operation on our library, and checks for errors.
+        Runs an ``update`` operation on our library, and checks for errors.
         """
         return self.assertNoErrors(list(App.update()))
 
     def run_update_errors(self, errors_min=1):
         """
-        Runs an `add` operation on our library, and expect to see at least
+        Runs an ``add`` operation on our library, and expect to see at least
         one error.
         """
         return self.assertErrors(list(App.update()), errors_min)
@@ -2085,21 +2085,21 @@ class BasicUpdateAsAddTests(BasicAddTests):
     This is a bit of nonsense.  Basically, all tests for add() should be
     repeated for update(), since add() is technically a subset of update().
     Rather than rewriting everything, we're just subclassing and
-    overriding the `run_add()` method so that all calls to `run_add()`
+    overriding the ``run_add()`` method so that all calls to ``run_add()``
     end up doing an update instead.
     """
 
     def run_add(self):
         """
-        Runs an `update` operation on our library while pretending to be
-        `add`, and checks for errors.
+        Runs an ``update`` operation on our library while pretending to be
+        ``add``, and checks for errors.
         """
         return self.assertNoErrors(list(App.update()))
 
     def run_add_errors(self, errors_min=1):
         """
-        Runs an `update` operation on our library while pretending to be
-        `add`, and ensures that there's at least one error
+        Runs an ``update`` operation on our library while pretending to be
+        ``add``, and ensures that there's at least one error
         """
         return self.assertErrors(list(App.update()), errors_min)
 
