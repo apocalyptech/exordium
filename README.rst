@@ -230,6 +230,9 @@ Quick start
    without the "*Exordium Media URL*" option being set properly, though
    with the caveats mentioned above.
 
+8. Visit the "Library Upkeep" link from the Exordium main page and click on
+   "Add new music" to beginn the initial import into Exordium!
+
 Limitations
 -----------
 
