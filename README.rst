@@ -4,11 +4,15 @@ Exordium
 
 **NOTE:** Exordium is currently a work-in-progress and may exhibit strange
 behavior or otherwise be non-feature-complete.  Proceed at your own risk!
+That said, it's working quite well for me.
 
 Exordium is a read-only web-based music library system for Django.
 Exordium will read mp3 and ogg files from the host filesystem and provide
 an online interface to browse, download (as zipfiles or otherwise), and
 stream.
+
+The HTML5 media player `jPlayer <http://jplayer.org/>`_ is used to provide
+arbitrary streaming of music.
 
 Detailed documentation may eventually show up in the "docs" directory.
 
@@ -16,10 +20,11 @@ The name "Exordium" comes from the fictional technology of the same name in
 Alastair Reynolds' "Revelation Space" novels.  It's not a perfect name for
 the app, given that the Revelation Space *Exordium* would make a pretty
 lousy music library, but at least there's some element of data storage and
-retrieval.  *Exordium* the web-based music library is only capable of
-retrieving music which has been imported to it in the past, unfortunately.
-I'll be sure to contact all the major news organizations if I figure out a
-way to get it to retrieve music stored in the future.
+retrieval.  Exordium the *web-based music library*, as opposed to its
+fictional counterpart, is only capable of retrieving music which has been
+imported to it in the past.  I'll be sure to contact all the major news
+organizations if I figure out a way to get it to retrieve music stored in the
+future.
 
 Requirements
 ------------
@@ -37,7 +42,9 @@ Exordium requires the following additional third-party modules:
 
 The tests in ``test.py`` make use of the ``exist_ok`` parameter to Python's
 ``os.makedirs()``, which was not introduced until Python 3.2, so the
-tests at least currently require at least Python 3.2.
+tests at least currently require at least Python 3.2.  I suspect that there
+may be one or two other functions in use which might cause the base
+required Python to be 3.4, but I have yet to investigate closely.
 
 Detailed Operation
 ------------------
@@ -45,10 +52,9 @@ Detailed Operation
 Exordium is designed with several assumptions and peculiarities in mind,
 which fit my ideal very well but may not be a good fit for you:
 
-- Except for the Javascript necessary to hook into jPlayer (the HTML5
-  media application used to stream directly from Exordium) all content
-  is generated server-side.  There is no other Javascript, and the
-  application is quite usable from text-based browsers.
+- Except for the Javascript necessary to hook into jPlayer, all content is
+  generated server-side.  There is no other Javascript, and the application is
+  quite usable from text-based browsers.
 
 - Music files must be accessible via the local filesystem on which Django
   is running, and stored as either mp3 or ogg vorbis.
@@ -58,7 +64,7 @@ which fit my ideal very well but may not be a good fit for you:
   mounts), that's fine, but there is NO support for multiple libraries in
   Exordium.
 
-- All music files are managed by hand, or via some other means.  Exordium
+- All music files are managed outside of Exordium.  Exordium itself
   will never attempt to write to your library directory for any reason.  It
   requires read access only.  (Write access to a directory on the
   filesystem is required for zipfile downloads, but that directory need not
@@ -140,7 +146,7 @@ deployment.
 
 Currently Exordium doesn't have a check for this - I'll hope to
 eventually add that in - but for now just make sure that you're specifying
-the following after your WSGIDaemonProcess line::
+the following after your ``WSGIDaemonProcess`` line::
 
     lang='en_US.UTF-8' locale='en_US.UTF-8'
 
@@ -159,7 +165,7 @@ WSGI Deployments on Apache: Process Count
 The ``WSGIDaemonProcess`` parameter in Apache lets you specify an arbitrary
 number of ``processes`` (in addition to ``threads``).  If ``processes`` is
 set to more than 1, problems can be encountered when setting preferences
-(such as library path, download URLs, live album showing, etc).  Namely,
+(such as library path, download URLs, live album display, etc).  Namely,
 the preference change will often only be seen by the process in which it
 was changed, which can lead to some vexing behavior.
 
@@ -173,18 +179,18 @@ Quick start
 -----------
 
 1. Add exordium, django_tables2, and dynamic_preferences to your
-   INSTALLED_APPS setting like this::
+   ``INSTALLED_APPS`` setting like this::
 
-   INSTALLED_APPS = [
-       ...
-       'exordium',
-       'django_tables2',
-       'dynamic_preferences',
-   ]
+     INSTALLED_APPS = [
+         ...
+         'exordium',
+         'django_tables2',
+         'dynamic_preferences',
+     ]
 
-2. Include the exordium URLconf in your project urls.py like this::
+2. Include the exordium URLconf in your project ``urls.py`` like this::
 
-   url(r'^exordium', include('exordium.urls')),
+     url(r'^exordium', include('exordium.urls')),
 
 3. Run ``python manage.py migrate exordium`` to create the Exordium models.
    
@@ -203,9 +209,26 @@ Quick start
 
 7. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Visit the administrative area in
-   "Dynamic Preferences > Global preferences" and set the values for
-   "Exordium Library Base Path" and "Exordium Media URL".  Additionally set
-   the values for the album zipfile downloads if you wish to support that.
+   "Dynamic Preferences > Global preferences" and set the values for the
+   following:
+
+   - **Exordium Library Base Path**: This is what defines where your music
+     library can be found on disk.
+   - **Exordium Media URL**: This is the base URL which provides direct
+     access to the files in your library.  Omit the trailing slash, though
+     things will probably work fine even if it's in there.  Without this
+     set properly, song download links will be broken and the streaming
+     player will not work properly.
+   - **Exordium Zip File Generation Path**: Path on the filesystem to store
+     zipfile album downloads.  This is the one location in which the user
+     running Django needs write access.
+   - **Exordium Zip File Retrieval URL**: This is the base URL providing
+     web access to that zipfile directory.
+
+   Without the last two options, Exordium will still function fine, but the
+   album-download button will not be rendered.  Exordium will also function
+   without the "*Exordium Media URL*" option being set properly, though
+   with the caveats mentioned above.
 
 Limitations
 -----------
@@ -225,8 +248,8 @@ As I think of them I'll add to the list.
   you'll end up with an album which spans directories.  Behavior may not
   be well-defined in that case.
 
-Migrations
-----------
+Migration from Other Libraries
+------------------------------
 
 Practically no support is included for converting an existing music library
 database in some other app to Exordium.  There IS one administrative
