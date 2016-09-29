@@ -1,0 +1,126 @@
+<html>
+<head>
+<title>Exordium | jPlayer Streaming</title>
+<link type="text/css" href="skin/pink.flag.600px/css/jplayer.pink.flag.min.css?v2.9.2" rel="stylesheet" />
+<style type="text/css">
+<!--
+body {
+    background-color: #1a0a25;
+}
+.poster-container {
+    width: 600px;
+    background-color: #0a0015;
+    margin-left: auto;
+    margin-right: auto;
+}
+.jp-jplayer {
+    margin-left: auto;
+    margin-right: auto;
+}
+.jp-audio {
+    width: 558px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.jp-volume-bar {
+    width: 554px;
+}
+.jp-progress {
+    width: 554px;
+}
+//->>
+</style>
+<script type="text/javascript" src="js/jquery.min.js?v3.1.1"></script>
+<script type="text/javascript" src="js/jquery.jplayer.min.js?v2.9.2"></script>
+<script type="text/javascript" src="js/jplayer.playlist.min.js?v2.9.2"></script>
+
+<script type="text/javascript">
+//<!CDATA[
+var myPlaylist = null;
+$(document).ready(function(){
+
+    myPlaylist = new jPlayerPlaylist({
+        jPlayer: "#jquery_jplayer_1",
+        cssSelectorAncestor: "#jp_container_1"
+    },
+    [],
+    {
+        supplied: "mp3, oga",
+        solution: "html",
+        useStateClassSkin: true,
+        autoBlur: false,
+        smoothPlayBar: true,
+        keyEnabled: true,
+        remainingDuration: false,
+        toggleDuration: true,
+        playlistOptions: {
+            enableRemoveControls: true,
+        },
+        size: {
+            width: 300,
+            height: 300
+        }
+    });
+
+    // Call back to our opener to let them know about us.
+    setInterval(function() {
+        if (self.opener && !self.opener.jplayerWindow) {
+            self.opener.jplayerWindow = self;
+        }
+    }, 500);
+
+});
+
+//]]>
+</script>
+</head>
+<body>
+
+<div class="poster-container"><div id="jquery_jplayer_1" class="jp-jplayer"></div></div>
+<div id="jp_container_1" class="jp-audio" role="application" aria-label="media player">
+  <div class="jp-type-playlist">
+    <div class="jp-gui jp-interface">
+      <div class="jp-volume-controls">
+        <button class="jp-mute" role="button" tabindex="0">mute</button>
+        <button class="jp-volume-max" role="button" tabindex="0">max volume</button>
+        <div class="jp-volume-bar">
+          <div class="jp-volume-bar-value"></div>
+        </div>
+      </div>
+      <div class="jp-controls-holder">
+        <div class="jp-controls">
+          <button class="jp-previous" role="button" tabindex="0">previous</button>
+          <button class="jp-play" role="button" tabindex="0">play</button>
+          <button class="jp-stop" role="button" tabindex="0">stop</button>
+          <button class="jp-next" role="button" tabindex="0">next</button>
+        </div>
+        <div class="jp-progress">
+          <div class="jp-seek-bar">
+            <div class="jp-play-bar"></div>
+          </div>
+        </div>
+        <div class="jp-current-time" role="timer" aria-label="time">&nbsp;</div>
+        <div class="jp-duration" role="timer" aria-label="duration">&nbsp;</div>
+        <div class="jp-toggles">
+          <button class="jp-repeat" role="button" tabindex="0">repeat</button>
+          <button class="jp-shuffle" role="button" tabindex="0">shuffle</button>
+        </div>
+      </div>
+    </div>
+    <div class="jp-playlist">
+      <ul>
+        <li>&nbsp;</li>
+      </ul>
+    </div>
+    <div class="jp-details">
+      <div class="jp-title" aria-label="title">&nbsp;</div>
+    </div>
+    <div class="jp-no-solution">
+      <span>Update Required</span>
+      To play the media you will need to either update your browser to a recent version, or otherwise work some magic.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

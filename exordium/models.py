@@ -194,6 +194,13 @@ class Album(models.Model):
         self.normname = App.norm_name(self.name)
         super(Album, self).save(*args, **kwargs)
 
+    def get_songs_ordered(self):
+        """
+        Returns all tracks in our album, ordered.  A convenience function
+        for inclusion in templates, basically.
+        """
+        return self.song_set.all().order_by('tracknum')
+
     def get_secondary_artists_list(self):
         """
         Returns a list of all artists contained in songs in this

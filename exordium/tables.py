@@ -136,7 +136,12 @@ class SongTable(tables.Table):
     dl = tables.TemplateColumn(
         verbose_name='',
         orderable=False,
-        template_name='exordium/download_link.html'
+        template_name='exordium/link_song_download.html'
+    )
+    play = tables.TemplateColumn(
+        verbose_name='',
+        orderable=False,
+        template_name='exordium/link_song_play.html'
     )
 
     def render_length(self, value):

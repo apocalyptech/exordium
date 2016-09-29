@@ -1,4 +1,14 @@
-Exordium is available under the New/Modified BSD License.
+Exordium is available under the New/Modified BSD License (below)
+
+Exordium also packages jPlayer (http://jplayer.org), which is available under
+the MIT license (see LICENSE-jPlayer.txt)
+
+Exordium also packages jQuery (https://jquery.com/), which is available
+under the MIT license (see LICENSE-jQuery.txt)
+
+-------------------------------------------------------------------------------
+Exordium License:
+-------------------------------------------------------------------------------
 
 Copyright (c) 2016, Christopher J. Kucera
 All rights reserved.

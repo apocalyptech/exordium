@@ -5,6 +5,34 @@
 <title>Exordium{% if exordium_title and exordium_title != '' %} | {{ exordium_title }}{% endif %}</title>
 <link rel="stylesheet" type="text/css" href="{% static 'exordium/style.css' %}" />
 <link rel="stylesheet" type="text/css" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+<script type="text/javascript">
+//<!CDATA[
+var jplayerWindow = null;
+function jplayerAdd(tracks) {
+    if (jplayerWindow == null || jplayerWindow.closed) {
+        jplayerOpen();
+        setTimeout(function(){jplayerAdd(tracks);}, 1500);
+    } else {
+        jplayerWindow.focus();
+        for (var i=0; i < tracks.length; i++) {
+            track = tracks[i];
+            dict = {title: track['title'], artist: track['artist'], poster: track['poster']};
+            if (track['type'] == 'mp3') {
+                dict['mp3'] = track['url'];
+            } else if (track['type'] == 'ogg') {
+                dict['oga'] = track['url'];
+            } else {
+                continue;
+            }
+            jplayerWindow.myPlaylist.add(dict);
+        }
+    }
+}
+function jplayerOpen() {
+    jplayerWindow = window.open('{% static 'exordium/jplayer/popup.html' %}', 'exordiumJPlayer', 'width=650,height=700');
+}
+//]]>
+</script>
 </head>
 <body>
 <div class="sidebar">

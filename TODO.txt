@@ -3,7 +3,6 @@ Now that my mental "TODO" contains a few more things than just
 be good to keep track of what I've been thinking about.
 
 * Tests for views
-* Streaming (html5 player)
 * Album Art updates via Album page itself, for admins
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
@@ -44,3 +43,12 @@ be good to keep track of what I've been thinking about.
   path - change it to something invalid and note that
   sometimes you'll get links, sometimes you won't.
 * Make 404s look nicer
+* Maybe make "Various" a non-reserved artist name?  We
+  could put in a big ol' random mess of characters for
+  the name, and just rely on Artist.various to display
+  it properly on the UI and all that.  That way if we
+  ever have a band whose name really is "Various" we
+  should be able to support it.  Would have to figure out
+  some UI differences to differentiate, if so.  Maybe
+  italics or something for the special artist?
+* m3u playlist generation from album page

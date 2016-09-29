@@ -68,3 +68,6 @@ h1 {
     border: 2px solid #777;
     padding: 1em;
 }
+.playbutton {
+    cursor: pointer;
+}
