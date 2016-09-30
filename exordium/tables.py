@@ -9,7 +9,7 @@ from .models import Artist, Album, Song
 
 class ArtistTable(tables.Table):
 
-    name = tables.LinkColumn('exordium:artist', args=[tables.A('pk')])
+    name = tables.LinkColumn('exordium:artist', args=[tables.A('normname')])
     albums = tables.Column(
         verbose_name='Albums',
         orderable=False,

@@ -5,7 +5,6 @@ bitrot:
 * ETA on library add
 * Album art is being loaded multiple times for the same
   album during add()
-* Use normnames in URLs rather than IDs?
 
 Things which may or may not make that cut:
 
