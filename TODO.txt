@@ -2,19 +2,35 @@ Now that my mental "TODO" contains a few more things than just
 "make this app at least marginally functional," I figure it'll
 be good to keep track of what I've been thinking about.
 
+Things I want to get done before inevitably letting the project
+bitrot:
+
 * Tests for views
 * Album Art updates via Album page itself, for admins
+* ETA on library add
+* Album art is being loaded multiple times for the same
+  album during add()
+* Use normnames in URLs rather than IDs?
+* Should probably be using tmpdir stuff for test library,
+  rather than a subdir of 'testdata'.  Works well enough
+  for development but would fail if installed For Real.
+* Make 404s look nicer
+
+Things which may or may not make that cut:
+
+* Direct links to pages with django-tables2 (instead of just
+  next/prev)
+
+Things which, if I'm being honest here, are likely to never
+actually happen:
+
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
-* ETA on library add
 * Extra details on album song list (format, bitrate, etc)
   (something else for user prefs.  Will have to wait until
   I figure out a *reasonable* way to have dynamic column
   definitions in django-tables2.  I don't want to define
   a different class for each possibility.)
-* Album art is being loaded multiple times for the same
-  album during add()
-* Use normnames in URLs rather than IDs?
 * Improve the Django admin area and make it actually-useful
 * Might be nice to support some artist groupings.
   ("Amanda Palmer and the Grand Theft Orchestra" albums
@@ -24,13 +40,7 @@ be good to keep track of what I've been thinking about.
   find a tag to use, instead, but I'm guessing that'd
   overly-complicate the backend, which I think I'd like
   to keep cleaner.  But it might be a monster anyway.)
-* General query cleanup in views.
-* Direct links to pages with django-tables2 (instead of just
-  next/prev)
 * "Random albums" page?
-* Should probably be using tmpdir stuff for test library,
-  rather than a subdir of 'testdata'.  Works well enough
-  for development but would fail if installed For Real.
 * User preferences don't seem to always get applied quite
   right?  I wonder if it's something to do with
   threading?  For instance for a bit I could pretty
@@ -42,7 +52,6 @@ be good to keep track of what I've been thinking about.
   The easiest to play with is probably the zipfile
   path - change it to something invalid and note that
   sometimes you'll get links, sometimes you won't.
-* Make 404s look nicer
 * Maybe make "Various" a non-reserved artist name?  We
   could put in a big ol' random mess of characters for
   the name, and just rely on Artist.various to display
