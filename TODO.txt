@@ -6,7 +6,6 @@ bitrot:
 * Album art is being loaded multiple times for the same
   album during add()
 * Use normnames in URLs rather than IDs?
-* Make 404s look nicer
 
 Things which may or may not make that cut:
 
