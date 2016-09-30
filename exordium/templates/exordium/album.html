@@ -7,6 +7,13 @@
     <tr>
         <td class="album_art_cell">
 {% if album.art_filename and album.art_filename != '' %}<a href="{% url 'exordium:origalbumart' album.pk album.art_ext %}"><img src="{% url 'exordium:albumart' album.pk 'album' %}" border="0"/></a>{% else %}<img src="{% static 'exordium/no_album_art.png' %}">{% endif %}
+
+{% if request.user.is_staff %}
+<form method="GET" action="{% url 'exordium:albumartupdate' album.pk %}">
+    <input class="album_art_regen" type="submit" value="Force Album Art Regen" />
+</form>
+{% endif %}
+
         </td>
         <td class="album_info_cell">
 <p>Artist: <strong><a href="{% url 'exordium:artist' album.artist.pk %}">{{ album.artist }}</a></strong></p>
@@ -50,12 +57,6 @@
 <form method="GET" action="{% url 'exordium:m3udownload' album.pk %}">
     <input type="submit" value="Stream Album (.m3u playlist)" />
 </form>
-
-{% if request.user.is_staff %}
-<form method="GET" action="{% url 'exordium:albumartupdate' album.pk %}">
-    <input type="submit" value="Force Album Art Regen" />
-</form>
-{% endif %}
 
 </td>
 </tr>
