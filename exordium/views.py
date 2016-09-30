@@ -359,7 +359,7 @@ class LibraryActionView(generic.View):
                         'line': line,
                     }))
             else:
-                yield line
+                yield "%s\n" % (line)
 
 @method_decorator(staff_member_required, name='dispatch')
 class LibraryAddView(LibraryActionView):

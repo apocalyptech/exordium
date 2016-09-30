@@ -4,7 +4,6 @@ bitrot:
 * Tests for views
 * Album art is being loaded multiple times for the same
   album during add()
-* Management subcommands to add/update the library
 
 Things which may or may not make that cut:
 
@@ -21,6 +20,11 @@ Things which may or may not make that cut:
   wordy and not needed most of the time.  Use 'view.varname'
   in the template and it'll pull from the named var/func.
   No fussy context fiddling required!
+* Management subcommands to add/update the library
+  (actually, this is more complicated than I'd considered
+  initially, because the user running the add/update won't
+  be the same as the user Django is running as, so 
+  permission issues come into play.)
 
 Things which, if I'm being honest here, are likely to never
 actually happen:
@@ -69,3 +73,8 @@ actually happen:
   those from the CLI?) Would make imports quicker,
   though I'd have to make sure to have checks in place to
   ensure checksums are present before processing updates.
+* Could maybe apply some sorting while adding/updating so
+  that updates appear in some kind of order rather than
+  effectively randomly (would be especially nice for the
+  initial bulk add(), so you'd have at least SOME indication
+  of how much more time will be needed)

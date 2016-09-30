@@ -29,6 +29,10 @@ BODY {
 .library_update {
     font-size: smaller;
 }
+.update_info {
+    font-size: smaller;
+    max-width: 60em;
+}
 .adminlinks {
     font-size: smaller;
 }
