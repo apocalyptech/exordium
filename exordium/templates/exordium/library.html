@@ -9,7 +9,11 @@
 {{ count_albums }} album{{ count_albums|pluralize }}, and
 {{ count_songs }} song{{ count_songs|pluralize }}.</p>
 
-<p><a href="{% url 'exordium:library_add' %}">Add new music</a></p>
-<p><a href="{% url 'exordium:library_update' %}">Update/Clean music (will also add)</a></p>
+<form method="GET" action="{% url 'exordium:library_add' %}">
+    <input type="submit" value="Add new music" />
+</form>
+<form method="GET" action="{% url 'exordium:library_update' %}">
+    <input type="submit" value="Update/Clean music (will also add)" />
+</form>
 
 {% endblock %}
