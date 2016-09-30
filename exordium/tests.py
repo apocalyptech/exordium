@@ -7,6 +7,7 @@ import io
 import os
 import shutil
 import pathlib
+import tempfile
 
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 from mutagen.oggvorbis import OggVorbis
@@ -36,7 +37,7 @@ class ExordiumTests(TestCase):
     fixtures = ['initial_data.json']
 
     testdata_path = os.path.join(os.path.dirname(__file__), 'testdata')
-    library_path = os.path.join(testdata_path, 'library')
+    library_path = None
 
     prefs = None
 
@@ -50,10 +51,7 @@ class ExordiumTests(TestCase):
                 'silence.ogg', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
-        if os.path.exists(self.library_path):
-            raise Exception('Test data path "%s" cannot exist before running tests' %
-                (self.library_path))
-        os.mkdir(self.library_path)
+        self.library_path = tempfile.mkdtemp()
         self.prefs = global_preferences_registry.manager()
         self.prefs['exordium__base_path'] = self.library_path
 
