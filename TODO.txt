@@ -2,9 +2,9 @@ Things I want to get done before inevitably letting the project
 bitrot:
 
 * Tests for views
-* ETA on library add
 * Album art is being loaded multiple times for the same
   album during add()
+* Management subcommands to add/update the library
 
 Things which may or may not make that cut:
 
@@ -64,3 +64,8 @@ actually happen:
 * Theme support might be nice, and should be pretty
   trivial, though I doubt I'll take the time to figure
   it out.
+* Option to defer checksum calculations when doing initial
+  imports?  (Perhaps with a management subcommand to do
+  those from the CLI?) Would make imports quicker,
+  though I'd have to make sure to have checks in place to
+  ensure checksums are present before processing updates.

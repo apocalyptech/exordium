@@ -1362,6 +1362,8 @@ class App(object):
         # lists of all the songs in that dir (as a SongHelper object)
         songs_in_dir = {}
         checksums_computed = 0
+        checksum_start_time = timezone.localtime(timezone.now())
+        checksum_last_notification = timezone.localtime(timezone.now())
         total_checksums = 0
         for (short_filename, sha256sum) in to_add:
             if sha256sum is None:
@@ -1372,11 +1374,29 @@ class App(object):
             full_filename = os.path.join(App.prefs['exordium__base_path'], short_filename)
 
             retlines = []
+
+            # Report on our progress - ensure we have a new line to show the user
+            # at least every ten seconds.  We only check every 20 files, though, so
+            # technically this could go a bit over if we're real slow.  Show an ETA
+            # if we've been processing for more than 30 seconds total
             if sha256sum is None:
                 checksums_computed += 1
-                if checksums_computed % 100 == 0:
-                    yield (App.STATUS_INFO, 'Checksums gathered for %d/%d tracks (%d%%)' % (
-                        checksums_computed, total_checksums, (checksums_computed/total_checksums*100)))
+                if checksums_computed % 20 == 0:
+                    current_check_time = timezone.localtime(timezone.now())
+                    interval = current_check_time - checksum_last_notification
+                    total_interval = current_check_time - checksum_start_time
+                    if interval.seconds > 10:
+                        checksum_last_notification = current_check_time
+                        if total_interval.seconds > 30:
+                            checksums_per_sec = checksums_computed / total_interval.seconds
+                            eta = checksum_start_time + datetime.timedelta(seconds=(total_checksums/checksums_per_sec))
+                            yield (App.STATUS_INFO, 'Checksums gathered for %d/%d tracks (%d%%) - ETA of checksum completion: %s' % (
+                                checksums_computed, total_checksums, (checksums_computed/total_checksums*100),
+                                eta.strftime('%I:%M:%S %p')))
+                        else:
+                            yield (App.STATUS_INFO, 'Checksums gathered for %d/%d tracks (%d%%)' % (
+                                checksums_computed, total_checksums, (checksums_computed/total_checksums*100)))
+
             song_info = Song.from_filename(
                 full_filename, short_filename,
                 retlines=retlines, sha256sum=sha256sum)
