@@ -1620,19 +1620,22 @@ class App(object):
         to_add = []
         for path in App.get_filesystem_media():
             if path not in db_paths:
-                sha256sum = Song.get_sha256sum(os.path.join(App.prefs['exordium__base_path'], path))
-                if sha256sum in digest_dict:
-                    song = digest_dict[sha256sum]
-                    yield (App.STATUS_INFO, 'File move detected: %s -> %s' % (
-                        song.filename, path
-                    ))
-                    song.filename = path
-                    song.save()
-                    del digest_dict[sha256sum]
-                    del to_delete[song]
+                if os.access(os.path.join(App.prefs['exordium__base_path'], path), os.R_OK):
+                    sha256sum = Song.get_sha256sum(os.path.join(App.prefs['exordium__base_path'], path))
+                    if sha256sum in digest_dict:
+                        song = digest_dict[sha256sum]
+                        yield (App.STATUS_INFO, 'File move detected: %s -> %s' % (
+                            song.filename, path
+                        ))
+                        song.filename = path
+                        song.save()
+                        del digest_dict[sha256sum]
+                        del to_delete[song]
+                    else:
+                        yield (App.STATUS_DEBUG, 'Found new file: %s' % (path))
+                        to_add.append((path, sha256sum))
                 else:
-                    yield (App.STATUS_DEBUG, 'Found new file: %s' % (path))
-                    to_add.append((path, sha256sum))
+                    yield (App.STATUS_DEBUG, 'Audio file is not readable: %s' % (path))
 
         # Report on deleted files here, and delete them
         delete_rel_albums = {}

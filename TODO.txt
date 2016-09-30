@@ -2,8 +2,8 @@ Things I want to get done before inevitably letting the project
 bitrot:
 
 * Tests for views
-* Album art is being loaded multiple times for the same
-  album during add()
+* Tests for what happens when Add or Update/Clean encounters
+  files it doesn't have permission to actually read.
 
 Things which may or may not make that cut:
 
