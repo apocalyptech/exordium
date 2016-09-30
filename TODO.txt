@@ -51,7 +51,9 @@ be good to keep track of what I've been thinking about.
   should be able to support it.  Would have to figure out
   some UI differences to differentiate, if so.  Maybe
   italics or something for the special artist?
-* m3u playlist generation from album page
 * Theme support might be nice, and should be pretty
   trivial, though I doubt I'll take the time to figure
   it out.
+* Hm, should we store file size?  Might be nice to show
+  how much room things are taking.  Would know for album
+  zipfiles, too.

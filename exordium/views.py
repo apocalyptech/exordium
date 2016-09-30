@@ -398,3 +398,22 @@ def updateprefs(request):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
         return HttpResponseRedirect(reverse('exordium:index'))
+
+class AlbumM3UDownloadView(generic.DetailView):
+    """
+    View to download an M3U playlist from our album.  Useful?  Maybe?
+    """
+    model = Album
+    template_name = 'exordium/album_stream.m3u'
+    content_type = 'audio/mpegurl'
+
+    def render_to_response(self, context, **kwargs):
+        """
+        Override to set a custom headers
+        """
+        response = super(AlbumM3UDownloadView, self).render_to_response(context, **kwargs)
+        response['Content-Disposition'] = 'attachment; filename=%s_-_%s.m3u' % (
+            App.norm_filename(str(context['album'].artist)),
+            App.norm_filename(str(context['album'])))
+        return response
+
