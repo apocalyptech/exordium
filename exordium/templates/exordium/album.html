@@ -51,6 +51,12 @@
     <input type="submit" value="Stream Album (.m3u playlist)" />
 </form>
 
+{% if request.user.is_staff %}
+<form method="GET" action="{% url 'exordium:albumartupdate' album.pk %}">
+    <input type="submit" value="Force Album Art Regen" />
+</form>
+{% endif %}
+
 </td>
 </tr>
 </table>

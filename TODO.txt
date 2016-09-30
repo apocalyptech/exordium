@@ -2,7 +2,6 @@ Things I want to get done before inevitably letting the project
 bitrot:
 
 * Tests for views
-* Album Art updates via Album page itself, for admins
 * ETA on library add
 * Album art is being loaded multiple times for the same
   album during add()
@@ -19,6 +18,11 @@ Things which may or may not make that cut:
 * Hm, should we store file size?  Might be nice to show
   how much room things are taking.  Would know for album
   zipfiles, too.
+* http://reinout.vanrees.org/weblog/2014/05/19/context.html
+  Basically, overriding get_context_data() in our views is
+  wordy and not needed most of the time.  Use 'view.varname'
+  in the template and it'll pull from the named var/func.
+  No fussy context fiddling required!
 
 Things which, if I'm being honest here, are likely to never
 actually happen:

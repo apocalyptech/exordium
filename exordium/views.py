@@ -16,6 +16,49 @@ from .tables import ArtistTable, AlbumTable, SongTableWithAlbum, SongTableNoAlbu
 
 # Create your views here.
 
+def add_session_msg(request, message, level):
+    """
+    Adds a message to our session var which will get shown on
+    the next page view.  Only 'success' and 'fail' are valid
+    for ``level``, but values other than that will be silently
+    ignored.
+    """
+    if level != 'success' and level != 'fail':
+        return
+    varname = '%s_msg' % (level)
+    if varname not in request.session:
+        request.session[varname] = []
+    request.session[varname].append(message)
+    request.session.modified = True
+
+def add_session_success(request, message):
+    """
+    Adds a success message to our session var which will get shown
+    on the next page view.
+    """
+    add_session_msg(request, message, 'success')
+
+def add_session_fail(request, message):
+    """
+    Adds a fail message to our session var which will get shown
+    on the next page view.
+    """
+    add_session_msg(request, message, 'fail')
+
+def populate_session_msg_context(request, context):
+    """
+    Takes an existing ``context`` object (as constructed in
+    ``get_context_data()`` and populates any session messages
+    we may have.
+    """
+    for varname in ['success', 'fail']:
+        session_var = '%s_msg' % (varname)
+        ctx_var = 'messages_%s' % (varname)
+        if session_var in request.session:
+            if len(request.session[session_var]) > 0:
+                context[ctx_var] = request.session[session_var]
+                del request.session[session_var]
+
 class TitleListView(generic.ListView):
     """
     Simple extension to django.views.generic.ListView which
@@ -29,6 +72,7 @@ class TitleListView(generic.ListView):
     def get_context_data(self, **kwargs):
         context = super(TitleListView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        populate_session_msg_context(self.request, context)
         return context
 
 class TitleDetailView(generic.DetailView):
@@ -44,6 +88,7 @@ class TitleDetailView(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super(TitleDetailView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        populate_session_msg_context(self.request, context)
         return context
 
 class TitleTemplateView(generic.TemplateView):
@@ -59,6 +104,7 @@ class TitleTemplateView(generic.TemplateView):
     def get_context_data(self, **kwargs):
         context = super(TitleTemplateView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        populate_session_msg_context(self.request, context)
         return context
 
 class IndexView(TitleTemplateView):
@@ -302,6 +348,7 @@ class LibraryActionView(generic.View):
             'request': self.request,
             'exordium_title': self.exordium_title,
         })
+        populate_session_msg_context(self.request, context)
         page = template_page.render(context)
         for line in page.split("\n"):
             if line == '@__LIBRARY_UPDATE_AREA__@':
@@ -392,6 +439,7 @@ def updateprefs(request):
         request.user.preferences['exordium__show_live'] = True
     else:
         request.user.preferences['exordium__show_live'] = False
+    add_session_success(request, 'Set user preferences')
 
     # Redirect back to our previous page
     if 'HTTP_REFERER' in request.META:
@@ -417,3 +465,18 @@ class AlbumM3UDownloadView(generic.DetailView):
             App.norm_filename(str(context['album'])))
         return response
 
+def update_album_art(request, albumid):
+    """
+    Handler to force a full album art update on an album.  Useful if album
+    art has already been associated but "better" art has been put in place.
+    """
+    album = get_object_or_404(Album, pk=albumid)
+    retlines = album.update_album_art(full_refresh=True)
+    for (status, line) in retlines:
+        if status == App.STATUS_INFO or status == App.STATUS_SUCCESS:
+            add_session_success(request, line)
+        elif status == App.STATUS_ERROR:
+            add_session_fail(request, line)
+
+    # Now redirect back to the album
+    return HttpResponseRedirect(reverse('exordium:album', args=(albumid,)))

@@ -18,6 +18,14 @@ BODY {
 .red {
     color: red;
 }
+.success_message {
+    color: green;
+    text-align: center;
+}
+.fail_message {
+    color: red;
+    text-align: center;
+}
 .library_update {
     font-size: smaller;
 }

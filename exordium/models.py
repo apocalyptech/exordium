@@ -662,6 +662,7 @@ class Song(models.Model):
         """
         Returns our full path (including library prefix)
         """
+        App.ensure_prefs()
         return os.path.join(App.prefs['exordium__base_path'], self.filename)
 
     def base_dir(self):

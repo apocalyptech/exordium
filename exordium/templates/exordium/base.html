@@ -68,6 +68,23 @@ function jplayerOpen() {
 </div>
 <div class="body">
 {% if exordium_title and exordium_title != '' %}<h2>{{ exordium_title }}</h2>{% endif %}
+
+{% if messages_success %}
+<div class="success_message">
+{% for message in messages_success %}
+{{ message }}{% if not forloop.last %}<br />{% endif %}
+{% endfor %}
+</div>
+{% endif %}
+
+{% if messages_fail %}
+<div class="fail_message">
+{% for message in messages_fail %}
+{{ message }}{% if not forloop.last %}<br />{% endif %}
+{% endfor %}
+</div>
+{% endif %}
+
 {% block body %}
 {% endblock %}
 </div>
