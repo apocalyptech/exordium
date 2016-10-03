@@ -353,9 +353,9 @@ class BrowseAlbumView(TitleListView):
     def get_context_data(self, **kwargs):
         context = super(BrowseAlbumView, self).get_context_data(**kwargs)
         if self.get_preference('show_live'):
-            albums = Album.objects.all().order_by('artist__name','name')
+            albums = Album.objects.all().order_by('miscellaneous', 'name', 'artist__name')
         else:
-            albums = Album.objects.filter(live=False).order_by('artist__name','name')
+            albums = Album.objects.filter(live=False).order_by('miscellaneous', 'name', 'artist__name')
         table = AlbumTable(albums)
         RequestConfig(self.request).configure(table)
         context['table'] = table

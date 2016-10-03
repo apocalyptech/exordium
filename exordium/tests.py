@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from django.contrib.auth.models import User
+from django.contrib.staticfiles.templatetags.staticfiles import static
 
 from dynamic_preferences.registries import global_preferences_registry
 
@@ -5650,6 +5651,28 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
         self.assertContains(response, '1 album')
 
+        # May as well verify that we're seeing the no-album-art cover, as well
+        self.assertContains(response, '"%s"' % (static('exordium/no_album_art_small.png')))
+
+    def test_album_art(self):
+        """
+        Make sure that an album with album art has its art showing in the table.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Test Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertContains(response, 'Test Album')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, reverse('exordium:albumart', args=(album.pk, 'list',)))
+
     def test_four_albums(self):
         """
         Test what happens when there's four albums.  Ensure that they are
@@ -5978,6 +6001,199 @@ class BrowseArtistViewTests(ExordiumTests):
         self.assertQuerysetEqual(response.context['table'].data,
             [repr(various), repr(artist_b), repr(artist_a)])
         self.assertContains(response, "?sort=name")
+
+class BrowseAlbumViewTests(ExordiumTests):
+    """
+    Tests of our Browse Album page
+    """
+
+    def test_no_albums(self):
+        """
+        Test the view when there are no albums
+        """
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [])
+
+    def test_one_album(self):
+        """
+        Test the view when there is one album
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertContains(response, '1 album')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, '"%s"' % (static('exordium/no_album_art_small.png')))
+
+    def test_one_album_with_art(self):
+        """
+        Test the view when there is one album, with album art
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertContains(response, '1 album')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, reverse('exordium:albumart', args=(album.pk, 'list',)))
+
+    def test_ordering_three_regular_albums(self):
+        """
+        Test ordering with three "regular" albums.  Should be alphabetical by
+        album name.
+        """
+        self.add_mp3(artist='Zebra', title='Title 1',
+            album='Z Album', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='R Album', filename='song2.mp3')
+        self.add_mp3(artist='Zebra', title='Title 1',
+            album='Album', filename='song3.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 3)
+        albums = [
+            Album.objects.get(normname='album'),
+            Album.objects.get(normname='r album'),
+            Album.objects.get(normname='z album'),
+        ]
+
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertContains(response, '3 albums')
+        for al in albums:
+            self.assertContains(response, reverse('exordium:album', args=(al.pk,)))
+            self.assertContains(response, reverse('exordium:artist', args=(al.artist.normname,)))
+
+    def test_ordering_miscellaneous_albums(self):
+        """
+        By default, "miscellaneous" (non-album) albums should come at
+        the end of the list.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Z Album', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2',
+            album='S Album', filename='song2.mp3')
+        self.add_mp3(artist='Artist', title='Title 3',
+            filename='song3.mp3')
+        self.add_mp3(artist='Zebra', title='Title 4',
+            album='C Album', filename='song4.mp3')
+        self.add_mp3(artist='Zebra', title='Title 5',
+            album='V Album', filename='song5.mp3')
+        self.add_mp3(artist='Zebra', title='Title 6',
+            filename='song6.mp3')
+        self.add_mp3(artist='Yellow', title='Title 7',
+            filename='song7.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 7)
+        albums = []
+        for albumname in [
+                'C Album',
+                'S Album',
+                'V Album',
+                'Z Album',
+                Album.miscellaneous_format_str % ('Artist'),
+                Album.miscellaneous_format_str % ('Yellow'),
+                Album.miscellaneous_format_str % ('Zebra'),
+                ]:
+            albums.append(Album.objects.get(name=albumname))
+
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertContains(response, '7 albums')
+        for al in albums:
+            self.assertContains(response, reverse('exordium:album', args=(al.pk,)))
+            self.assertContains(response, reverse('exordium:artist', args=(al.artist.normname,)))
+
+    def test_pagination(self):
+        """
+        Test to make sure that our pagination is working properly.
+        The album browse page will show a total of 50 albums
+        """
+        for num in range(60):
+            self.add_mp3(artist='Artist', title='Title %d' % (num+1),
+                album='Album %02d' % (num+1), filename='song%d.mp3' % (num+1))
+        self.run_add()
+        self.assertEqual(Album.objects.count(), 60)
+
+        albums = {}
+        for num in range(60):
+            albums[num] = Album.objects.get(name='Album %02d' % (num+1))
+
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 60)
+        for num in range(50):
+            self.assertContains(response, '%s<' % (albums[num]))
+            self.assertContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        for num in range(50, 60):
+            self.assertNotContains(response, '%s<' % (albums[num]))
+            self.assertNotContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        self.assertContains(response, '50 of 60 albums')
+        self.assertContains(response, '"?page=2"')
+
+        # test page 2
+        response = self.client.get(reverse('exordium:browse_album'), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 60)
+        for num in range(50):
+            self.assertNotContains(response, '%s<' % (albums[num]))
+            self.assertNotContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        for num in range(50, 60):
+            self.assertContains(response, '%s<' % (albums[num]))
+            self.assertContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        self.assertContains(response, '10 of 60 albums')
+        self.assertContains(response, '"?page=1"')
+
+    def test_sorting(self):
+        """
+        Test at least one case of sorting.
+        """
+        self.add_mp3(artist='Zed', title='Title 1',
+            album='Album 1', filename='song1.mp3')
+        self.add_mp3(artist='Gee', title='Title 2',
+            album='Album 2', filename='song2.mp3')
+        self.add_mp3(artist='Artist', title='Title 3',
+            album='Album 3', filename='song3.mp3')
+        self.run_add()
+        self.assertEqual(Album.objects.count(), 3)
+
+        albums = [
+            Album.objects.get(name='Album 1'),
+            Album.objects.get(name='Album 2'),
+            Album.objects.get(name='Album 3'),
+        ]
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 3)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertContains(response, '"?sort=artist"')
+
+        # test the sorting button
+        response = self.client.get(reverse('exordium:browse_album'), {'sort': 'artist'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 3)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in reversed(albums)])
+        self.assertContains(response, '"?sort=-artist"')
 
 class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
     """
