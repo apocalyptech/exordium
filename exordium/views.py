@@ -59,7 +59,52 @@ def populate_session_msg_context(request, context):
                 context[ctx_var] = request.session[session_var]
                 del request.session[session_var]
 
-class TitleListView(generic.ListView):
+class UserAwareView(object):
+    """
+    Class to support our user preferences, basically.  Provides some
+    functions to allow us to store user preferences if the user is
+    logged in, or otherwise just log the value to the current
+    session.
+    """
+
+    def get_preference(self, prefname):
+        """
+        Get a preference, or None
+        """
+        return UserAwareView.get_preference_static(self.request, prefname)
+
+    def set_preference(self, prefname, value):
+        """
+        Sets a perference value
+        """
+        return UserAwareView.set_preference_static(self.request, prefname)
+
+    @staticmethod
+    def get_preference_static(request, prefname):
+        """
+        Get a preference, or None
+        """
+        full_name = 'exordium__%s' % (prefname)
+        if request.user.is_authenticated():
+            return request.user.preferences[full_name]
+        else:
+            if prefname in request.session:
+                return request.session[full_name]
+            else:
+                return None
+
+    @staticmethod
+    def set_preference_static(request, prefname, value):
+        """
+        Sets a perference value
+        """
+        full_name = 'exordium__%s' % (prefname)
+        if request.user.is_authenticated():
+            request.user.preferences[full_name] = value
+        else:
+            request.session[full_name] = value
+
+class TitleListView(generic.ListView, UserAwareView):
     """
     Simple extension to django.views.generic.ListView which
     allows us to set exordium_title as part of our object,
@@ -75,7 +120,7 @@ class TitleListView(generic.ListView):
         populate_session_msg_context(self.request, context)
         return context
 
-class TitleDetailView(generic.DetailView):
+class TitleDetailView(generic.DetailView, UserAwareView):
     """
     Simple extension to django.views.generic.DetailView which
     allows us to set exordium_title as part of our object,
@@ -91,7 +136,7 @@ class TitleDetailView(generic.DetailView):
         populate_session_msg_context(self.request, context)
         return context
 
-class TitleTemplateView(generic.TemplateView):
+class TitleTemplateView(generic.TemplateView, UserAwareView):
     """
     Simple extension to django.views.generic.TemplateView which
     allows us to set exordium_title as part of our object,
@@ -113,7 +158,7 @@ class IndexView(TitleTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
-        if self.request.user.preferences['exordium__show_live']:
+        if self.get_preference('show_live'):
             albums = Album.objects.all().order_by('-time_added')
         else:
             albums = Album.objects.filter(live=False).order_by('-time_added')
@@ -162,7 +207,7 @@ class SearchView(TitleTemplateView):
             context['artist_results'] = table
 
         album_filter = [(Q(name__icontains=search) | Q(normname__icontains=App.norm_name(search)))]
-        if not self.request.user.preferences['exordium__show_live']:
+        if not self.get_preference('show_live'):
             album_filter.append(Q(live=False))
         albums = Album.objects.filter(*album_filter).order_by('name')
         if albums.count() > 0:
@@ -172,7 +217,7 @@ class SearchView(TitleTemplateView):
             context['album_results'] = table
 
         song_filter = [(Q(title__icontains=search) | Q(normtitle__icontains=App.norm_name(search)))]
-        if not self.request.user.preferences['exordium__show_live']:
+        if not self.get_preference('show_live'):
             song_filter.append(Q(album__live=False))
         songs = Song.objects.filter(*song_filter).order_by('title')
         if songs.count() > 0:
@@ -198,7 +243,7 @@ class ArtistView(TitleDetailView):
             Q(song__group=self.object) |
             Q(song__conductor=self.object) |
             Q(song__composer=self.object))]
-        if not self.request.user.preferences['exordium__show_live']:
+        if not self.get_preference('show_live'):
             album_filter.append(Q(live=False))
         albums = Album.objects.filter(*album_filter).distinct().order_by(
             'artist__various', 'miscellaneous', 'name')
@@ -212,7 +257,7 @@ class ArtistView(TitleDetailView):
             Q(group=self.object) |
             Q(conductor=self.object) |
             Q(composer=self.object))]
-        if not self.request.user.preferences['exordium__show_live']:
+        if not self.get_preference('show_live'):
             song_filter.append(Q(album__live=False))
         song_query = Song.objects.filter(*song_filter)
         num_songs = song_query.count()
@@ -307,7 +352,7 @@ class BrowseAlbumView(TitleListView):
 
     def get_context_data(self, **kwargs):
         context = super(BrowseAlbumView, self).get_context_data(**kwargs)
-        if self.request.user.preferences['exordium__show_live']:
+        if self.get_preference('show_live'):
             albums = Album.objects.all().order_by('artist__name','name')
         else:
             albums = Album.objects.filter(live=False).order_by('artist__name','name')
@@ -331,7 +376,7 @@ class LibraryView(TitleTemplateView):
         context['count_songs'] = Song.objects.count()
         return context
 
-class LibraryActionView(generic.View):
+class LibraryActionView(generic.View, UserAwareView):
 
     exordium_title = 'Library Action'
     update_func = staticmethod(App.add)
@@ -402,7 +447,7 @@ class OriginalAlbumArtView(generic.View):
         else:
             raise Http404('Album art not found for album "%s / %s"' % (album.artist, album))
 
-class AlbumArtView(generic.View):
+class AlbumArtView(generic.View, UserAwareView):
     """
     Class to handle showing album art.
     """
@@ -437,9 +482,9 @@ def updateprefs(request):
     Handler to update our preferences.  Will redirect back to the page we were just on.
     """
     if 'show_live' in request.POST:
-        request.user.preferences['exordium__show_live'] = True
+        UserAwareView.set_preference_static(request, 'show_live', True)
     else:
-        request.user.preferences['exordium__show_live'] = False
+        UserAwareView.set_preference_static(request, 'show_live', False)
     add_session_success(request, 'Set user preferences')
 
     # Redirect back to our previous page
@@ -448,7 +493,7 @@ def updateprefs(request):
     else:
         return HttpResponseRedirect(reverse('exordium:index'))
 
-class AlbumM3UDownloadView(generic.DetailView):
+class AlbumM3UDownloadView(generic.DetailView, UserAwareView):
     """
     View to download an M3U playlist from our album.  Useful?  Maybe?
     """

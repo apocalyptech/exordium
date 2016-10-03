@@ -1,5 +1,10 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+
+from django.conf import settings
+
+from django.contrib.auth.models import User
 
 from dynamic_preferences.registries import global_preferences_registry
 
@@ -7,6 +12,7 @@ import io
 import os
 import shutil
 import pathlib
+import datetime
 import tempfile
 
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
@@ -14,6 +20,7 @@ from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
 from .models import Artist, Album, Song, App, AlbumArt
+from .views import UserAwareView
 
 # These two imports are just here in case we want to examine SQL while running tests.
 # If so, set "settings.DEBUG = True" in the test and then use connection.queries
@@ -417,6 +424,18 @@ class ExordiumTests(TestCase):
             new_mtime = ending_mtime + 1
             os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
 
+    def age_album(self, artist, album, age_days):
+        """
+        Given an album already in our database, age it by setting its
+        mtime to the current date minus the specified number of days.
+        Returns the album object, since it's likely you'll want to use
+        it for comparisons anyway.
+        """
+        album = Album.objects.get(artist__name=artist, name=album)
+        album.time_added = timezone.now() - datetime.timedelta(days=age_days)
+        album.save()
+        return album
+
     def get_file_contents(self, filename):
         """
         Retrieves file contents from the named file in the library
@@ -468,7 +487,7 @@ class ExordiumTests(TestCase):
         for (status, line) in appresults:
             if status == App.STATUS_ERROR:
                 error_count += 1
-        self.assertTrue(error_count >= errors_min)
+        self.assertGreaterEqual(error_count, errors_min)
         return appresults
 
     def run_add(self):
@@ -496,6 +515,36 @@ class ExordiumTests(TestCase):
         one error.
         """
         return self.assertErrors(list(App.update()), errors_min)
+
+# My main Django installation uses an authentication backend of
+# django.contrib.auth.backends.RemoteUserBackend, which the test
+# client does NOT know what to do with by default.  We could
+# have our stuff set a REMOTE_USER variable, perhaps, but it makes
+# more sense to just ensure that these tests use a more common
+# Django authentication backend.
+@override_settings(AUTHENTICATION_BACKENDS=['django.contrib.auth.backends.ModelBackend'])
+class ExordiumUserTests(ExordiumTests):
+    """
+    Tests of ours which also test views, which means that we might need to
+    have an admin/staff user in order to test various things.
+    """
+
+    @classmethod
+    def setUpTestData(self):
+        """
+        Sets up a user which all tests in this class can use.  The user
+        will have staff privileges.
+        """
+        super(ExordiumUserTests, self).setUpTestData()
+        self.user = User.objects.create_user('mainuser')
+        self.user.is_staff = True
+        self.user.save()
+
+    def login(self):
+        """
+        Logs in as our staff user
+        """
+        self.client.force_login(self.user)
 
 class BasicAddTests(ExordiumTests):
     """
@@ -5533,3 +5582,121 @@ class BasicAlbumArtTests(TestCase):
         for (before, after) in order_tests:
             self.assertEqual(App.get_cover_images(before), after)
 
+class IndexViewTests(ExordiumUserTests):
+    """
+    Tests of our main index view.  (Not a whole lot going on, really)
+    """
+
+    def test_no_albums(self):
+        """
+        Test what happens if there are no albums defined.  (No albums should
+        be found in the view's context.)  This test also tests for the various
+        links which are supposed to be present on the main page.
+        """
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [])
+
+        self.assertContains(response, 'AnonymousUser')
+        self.assertContains(response, reverse('exordium:browse_artist'))
+        self.assertContains(response, reverse('exordium:browse_album'))
+        self.assertContains(response, reverse('exordium:updateprefs'))
+
+        # We are not authenticated, so we should NOT see any of the admin
+        # links anywhere.
+        self.assertNotContains(response, reverse('exordium:library'))
+        self.assertNotContains(response, reverse('admin:dynamic_preferences_globalpreferencemodel_changelist'))
+        self.assertNotContains(response, reverse('admin:index'))
+
+    def test_no_albums_admin(self):
+        """
+        Test what happens if there are no albums defined.  (No albums should
+        be found in the view's context.)  This test also tests for the various
+        links which are supposed to be present on the main page.  This time,
+        request as if we're an admin.
+        """
+        self.login()
+        response = self.client.get(reverse('exordium:index'))
+        self.assertContains(response, 'mainuser')
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [])
+
+        self.assertContains(response, 'mainuser')
+        self.assertContains(response, reverse('exordium:browse_artist'))
+        self.assertContains(response, reverse('exordium:browse_album'))
+        self.assertContains(response, reverse('exordium:updateprefs'))
+
+        # We are authenticated, so we should see the admin links.
+        self.assertContains(response, reverse('exordium:library'))
+        self.assertContains(response, reverse('admin:dynamic_preferences_globalpreferencemodel_changelist'))
+        self.assertContains(response, reverse('admin:index'))
+
+    def test_single_album(self):
+        """
+        Test what happens when there's a single album.  We should see that
+        album!
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Test Album', filename='song1.mp3')
+        self.run_add()
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertContains(response, 'Test Album')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+
+    def test_four_albums(self):
+        """
+        Test what happens when there's four albums.  Ensure that they are
+        sorted properly.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 2', filename='song2.mp3')
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 3', filename='song3.mp3')
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 4', filename='song4.mp3')
+        self.run_add()
+        album_2 = self.age_album('Artist', 'Album 2', 2)
+        album_3 = self.age_album('Artist', 'Album 3', 4)
+        album_4 = self.age_album('Artist', 'Album 4', 6)
+        self.assertEqual(Album.objects.count(), 4)
+        album_1 = Album.objects.get(name='Album 1')
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data,
+            [repr(al) for al in [album_1, album_2, album_3, album_4]])
+        self.assertContains(response, 'Album 1')
+        self.assertContains(response, 'Album 2')
+        self.assertContains(response, 'Album 3')
+        self.assertContains(response, 'Album 4')
+
+# TODO: the next few classes are *clearly* not finished...
+
+class UserPreferenceTests(ExordiumUserTests):
+    """
+    Tests of our user-based preferences, which for the purpose of this
+    class are View-dependent, because if we are a logged-in user they
+    should be stored in our actual user preferences DB-or-whatever (via
+    our third party django-dynamic-preferences, but if we're AnonymousUser,
+    it should just be stored in our session.
+    """
+
+    def test_anonymous(self):
+        """
+        Test the behavior when we're anonymous.  Should be stored just
+        in the session.
+        """
+        response = self.client.get(reverse('exordium:index'))
+        #self.assertEqual(UserAwareView.get_preference_static(self.client.request, 'show_live'), None)
+
+class LiveAlbumViewTests(ExordiumUserTests):
+    """
+    """
