@@ -5723,6 +5723,38 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, '10 of 30 albums')
         self.assertContains(response, '"?page=1"')
 
+    def test_sorting(self):
+        """
+        Test for at least one sorting link
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='song1.mp3', year=2016)
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 2', filename='song2.mp3', year=2006)
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 2)
+        album_2 = self.age_album('Artist', 'Album 2', 2)
+        album_1 = Album.objects.get(name='Album 1')
+
+        # Initial view, should be sorted by addition time
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data,
+            [repr(al) for al in [album_1, album_2]])
+        self.assertContains(response, 'Album 1')
+        self.assertContains(response, 'Album 2')
+        self.assertContains(response, '"?sort=year"')
+
+        # Now sort by year
+        response = self.client.get(reverse('exordium:index'), {'sort': 'year'})
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data,
+            [repr(al) for al in [album_2, album_1]])
+        self.assertContains(response, 'Album 1')
+        self.assertContains(response, 'Album 2')
+        self.assertContains(response, '"?sort=-year"')
+
 # TODO: Really we should convert our preference form to a django.form.Form
 # and test the full submission, rather than just faking a POST.
 class UserPreferenceTests(ExordiumUserTests):
@@ -5918,6 +5950,34 @@ class BrowseArtistViewTests(ExordiumTests):
         self.assertContains(response, 'Various<')
         self.assertContains(response, '6 of 31 artists')
         self.assertContains(response, '"?page=1"')
+
+    def test_sorting(self):
+        """
+        Test at least one sort
+        """
+        self.add_mp3(artist='A Artist', title='Title 1',
+            album='Album 1', filename='song1.mp3')
+        self.add_mp3(artist='B Artist', title='Title 2',
+            album='Album 2', filename='song2.mp3')
+        self.run_add()
+
+        various = Artist.objects.get(normname='various')
+        artist_a = Artist.objects.get(normname='a artist')
+        artist_b = Artist.objects.get(normname='b artist')
+
+        # Initial view, artist name.
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data,
+            [repr(artist_a), repr(artist_b), repr(various)])
+        self.assertContains(response, "?sort=-name")
+
+        # Now sort by name descending
+        response = self.client.get(reverse('exordium:browse_artist'), {'sort': '-name'})
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data,
+            [repr(various), repr(artist_b), repr(artist_a)])
+        self.assertContains(response, "?sort=name")
 
 class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
     """
