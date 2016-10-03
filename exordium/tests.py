@@ -564,7 +564,7 @@ class BasicAddTests(ExordiumTests):
         self.add_mp3(artist='Artist', title='Title', basefile='silence-%s.mp3' % (mode.lower()))
         self.run_add()
         song = Song.objects.get(title='Title')
-        self.assertEquals(song.mode, mode.upper())
+        self.assertEqual(song.mode, mode.upper())
 
     def mp3_year_test(self, year, yeartag):
         """
@@ -574,7 +574,7 @@ class BasicAddTests(ExordiumTests):
         self.add_mp3(artist='Artist', title='Title', year=year, yeartag=yeartag)
         self.run_add()
         song = Song.objects.get()
-        self.assertEquals(song.year, year)
+        self.assertEqual(song.year, year)
 
     ###
     ### Actual tests follow
@@ -5678,8 +5678,8 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album 3')
         self.assertContains(response, 'Album 4')
 
-# TODO: the next few classes are *clearly* not finished...
-
+# TODO: Really we should convert our preference form to a django.form.Form
+# and test the full submission, rather than just faking a POST.
 class UserPreferenceTests(ExordiumUserTests):
     """
     Tests of our user-based preferences, which for the purpose of this
@@ -5689,14 +5689,79 @@ class UserPreferenceTests(ExordiumUserTests):
     it should just be stored in our session.
     """
 
-    def test_anonymous(self):
+    def test_show_live_anonymous(self):
         """
         Test the behavior when we're anonymous.  Should be stored just
         in the session.
         """
+
+        # First up - our default show_live should be None
         response = self.client.get(reverse('exordium:index'))
-        #self.assertEqual(UserAwareView.get_preference_static(self.client.request, 'show_live'), None)
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), None)
+        self.assertNotIn('exordium__show_live', response.wsgi_request.session)
+
+        # Next: submit our preferences form to enable show_live.  Actually loading
+        # the index again here isn't really required, but this simulates a browser,
+        # so I dig it.
+        response = self.client.post(reverse('exordium:updateprefs'), {'show_live': 'yes'})
+        self.assertRedirects(response, reverse('exordium:index'))
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), True)
+        self.assertIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.session['exordium__show_live'], True)
+
+        # And now, submit one more, flipping back to False.  Once again, the extra
+        # redirect to index is a bit gratuitous.
+        response = self.client.post(reverse('exordium:updateprefs'), {})
+        self.assertRedirects(response, reverse('exordium:index'))
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), False)
+        self.assertIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.session['exordium__show_live'], False)
+
+    def test_show_live_user(self):
+        """
+        Test the behavior when we're logged in.  Should be stored in
+        our user preferences, and avoid the session entirely.
+        """
+        
+        # Log in!
+        self.login()
+
+        # Now, our default show_live should be False
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), False)
+        self.assertNotIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
+
+        # Next: submit our preferences form to enable show_live.  Actually loading
+        # the index again here isn't really required, but this simulates a browser,
+        # so I dig it.
+        response = self.client.post(reverse('exordium:updateprefs'), {'show_live': 'yes'})
+        self.assertRedirects(response, reverse('exordium:index'))
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), True)
+        self.assertNotIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], True)
+
+        # And now, submit one more, flipping back to False.  Once again, the extra
+        # redirect to index is a bit gratuitous.
+        response = self.client.post(reverse('exordium:updateprefs'), {})
+        self.assertRedirects(response, reverse('exordium:index'))
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), False)
+        self.assertNotIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
 
 class LiveAlbumViewTests(ExordiumUserTests):
     """
     """
+
+    def test_foo(self):
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='2016.01.01 - Live at City Name', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertEqual(album.live, True)

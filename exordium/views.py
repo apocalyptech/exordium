@@ -88,7 +88,7 @@ class UserAwareView(object):
         if request.user.is_authenticated():
             return request.user.preferences[full_name]
         else:
-            if prefname in request.session:
+            if full_name in request.session:
                 return request.session[full_name]
             else:
                 return None

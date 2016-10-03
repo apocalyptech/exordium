@@ -25,6 +25,7 @@ Things which may or may not make that cut:
   initially, because the user running the add/update won't
   be the same as the user Django is running as, so 
   permission issues come into play.)
+* Convert our two forms to actual django Forms.
 
 Things which, if I'm being honest here, are likely to never
 actually happen:
