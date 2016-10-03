@@ -5648,6 +5648,7 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, 'Test Album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, '1 album')
 
     def test_four_albums(self):
         """
@@ -5677,6 +5678,50 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album 2')
         self.assertContains(response, 'Album 3')
         self.assertContains(response, 'Album 4')
+        self.assertContains(response, '4 albums')
+
+    def test_pagination(self):
+        """
+        Test to make sure that our pagination is working properly.
+        The index page will show a total of 20 albums
+        """
+        for num in range(30):
+            self.add_mp3(artist='Artist', title='Title %d' % (num+1),
+                album='Album %d' % (num+1), filename='song%d.mp3' % (num+1))
+        self.run_add()
+        self.assertEqual(Album.objects.count(), 30)
+
+        albums = {}
+        for num in range(30):
+            self.age_album(artist='Artist',
+                album='Album %d' % (num+1),
+                age_days=num+1)
+            albums[num] = Album.objects.get(name='Album %d' % (num+1))
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['album_list'].data), 30)
+        for num in range(20):
+            self.assertContains(response, '%s<' % (albums[num]))
+            self.assertContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        for num in range(20, 30):
+            self.assertNotContains(response, '%s<' % (albums[num]))
+            self.assertNotContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        self.assertContains(response, '20 of 30 albums')
+        self.assertContains(response, '"?page=2"')
+
+        # test page 2
+        response = self.client.get(reverse('exordium:index'), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['album_list'].data), 30)
+        for num in range(20):
+            self.assertNotContains(response, '%s<' % (albums[num]))
+            self.assertNotContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        for num in range(20, 30):
+            self.assertContains(response, '%s<' % (albums[num]))
+            self.assertContains(response, reverse('exordium:album', args=(albums[num].pk,)))
+        self.assertContains(response, '10 of 30 albums')
+        self.assertContains(response, '"?page=1"')
 
 # TODO: Really we should convert our preference form to a django.form.Form
 # and test the full submission, rather than just faking a POST.
@@ -5762,8 +5807,123 @@ class UserPreferenceTests(ExordiumUserTests):
         response = self.client.post(reverse('exordium:updateprefs'), {}, HTTP_REFERER=reverse('exordium:browse_artist'))
         self.assertRedirects(response, reverse('exordium:browse_artist'))
 
-class LiveAlbumViewTests(ExordiumUserTests):
+class BrowseArtistViewTests(ExordiumTests):
     """
+    Tests of our Browse Artists page
+    """
+
+    def test_no_artists(self):
+        """
+        Test the view when there are no artists (except for Various)
+        """
+        various = Artist.objects.get()
+
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(various)])
+        self.assertContains(response, '1 artist')
+        self.assertContains(response, reverse('exordium:artist', args=(various.normname,)))
+
+    def test_one_artists(self):
+        """
+        Test the view when there is one artist (and Various)
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', filename='song1.mp3')
+        self.run_add()
+
+        various = Artist.objects.get(normname='various')
+        artist = Artist.objects.get(normname='artist')
+
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(artist), repr(various)])
+        self.assertContains(response, '2 artists')
+        for a in [various, artist]:
+            self.assertContains(response, reverse('exordium:artist', args=(a.normname,)))
+
+    def test_ten_artists(self):
+        """
+        Test the view when there are a bunch of artists
+        """
+        artists = ['Adipiscing',
+            'Amet',
+            'Congue',
+            'Consectetur',
+            'Dolor',
+            'Elit',
+            'Ipsum',
+            'Lorem',
+            'Sit',
+            'Vivamus',
+        ]
+        for (idx, artist) in enumerate(artists):
+            self.add_mp3(artist=artist, title='Title %d' % (idx+1),
+                album='Album', filename='song%d.mp3' % (idx+1))
+        self.run_add()
+
+        # add Various to our list, in the properly-sorted place.
+        artists.insert(9, 'Various')
+        artist_objs = []
+        for artist in artists:
+            artist_objs.append(Artist.objects.get(name=artist))
+
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data,
+            [repr(artist) for artist in artist_objs])
+        self.assertContains(response, '11 artists')
+        for artist in artist_objs:
+            self.assertContains(response, reverse('exordium:artist',
+                args=(artist.normname,)))
+
+    def test_pagination(self):
+        """
+        Test to make sure that our pagination is working properly.
+        The Browse Artists page will show a total of 25 artists
+        """
+        for num in range(30):
+            self.add_mp3(artist='Artist %02d' % (num+1), title='Title %d' % (num+1),
+                album='Album %d' % (num+1), filename='song%d.mp3' % (num+1))
+        self.run_add()
+        self.assertEqual(Artist.objects.count(), 31)
+
+        artists = {}
+        for num in range(30):
+            artists[num] = Artist.objects.get(name='Artist %02d' % (num+1))
+
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 31)
+        for num in range(25):
+            self.assertContains(response, '%s<' % (artists[num]))
+            self.assertContains(response, reverse('exordium:artist', args=(artists[num].normname,)))
+        for num in range(25, 30):
+            self.assertNotContains(response, '%s<' % (artists[num]))
+            self.assertNotContains(response, reverse('exordium:artist', args=(artists[num].normname,)))
+        self.assertNotContains(response, 'Various<')
+        self.assertContains(response, '25 of 31 artists')
+        self.assertContains(response, '"?page=2"')
+
+        # test page 2
+        response = self.client.get(reverse('exordium:browse_artist'), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['table'].data), 31)
+        for num in range(25):
+            self.assertNotContains(response, '%s<' % (artists[num]))
+            self.assertNotContains(response, reverse('exordium:artist', args=(artists[num].normname,)))
+        for num in range(25, 30):
+            self.assertContains(response, '%s<' % (artists[num]))
+            self.assertContains(response, reverse('exordium:artist', args=(artists[num].normname,)))
+        self.assertContains(response, 'Various<')
+        self.assertContains(response, '6 of 31 artists')
+        self.assertContains(response, '"?page=1"')
+
+class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
+    """
+    Tests of our live album viewing functionality.  They can be either
+    hidden or shown based on user preference, so there'll basically just
+    be one test in here per view where this preference applies.
     """
 
     def set_show_live(self, show_live=True):
@@ -5772,12 +5932,15 @@ class LiveAlbumViewTests(ExordiumUserTests):
         user preference form.  (That way we don't need a request object.)
         """
         if show_live:
-            post_data = {'show_live': yes}
+            post_data = {'show_live': 'yes'}
         else:
             post_data = {}
         self.client.post(reverse('exordium:updateprefs'), post_data)
 
-    def test_foo(self):
+    def test_index(self):
+        """
+        Tests our index page display
+        """
         self.add_mp3(artist='Artist', title='Title 1',
             album='2016.01.01 - Live at City Name', filename='song1.mp3')
         self.run_add()
@@ -5785,3 +5948,32 @@ class LiveAlbumViewTests(ExordiumUserTests):
         self.assertEqual(Album.objects.count(), 1)
         album = Album.objects.get()
         self.assertEqual(album.live, True)
+
+        # Default is off
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [])
+        self.assertNotContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertNotContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+
+        # Now flip it on
+        self.set_show_live()
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, '1 album')
+
+class LiveAlbumViewTestsUser(LiveAlbumViewTestsAnonymous):
+    """
+    Some nonsense along the lines of BasicUpdateAsAddTests.  Basically,
+    all of our tests in LiveAlbumViewTestsAnonymous should work just
+    as well if the user is logged in as when the user is anonymous.  So,
+    we have a custom setUp() function here which will do that prior to
+    every test.
+    """
+
+    def setUp(self):
+        super(LiveAlbumViewTestsUser, self).setUp()
+        self.login()
