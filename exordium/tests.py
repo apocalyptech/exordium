@@ -5753,9 +5753,29 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
 
+    def test_preferences_referer_redirect(self):
+        """
+        After a preference submission, we should be returned to the page
+        we started on.
+        """
+        
+        response = self.client.post(reverse('exordium:updateprefs'), {}, HTTP_REFERER=reverse('exordium:browse_artist'))
+        self.assertRedirects(response, reverse('exordium:browse_artist'))
+
 class LiveAlbumViewTests(ExordiumUserTests):
     """
     """
+
+    def set_show_live(self, show_live=True):
+        """
+        Sets our ``show_live`` preference as specified, by submitting our
+        user preference form.  (That way we don't need a request object.)
+        """
+        if show_live:
+            post_data = {'show_live': yes}
+        else:
+            post_data = {}
+        self.client.post(reverse('exordium:updateprefs'), post_data)
 
     def test_foo(self):
         self.add_mp3(artist='Artist', title='Title 1',

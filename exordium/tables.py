@@ -30,7 +30,7 @@ class ArtistTable(tables.Table):
             Q(song__group=record) |
             Q(song__conductor=record) |
             Q(song__composer=record))]
-        if not self.user.preferences['exordium__show_live']:
+        if not self.view.get_preference('show_live'):
             album_filter.append(Q(live=False))
         return Album.objects.filter(*album_filter).distinct().count()
 
@@ -40,7 +40,7 @@ class ArtistTable(tables.Table):
         """
         song_filter = [(Q(artist=record) | Q(group=record) |
             Q(conductor=record) | Q(composer=record))]
-        if not self.user.preferences['exordium__show_live']:
+        if not self.view.get_preference('show_live'):
             song_filter.append(Q(album__live=False))
         return Song.objects.filter(*song_filter).count()
 
@@ -51,7 +51,7 @@ class ArtistTable(tables.Table):
         fields = ['name']
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.view = kwargs.pop('view', None)
         super(ArtistTable, self).__init__(*args, **kwargs)
 
 class AlbumTable(tables.Table):

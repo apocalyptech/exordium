@@ -202,7 +202,7 @@ class SearchView(TitleTemplateView):
         ).order_by('name')
         if artists.count() > 0:
             show_artists = True
-            table = ArtistTable(artists, user=self.request.user, prefix='artist-')
+            table = ArtistTable(artists, view=self, prefix='artist-')
             RequestConfig(self.request).configure(table)
             context['artist_results'] = table
 
@@ -340,7 +340,7 @@ class BrowseArtistView(TitleListView):
     def get_context_data(self, **kwargs):
         context = super(BrowseArtistView, self).get_context_data(**kwargs)
         artists = Artist.objects.all().order_by('name')
-        table = ArtistTable(artists, user=self.request.user)
+        table = ArtistTable(artists, view=self)
         RequestConfig(self.request).configure(table)
         context['table'] = table
         return context
