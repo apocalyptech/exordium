@@ -7630,7 +7630,10 @@ class AlbumDownloadViewTests(ExordiumTests):
         self.assertEqual(os.path.exists(zip_file), True)
 
         with zipfile.ZipFile(zip_file, 'r') as zf:
-            self.assertEqual(zf.namelist(), ['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
+            self.assertEqual(
+                sorted(zf.namelist()),
+                sorted(['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
+            )
 
 class AlbumM3UDownloadViewTests(ExordiumTests):
     """
@@ -7697,6 +7700,108 @@ class AlbumM3UDownloadViewTests(ExordiumTests):
             self.assertContains(response, str(song.artist))
             self.assertContains(response, str(song.title))
             self.assertContains(response, song.get_download_url())
+
+class LibraryViewTests(ExordiumUserTests):
+    """
+    Tests for our main library view index.  Not a whole lot here, honestly.
+    I'm not bothering to test the aggregate information shown here, alas.
+    """
+
+    def test_without_permission(self):
+        """
+        Test when we're not actually logged in.
+        """
+
+        url = reverse('exordium:library')
+        response = self.client.get(url)
+        self.assertRedirects(response, '%s?next=%s' % (reverse('admin:login'), url))
+
+    def test_with_permission(self):
+        """
+        Test when we're logged in.
+        """
+
+        self.login()
+        response = self.client.get(reverse('exordium:library'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('exordium:library_add'))
+        self.assertContains(response, reverse('exordium:library_update'))
+
+class LibraryAddViewTests(ExordiumUserTests):
+    """
+    Testing of our library add view.  All we're really checking here
+    is that the add process takes place - all the actual add functionality
+    is tested in BasicAddTests.
+    """
+
+    def test_without_permission(self):
+        """
+        Test when we're not actually logged in.
+        """
+
+        url = reverse('exordium:library_add')
+        response = self.client.get(url)
+        self.assertRedirects(response, '%s?next=%s' % (reverse('admin:login'), url))
+
+    def test_with_permission(self):
+        """
+        Test when we're logged in - make sure an add actually happens.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+
+        self.login()
+        response = self.client.get(reverse('exordium:library_add'))
+        self.assertEqual(response.status_code, 200)
+        # Since LibraryAddView returns a StreamingHttpResponse, we need to
+        # iterate through it for anything to actually happen.
+        for line in response.streaming_content:
+            pass
+
+        self.assertEqual(Artist.objects.count(), 2)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+
+class LibraryUpdateViewTests(ExordiumUserTests):
+    """
+    Testing of our library update view.  All we're really checking here
+    is that the update process takes place - all the actual add functionality
+    is tested in BasicUpdateTests.
+    """
+
+    def test_without_permission(self):
+        """
+        Test when we're not actually logged in.
+        """
+
+        url = reverse('exordium:library_update')
+        response = self.client.get(url)
+        self.assertRedirects(response, '%s?next=%s' % (reverse('admin:login'), url))
+
+    def test_with_permission(self):
+        """
+        Test when we're logged in - make sure an add actually happens.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.update_mp3(filename='song1.mp3', title='New Title')
+
+        self.login()
+        response = self.client.get(reverse('exordium:library_update'))
+        self.assertEqual(response.status_code, 200)
+        # Since LibraryAddView returns a StreamingHttpResponse, we need to
+        # iterate through it for anything to actually happen.
+        for line in response.streaming_content:
+            pass
+
+        self.assertEqual(Artist.objects.count(), 2)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'New Title')
 
 class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
     """
