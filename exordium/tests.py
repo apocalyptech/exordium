@@ -5703,6 +5703,59 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album 4')
         self.assertContains(response, '4 albums')
 
+    def test_classical_album(self):
+        """
+        Test the display of an album with classical tags
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            group='Group', conductor='Conductor', composer='Composer',
+            album='Album 1', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Artist.objects.count(), 5)
+        self.assertEqual(Album.objects.count(), 1)
+
+        album = Album.objects.get()
+        artists = []
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertContains(response, 'Album 1')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        for artist in Artist.objects.exclude(name='Various'):
+            self.assertContains(response, str(artist))
+            self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
+
+    def test_various_album(self):
+        """
+        Test display of a Various Artists album
+        """
+        self.add_mp3(artist='Artist 1', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_mp3(artist='Artist 2', title='Title 2',
+            album='Album', filename='song2.mp3')
+        self.run_add()
+
+        self.assertEqual(Artist.objects.count(), 3)
+        self.assertEqual(Album.objects.count(), 1)
+        artist_1 = Artist.objects.get(name='Artist 1')
+        artist_2 = Artist.objects.get(name='Artist 2')
+        various = Artist.objects.get(name='Various')
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertContains(response, 'Album')
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, reverse('exordium:artist', args=(various.normname,)))
+        for artist in [artist_1, artist_2]:
+            self.assertNotContains(response, str(artist_1))
+            self.assertNotContains(response, reverse('exordium:artist', args=(artist.normname,)))
+
     def test_pagination(self):
         """
         Test to make sure that our pagination is working properly.
@@ -5929,6 +5982,34 @@ class BrowseArtistViewTests(ExordiumTests):
             [repr(artist) for artist in artist_objs])
         self.assertContains(response, '11 artists')
         for artist in artist_objs:
+            self.assertContains(response, reverse('exordium:artist',
+                args=(artist.normname,)))
+
+    def test_classical_song(self):
+        """
+        Test the view when a single song created multiple artists
+        """
+        self.add_mp3(artist='Artist', group='Group',
+            conductor='Conductor', composer='Composer',
+            title='Title', album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Artist.objects.count(), 5)
+        artists = [
+            Artist.objects.get(name='Artist'),
+            Artist.objects.get(name='Composer'),
+            Artist.objects.get(name='Conductor'),
+            Artist.objects.get(name='Group'),
+            Artist.objects.get(name='Various'),
+        ]
+
+        response = self.client.get(reverse('exordium:browse_artist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data,
+            [repr(artist) for artist in artists])
+        self.assertContains(response, '5 artists')
+        for artist in artists:
+            self.assertContains(response, str(artist))
             self.assertContains(response, reverse('exordium:artist',
                 args=(artist.normname,)))
 
@@ -6194,6 +6275,46 @@ class BrowseAlbumViewTests(ExordiumTests):
         self.assertEqual(len(response.context['table'].data), 3)
         self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in reversed(albums)])
         self.assertContains(response, '"?sort=-artist"')
+
+class ArtistViewTests(ExordiumTests):
+    """
+    Tests of our Artist info page
+    """
+
+    def test_invalid_artist(self):
+        """
+        Tests making a request for an artist which can't be found.
+        """
+        response = self.client.get(reverse('exordium:artist', args=('notfound',)))
+        self.assertEqual(response.status_code, 404)
+
+    def test_single_song(self):
+        """
+        Test an artist who only has a single song
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+        
+        self.assertEqual(Artist.objects.count(), 2)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+
+        artist = Artist.objects.get(name='Artist')
+        album = Album.objects.get()
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:artist', args=('artist',)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['albums'].data, [repr(album)])
+        self.assertEqual(response.context['have_songs'], True)
+        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertContains(response, 'Songs by %s' % (artist))
+        self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+
+        # May as well double-check the no-album-art-found image as well
+        self.assertContains(response, '"%s"' % (static('exordium/no_album_art_small.png')))
 
 class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
     """
