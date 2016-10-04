@@ -511,6 +511,7 @@ class AlbumM3UDownloadView(generic.DetailView, UserAwareView):
             App.norm_filename(str(context['album'])))
         return response
 
+@staff_member_required
 def update_album_art(request, albumid):
     """
     Handler to force a full album art update on an album.  Useful if album

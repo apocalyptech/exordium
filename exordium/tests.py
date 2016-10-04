@@ -4906,8 +4906,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.live, True)
 
-# TODO: add in our 'albumartupdate' button from the Album page
-class AlbumArtTests(ExordiumTests):
+class AlbumArtTests(ExordiumUserTests):
     """
     Tests about album art specifically
     """
@@ -5551,6 +5550,78 @@ class AlbumArtTests(ExordiumTests):
         art = AlbumArt.objects.get(album=al, size=size)
         self.assertEqual(art.resolution, resolution)
         self.assertNotEqual(art_pk, art.pk)
+
+    def test_admin_update_without_permission(self):
+        """
+        Test an admin album art update when we're not actually logged in.
+        """
+
+        url = reverse('exordium:albumartupdate', args=(42,))
+        response = self.client.get(url)
+        self.assertRedirects(response, '%s?next=%s' % (reverse('admin:login'), url))
+
+    def test_admin_update_invalid_album(self):
+        """
+        Test an admin album art update for an invalid album ID
+        """
+
+        self.login()
+        response = self.client.get(reverse('exordium:albumartupdate', args=(42,)))
+        self.assertEqual(response.status_code, 404)
+
+    def test_admin_update_no_change(self):
+        """
+        Test an admin album art update for an album which doesn't actually change.
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        orig_mtime = al.art_mtime
+        orig_filename = al.art_filename
+        orig_mime = al.art_mime
+        orig_ext = al.art_ext
+
+        self.login()
+        response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
+        self.assertRedirects(response, reverse('exordium:album', args=(al.pk,)))
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(orig_mtime, al.art_mtime)
+        self.assertEqual(orig_filename, al.art_filename)
+        self.assertEqual(orig_mime, al.art_mime)
+        self.assertEqual(orig_ext, al.art_ext)
+
+    def test_admin_update_better_filename(self):
+        """
+        Tests what happens when an update sees a "better" cover filename.
+        Our admin update should pick up on it.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='blah.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'blah.jpg')
+
+        self.add_art(filename='cover.jpg')
+
+        self.login()
+        response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
+        self.assertRedirects(response, reverse('exordium:album', args=(al.pk,)))
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
 
 class BasicAlbumArtTests(TestCase):
     """
