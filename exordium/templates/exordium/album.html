@@ -6,7 +6,7 @@
 <table class="album_info">
     <tr>
         <td class="album_art_cell">
-{% if album.art_filename and album.art_filename != '' %}<a href="{% url 'exordium:origalbumart' album.pk album.art_ext %}"><img src="{% url 'exordium:albumart' album.pk 'album' %}" border="0"/></a>{% else %}<img src="{% static 'exordium/no_album_art.png' %}">{% endif %}
+{% if album.has_album_art %}<a href="{% url 'exordium:origalbumart' album.pk album.art_ext %}"><img src="{% url 'exordium:albumart' album.pk 'album' %}" border="0"/></a>{% else %}<img src="{% static 'exordium/no_album_art.png' %}">{% endif %}
 
 {% if request.user.is_staff %}
 <form method="GET" action="{% url 'exordium:albumartupdate' album.pk %}">
