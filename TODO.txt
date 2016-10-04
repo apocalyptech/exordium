@@ -4,11 +4,17 @@ bitrot:
 * Should implement a max-number-of-results in search.  Probably
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.
+* Make sure our setup.py does the right things
+* Upload to PIP
+* Website
 
 Things which may or may not make that cut:
 
+* Might be nice to have a mobile-optimized CSS
 * Tests for what happens when Add or Update/Clean encounters
-  files it doesn't have permission to actually read.
+  files it doesn't have permission to actually read. (I believe
+  this is actually okay, but I have no tests to verify at the
+  moment.)
 * Tests for some more direct model stuff, like normalization.
   Similar to what we're doing in BasicAlbumArtTests
 * Split tests into multiple files?  That file is huge.
