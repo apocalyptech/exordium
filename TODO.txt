@@ -1,7 +1,8 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Tests for views
+* Tests for some more direct model stuff, like normalization.
+  Similar to what we're doing in BasicAlbumArtTests
 * Tests for what happens when Add or Update/Clean encounters
   files it doesn't have permission to actually read.
 * Should implement a max-number-of-results in search.  Probably

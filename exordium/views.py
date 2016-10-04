@@ -213,7 +213,7 @@ class SearchView(TitleTemplateView):
         if albums.count() > 0:
             show_albums = True
             table = AlbumTable(albums, prefix='album-')
-            RequestConfig(self.request).configure(table)
+            RequestConfig(self.request, paginate={'per_page': 25}).configure(table)
             context['album_results'] = table
 
         song_filter = [(Q(title__icontains=search) | Q(normtitle__icontains=App.norm_name(search)))]
