@@ -7612,7 +7612,10 @@ class AlbumDownloadViewTests(ExordiumTests):
         self.assertIn('filenames', response.context)
         self.assertIn('zip_file', response.context)
         self.assertIn('zip_url', response.context)
-        self.assertEqual(response.context['filenames'], ['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
+        self.assertEqual(
+            sorted(response.context['filenames']),
+            sorted(['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
+        )
         self.assertEqual(response.context['zip_file'], 'Artist_-_%s.zip' % (App.norm_filename(album.name)))
         self.assertContains(response, 'Artist/Tracks/song1.mp3<')
         self.assertContains(response, 'Artist/MoreTracks/song2.mp3<')
