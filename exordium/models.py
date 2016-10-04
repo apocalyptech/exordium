@@ -387,6 +387,29 @@ class Album(models.Model):
         else:
             return '%d:%02d' % (minutes, seconds)
 
+    def get_total_size(self):
+        """
+        Returns the total size taken up by all the tracks in this album, as bytes.
+        """
+        return self.song_set.aggregate(
+                album_size=models.Sum(models.F('size'),
+                    output_field=models.IntegerField()))['album_size']
+
+    def get_total_size_str(self):
+        """
+        Returns a human-readable total size of all the tracks in this album.
+        Taken from http://stackoverflow.com/questions/14996453/python-libraries-to-calculate-human-readable-filesize-from-bytes
+        """
+        suffixes = ['B', 'KB', 'MB', 'GB']
+        sz_bytes = self.get_total_size()
+        if sz_bytes == 0:
+            return '0 B'
+        i = 0
+        while sz_bytes >= 1024 and i < len(suffixes)-1:
+            sz_bytes /= 1024
+            i += 1
+        return '%d %s' % (sz_bytes, suffixes[i])
+
     def create_zip(self):
         """
         Creates a zipfile of ourselves (if possible) and returns a tuple

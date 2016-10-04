@@ -12,9 +12,6 @@ Things which may or may not make that cut:
 * Ability to specify subdirectories when doing add/update
   actions, to only process a subset of the library.  (Might
   change add/update to a dropdown or radio selection, too.)
-* Hm, should we store file size?  Might be nice to show
-  how much room things are taking.  Would know for album
-  zipfiles, too.
 * http://reinout.vanrees.org/weblog/2014/05/19/context.html
   Basically, overriding get_context_data() in our views is
   wordy and not needed most of the time.  Use 'view.varname'
