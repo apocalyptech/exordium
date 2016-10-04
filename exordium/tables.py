@@ -155,6 +155,10 @@ class SongTable(tables.Table):
 # TODO: I wish I could find a better way of having "dynamic" fields than
 # this, but everything else I've tried has failed.
 
+# TODO: Also, the cardinality row at the bottom will always say "items"
+# instead of "songs."  I've tried various ways of fixing that, too, to
+# no avail.
+
 class SongTableWithAlbumNoTracknum(SongTable):
 
     album = tables.LinkColumn(

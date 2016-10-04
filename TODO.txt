@@ -4,9 +4,13 @@ bitrot:
 * Tests for views
 * Tests for what happens when Add or Update/Clean encounters
   files it doesn't have permission to actually read.
+* Should implement a max-number-of-results in search.  Probably
+  only really an issue on Songs, maybe just use 500 like we do
+  on the artist view page.
 
 Things which may or may not make that cut:
 
+* Split tests into multiple files?  That file is huge.
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
 * Ability to specify subdirectories when doing add/update
