@@ -1,16 +1,16 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Tests for some more direct model stuff, like normalization.
-  Similar to what we're doing in BasicAlbumArtTests
-* Tests for what happens when Add or Update/Clean encounters
-  files it doesn't have permission to actually read.
 * Should implement a max-number-of-results in search.  Probably
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.
 
 Things which may or may not make that cut:
 
+* Tests for what happens when Add or Update/Clean encounters
+  files it doesn't have permission to actually read.
+* Tests for some more direct model stuff, like normalization.
+  Similar to what we're doing in BasicAlbumArtTests
 * Split tests into multiple files?  That file is huge.
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
@@ -22,11 +22,6 @@ Things which may or may not make that cut:
   wordy and not needed most of the time.  Use 'view.varname'
   in the template and it'll pull from the named var/func.
   No fussy context fiddling required!
-* Management subcommands to add/update the library
-  (actually, this is more complicated than I'd considered
-  initially, because the user running the add/update won't
-  be the same as the user Django is running as, so 
-  permission issues come into play.)
 * Convert our two forms to actual django Forms.
 
 Things which, if I'm being honest here, are likely to never
@@ -81,3 +76,8 @@ actually happen:
   effectively randomly (would be especially nice for the
   initial bulk add(), so you'd have at least SOME indication
   of how much more time will be needed)
+* Management subcommands to add/update the library
+  (actually, this is more complicated than I'd considered
+  initially, because the user running the add/update won't
+  be the same as the user Django is running as, so 
+  permission issues come into play.)
