@@ -14,6 +14,7 @@ import io
 import os
 import shutil
 import pathlib
+import zipfile
 import datetime
 import tempfile
 
@@ -7404,6 +7405,232 @@ class AlbumViewTests(ExordiumUserTests):
         for num in range(100, 120):
             self.assertContains(response, '%s<' % (songs[num]))
             self.assertContains(response, '"%s"' % (songs[num].get_download_url()))
+
+class AlbumDownloadViewTests(ExordiumTests):
+    """
+    Tests for album downloads
+    """
+
+    def setUp(self):
+        """
+        For these tests we need to have a place to store our zipfiles
+        """
+        super(AlbumDownloadViewTests, self).setUp()
+        self.zipfile_path = tempfile.mkdtemp()
+        self.prefs['exordium__zipfile_path'] = self.zipfile_path
+        self.prefs['exordium__zipfile_url'] = 'http://testserver-zip/zipfiles'
+
+    def tearDown(self):
+        """
+        Get rid of our zipfile download path
+        """
+        super(AlbumDownloadViewTests, self).tearDown()
+        shutil.rmtree(self.zipfile_path)
+
+    def test_download_button_present(self):
+        """
+        Test to ensure that the album view renders our download button
+        now that we have the necessary preferences set.  The inverse of
+        this is taken care of via various tests in ``AlbumViewTests``.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('exordium:albumdownload', args=(album.pk,)))
+
+    def test_album_download_without_configuration(self):
+        """
+        Test what happens when someone requests a download when we're
+        not actually configured for it.
+        """
+
+        # Have to clear out these vars for this test
+        self.prefs['exordium__zipfile_path'] = ''
+        self.prefs['exordium__zipfile_url'] = ''
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Exordium is not currently configured to allow zipfile creation')
+        self.assertNotContains(response, reverse('exordium:albumdownload', args=(album.pk,)))
+
+    def test_basic_album_download(self):
+        """
+        Test to ensure that we can generate zipfiles
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Album')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('filenames', response.context)
+        self.assertIn('zip_file', response.context)
+        self.assertIn('zip_url', response.context)
+        self.assertEqual(response.context['filenames'], ['Album/song1.mp3'])
+        self.assertEqual(response.context['zip_file'], 'Artist_-_Album.zip')
+        self.assertContains(response, 'Album/song1.mp3<')
+        self.assertContains(response, response.context['zip_file'])
+        self.assertContains(response, response.context['zip_url'])
+        zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
+        self.assertEqual(os.path.exists(zip_file), True)
+
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            self.assertEqual(zf.namelist(), ['Album/song1.mp3'])
+
+    def test_basic_album_download_twice(self):
+        """
+        Generate a zipfile and then request the zipfile again.  Should get a page
+        back which has a link to the zipfile, and a message about how it was
+        generated previously.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Album')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        # Original request
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Subsequent request
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Zipfile already exists.  You should be able to download with the link below.')
+        self.assertNotIn('filenames', response.context)
+        self.assertIn('zip_file', response.context)
+        self.assertIn('zip_url', response.context)
+        self.assertEqual(response.context['zip_file'], 'Artist_-_Album.zip')
+        self.assertNotContains(response, 'Album/song1.mp3<')
+        self.assertContains(response, response.context['zip_file'])
+        self.assertContains(response, response.context['zip_url'])
+        zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
+        self.assertEqual(os.path.exists(zip_file), True)
+
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            self.assertEqual(zf.namelist(), ['Album/song1.mp3'])
+
+    def test_basic_album_download_with_art(self):
+        """
+        Test to ensure that we can generate zipfiles, with album art included.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Album')
+        self.add_art(path='Album')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('filenames', response.context)
+        self.assertIn('zip_file', response.context)
+        self.assertIn('zip_url', response.context)
+        self.assertEqual(response.context['filenames'], ['Album/song1.mp3', 'Album/cover.jpg'])
+        self.assertEqual(response.context['zip_file'], 'Artist_-_Album.zip')
+        self.assertContains(response, 'Album/song1.mp3<')
+        self.assertContains(response, 'Album/cover.jpg<')
+        self.assertContains(response, response.context['zip_file'])
+        self.assertContains(response, response.context['zip_url'])
+        zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
+        self.assertEqual(os.path.exists(zip_file), True)
+
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            self.assertEqual(zf.namelist(), ['Album/song1.mp3', 'Album/cover.jpg'])
+
+    def test_basic_album_download_with_art_in_parent_dir(self):
+        """
+        Test to ensure that we can generate zipfiles, with album art included
+        but in the parent directory.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Artist/Album')
+        self.add_art(path='Artist')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('filenames', response.context)
+        self.assertIn('zip_file', response.context)
+        self.assertIn('zip_url', response.context)
+        self.assertEqual(response.context['filenames'], ['Artist/Album/song1.mp3', 'Artist/cover.jpg'])
+        self.assertEqual(response.context['zip_file'], 'Artist_-_Album.zip')
+        self.assertContains(response, 'Artist/Album/song1.mp3<')
+        self.assertContains(response, 'Artist/cover.jpg<')
+        self.assertContains(response, response.context['zip_file'])
+        self.assertContains(response, response.context['zip_url'])
+        zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
+        self.assertEqual(os.path.exists(zip_file), True)
+
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            self.assertEqual(zf.namelist(), ['Artist/Album/song1.mp3', 'Artist/cover.jpg'])
+
+    def test_miscellaneous_album_download_in_multiple_dirs(self):
+        """
+        Test to ensure that we can generate zipfiles for an album which is contained
+        in more than one directory.  (Using a 'miscellaneous' album here but this'd
+        work for any album which happens to do this)
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            filename='song1.mp3', path='Artist/Tracks')
+        self.add_mp3(artist='Artist', title='Title 2',
+            filename='song2.mp3', path='Artist/MoreTracks')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 2)
+
+        response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('filenames', response.context)
+        self.assertIn('zip_file', response.context)
+        self.assertIn('zip_url', response.context)
+        self.assertEqual(response.context['filenames'], ['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
+        self.assertEqual(response.context['zip_file'], 'Artist_-_%s.zip' % (App.norm_filename(album.name)))
+        self.assertContains(response, 'Artist/Tracks/song1.mp3<')
+        self.assertContains(response, 'Artist/MoreTracks/song2.mp3<')
+        self.assertContains(response, response.context['zip_file'])
+        self.assertContains(response, response.context['zip_url'])
+        zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
+        self.assertEqual(os.path.exists(zip_file), True)
+
+        with zipfile.ZipFile(zip_file, 'r') as zf:
+            self.assertEqual(zf.namelist(), ['Artist/Tracks/song1.mp3', 'Artist/MoreTracks/song2.mp3'])
 
 class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
     """
