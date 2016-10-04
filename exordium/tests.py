@@ -6241,6 +6241,35 @@ class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
         self.assertContains(response, '1 album')
 
+    def test_album_browse(self):
+        """
+        Tests our Browse Album page
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='2016.01.01 - Live at City Name', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertEqual(album.live, True)
+
+        # Default is off
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [])
+        self.assertNotContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertNotContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+
+        # Now flip it on
+        self.set_show_live()
+        response = self.client.get(reverse('exordium:browse_album'))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
+        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, '1 album')
+
 class LiveAlbumViewTestsUser(LiveAlbumViewTestsAnonymous):
     """
     Some nonsense along the lines of BasicUpdateAsAddTests.  Basically,
@@ -6253,3 +6282,12 @@ class LiveAlbumViewTestsUser(LiveAlbumViewTestsAnonymous):
     def setUp(self):
         super(LiveAlbumViewTestsUser, self).setUp()
         self.login()
+
+    def tearDown(self):
+        """
+        Ensure that we revert back to the default of not showing live
+        albums inbetween tests - this won't automatically happen for
+        logged-in users because changes to the user database persists.
+        """
+        super(LiveAlbumViewTestsUser, self).tearDown()
+        self.set_show_live(False)
