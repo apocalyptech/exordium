@@ -155,20 +155,6 @@ class SongTable(tables.Table):
 # TODO: I wish I could find a better way of having "dynamic" fields than
 # this, but everything else I've tried has failed.
 
-class SongTableWithAlbum(SongTable):
-
-    album = tables.LinkColumn(
-        'exordium:album',
-        verbose_name='Album',
-        args=[tables.A('album.pk')]
-    )
-
-    class Meta:
-        model = Song
-        attrs = {'class': 'paleblue', 'id': 'songtable'}
-        show_footer = True
-        fields = ['tracknum', 'artist', 'album', 'title', 'length', 'dl']
-
 class SongTableWithAlbumNoTracknum(SongTable):
 
     album = tables.LinkColumn(

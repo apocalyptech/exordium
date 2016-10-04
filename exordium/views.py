@@ -12,7 +12,7 @@ from django_tables2 import RequestConfig
 from dynamic_preferences.registries import global_preferences_registry
 
 from .models import Artist, Album, Song, App, AlbumArt
-from .tables import ArtistTable, AlbumTable, SongTableWithAlbum, SongTableNoAlbum, SongTableWithAlbumNoTracknum, SongTableNoAlbumNoTracknum
+from .tables import ArtistTable, AlbumTable, SongTableNoAlbum, SongTableWithAlbumNoTracknum, SongTableNoAlbumNoTracknum
 
 # Create your views here.
 
