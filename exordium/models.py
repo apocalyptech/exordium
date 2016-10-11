@@ -1755,7 +1755,9 @@ class App(object):
             # that all tracks making up an album might have changed the album name to something
             # which would otherwise match our normalized case, and if ALL the tracks get updated
             # then that's a change we'd want to make even if it's "virtually" the same thing.
-            if artist_changed or helper.album != song.album.name:
+            # Also go through updates if our updated song year isn't the same as our album year,
+            # because we want to update the album year in that case.
+            if artist_changed or helper.album != song.album.name or helper.song_obj.year != song.album.year:
                 delete_rel_albums[song.album] = True
                 album_changes[helper.base_dir] = True
                 to_update_helpers[song.filename] = helper

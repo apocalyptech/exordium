@@ -2255,6 +2255,89 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song.title, 'Title')
         self.assertEqual(song.artist.name, 'New Artist')
 
+    def test_basic_title_update(self):
+        """
+        Test a simple track update in which the title changes
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.title, 'Title')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', title='New Title')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'New Title')
+        self.assertEqual(song.pk, song_pk)
+
+    def test_basic_tracknum_update(self):
+        """
+        Test a simple track update in which the track number changes
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', tracknum=1)
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.tracknum, 1)
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', tracknum=3)
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.tracknum, 3)
+        self.assertEqual(song.pk, song_pk)
+
+    def test_basic_year_update(self):
+        """
+        Test a simple track update in which the year changes.  The
+        album year should also be updated
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2016)
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.year, 2016)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.year, 2016)
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', year=2006)
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.year, 2006)
+        self.assertEqual(song.pk, song_pk)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.year, 2006)
+
     def test_basic_group_update(self):
         """
         Test a simple track update in which the group name changes
