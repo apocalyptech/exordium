@@ -25,7 +25,7 @@ def add_session_msg(request, message, level):
     """
     if level != 'success' and level != 'fail':
         return
-    varname = '%s_msg' % (level)
+    varname = 'exordium_msg_%s' % (level)
     if varname not in request.session:
         request.session[varname] = []
     request.session[varname].append(message)
@@ -52,7 +52,7 @@ def populate_session_msg_context(request, context):
     we may have.
     """
     for varname in ['success', 'fail']:
-        session_var = '%s_msg' % (varname)
+        session_var = 'exordium_msg_%s' % (varname)
         ctx_var = 'messages_%s' % (varname)
         if session_var in request.session:
             if len(request.session[session_var]) > 0:

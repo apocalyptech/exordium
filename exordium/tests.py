@@ -6067,24 +6067,23 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), None)
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
 
-        # Next: submit our preferences form to enable show_live.  Actually loading
-        # the index again here isn't really required, but this simulates a browser,
-        # so I dig it.
+        # Next: submit our preferences form to enable show_live.
         response = self.client.post(reverse('exordium:updateprefs'), {'show_live': 'yes'})
-        self.assertRedirects(response, reverse('exordium:index'))
+        self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), True)
         self.assertIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.session['exordium__show_live'], True)
+        self.assertContains(response, 'Set user preferences')
 
-        # And now, submit one more, flipping back to False.  Once again, the extra
-        # redirect to index is a bit gratuitous.
+        # And now, submit one more, flipping back to False.
         response = self.client.post(reverse('exordium:updateprefs'), {})
-        self.assertRedirects(response, reverse('exordium:index'))
+        self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), False)
         self.assertIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.session['exordium__show_live'], False)
+        self.assertContains(response, 'Set user preferences')
 
     def test_show_live_user(self):
         """
@@ -6105,20 +6104,22 @@ class UserPreferenceTests(ExordiumUserTests):
         # the index again here isn't really required, but this simulates a browser,
         # so I dig it.
         response = self.client.post(reverse('exordium:updateprefs'), {'show_live': 'yes'})
-        self.assertRedirects(response, reverse('exordium:index'))
+        self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), True)
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], True)
+        self.assertContains(response, 'Set user preferences')
 
         # And now, submit one more, flipping back to False.  Once again, the extra
         # redirect to index is a bit gratuitous.
         response = self.client.post(reverse('exordium:updateprefs'), {})
-        self.assertRedirects(response, reverse('exordium:index'))
+        self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), False)
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
+        self.assertContains(response, 'Set user preferences')
 
     def test_preferences_referer_redirect(self):
         """
