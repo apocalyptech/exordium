@@ -70,6 +70,17 @@ class ExordiumTests(TestCase):
         shutil.rmtree(self.library_path)
         AlbumArt.resolutions[AlbumArt.SZ_ALBUM] = self.saved_album_size
 
+    def check_library_filename(self, filename):
+        """
+        Checks to make sure our passed-in filename isn't trying to break
+        out of our library.  This is a bit silly since only these tests
+        will ever be passing in paths, and we'd have to be attempting to
+        do nasty things to ourselves, but this should help prevent any
+        unintentional blunders, at least.
+        """
+        if len(filename) < 3 or '..' in filename or filename[0] == '/':
+            raise Exception('Given filename "%s" is invalid' % (filename))
+
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
             title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
             group='', conductor='', composer='',
@@ -155,8 +166,7 @@ class ExordiumTests(TestCase):
         Will ensure that the file's mtime is updated.
         """
 
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
         self.assertEqual(os.path.exists(full_filename), True)
@@ -278,8 +288,7 @@ class ExordiumTests(TestCase):
         Will ensure that the file's mtime is updated.
         """
 
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
         self.assertEqual(os.path.exists(full_filename), True)
@@ -365,8 +374,7 @@ class ExordiumTests(TestCase):
         """
         Deletes the given file from our fake library
         """
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
         self.assertEqual(os.path.exists(full_filename), True)
@@ -379,14 +387,13 @@ class ExordiumTests(TestCase):
         """
         Deletes the given file from our fake library
         """
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
         self.assertEqual(os.path.exists(full_filename), True)
 
-        if destination != '' and ('..' in destination or destination[0] == '/'):
-            raise Exception('Given destination "%s" is invalid' % (destination))
+        if destination != '':
+            self.check_library_filename(destination)
         full_destination = os.path.join(self.library_path, destination)
 
         # Create the destination dir if it doesn't exist
@@ -405,8 +412,7 @@ class ExordiumTests(TestCase):
         in the future if need be.
         """
 
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
 
@@ -437,8 +443,7 @@ class ExordiumTests(TestCase):
         Retrieves file contents from the named file in the library
         """
 
-        if len(filename) < 3 or '..' in filename or filename[0] == '/':
-            raise Exception('Given filename "%s" is invalid' % (filename))
+        self.check_library_filename(filename)
 
         full_filename = os.path.join(self.library_path, filename)
 
