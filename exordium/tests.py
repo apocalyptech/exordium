@@ -10,6 +10,7 @@ from dynamic_preferences.registries import global_preferences_registry
 
 import io
 import os
+import stat
 import shutil
 import pathlib
 import zipfile
@@ -77,9 +78,13 @@ class ExordiumTests(TestCase):
         will ever be passing in paths, and we'd have to be attempting to
         do nasty things to ourselves, but this should help prevent any
         unintentional blunders, at least.
+
+        Returns our full filename, with library path, since we basically
+        always want that after doing this check.
         """
         if len(filename) < 3 or '..' in filename or filename[0] == '/':
             raise Exception('Given filename "%s" is invalid' % (filename))
+        return os.path.join(self.library_path, filename)
 
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
             title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
@@ -166,9 +171,7 @@ class ExordiumTests(TestCase):
         Will ensure that the file's mtime is updated.
         """
 
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
+        full_filename = self.check_library_filename(filename)
         self.assertEqual(os.path.exists(full_filename), True)
 
         starting_mtime = int(os.stat(full_filename).st_mtime)
@@ -288,9 +291,7 @@ class ExordiumTests(TestCase):
         Will ensure that the file's mtime is updated.
         """
 
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
+        full_filename = self.check_library_filename(filename)
         self.assertEqual(os.path.exists(full_filename), True)
 
         starting_mtime = int(os.stat(full_filename).st_mtime)
@@ -374,9 +375,7 @@ class ExordiumTests(TestCase):
         """
         Deletes the given file from our fake library
         """
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
+        full_filename = self.check_library_filename(filename)
         self.assertEqual(os.path.exists(full_filename), True)
 
         os.unlink(full_filename)
@@ -387,14 +386,13 @@ class ExordiumTests(TestCase):
         """
         Deletes the given file from our fake library
         """
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
+        full_filename = self.check_library_filename(filename)
         self.assertEqual(os.path.exists(full_filename), True)
 
         if destination != '':
-            self.check_library_filename(destination)
-        full_destination = os.path.join(self.library_path, destination)
+            full_destination = self.check_library_filename(destination)
+        else:
+            full_destination = self.library_path
 
         # Create the destination dir if it doesn't exist
         os.makedirs(full_destination, exist_ok=True)
@@ -412,9 +410,7 @@ class ExordiumTests(TestCase):
         in the future if need be.
         """
 
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
+        full_filename = self.check_library_filename(filename)
 
         starting_mtime = int(os.stat(full_filename).st_mtime)
 
@@ -443,12 +439,20 @@ class ExordiumTests(TestCase):
         Retrieves file contents from the named file in the library
         """
 
-        self.check_library_filename(filename)
-
-        full_filename = os.path.join(self.library_path, filename)
-
+        full_filename = self.check_library_filename(filename)
         with open(full_filename, 'rb') as df:
             return df.read()
+
+    def set_file_permissions(self, filename, readable=True):
+        """
+        Will set the given filename to either be ``readable`` or not.
+        """
+
+        full_filename = self.check_library_filename(filename)
+        if readable:
+            os.chmod(full_filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        else:
+            os.chmod(full_filename, 0)
 
     def add_art(self, path='', filename='cover.jpg', basefile='cover_400.jpg'):
         """
@@ -476,7 +480,7 @@ class ExordiumTests(TestCase):
         ensure that none of the lines have status App.STATUS_ERROR
         """
         for (status, line) in appresults:
-            self.assertNotEqual(status, App.STATUS_ERROR)
+            self.assertNotEqual(status, App.STATUS_ERROR, msg='Error found: "%s"' % (line))
         return appresults
 
     def assertErrors(self, appresults, errors_min=1):
@@ -488,7 +492,8 @@ class ExordiumTests(TestCase):
         for (status, line) in appresults:
             if status == App.STATUS_ERROR:
                 error_count += 1
-        self.assertGreaterEqual(error_count, errors_min)
+        self.assertGreaterEqual(error_count, errors_min, msg='%d errors expected, %d found' %
+            (errors_min, error_count))
         return appresults
 
     def run_add(self):
@@ -5037,6 +5042,21 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(al.art_mime, 'image/jpeg')
         self.assertEqual(al.art_ext, 'jpg')
 
+    def test_basic_add_album_art_without_filesystem_permissions(self):
+        """
+        Test a simple case where we have album art but the filesystem
+        permissions are bad.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='cover.jpg')
+        self.set_file_permissions('cover.jpg', readable=False)
+        self.run_add_errors()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
+
     def test_basic_update_add_album_art(self):
         """
         Test a simple case where we add album art during an update,
@@ -5054,6 +5074,24 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(al.art_filename, 'cover.jpg')
         self.assertEqual(al.art_mime, 'image/jpeg')
         self.assertEqual(al.art_ext, 'jpg')
+
+    def test_basic_update_add_album_art_without_filesystem_permissions(self):
+        """
+        Test a simple case where we add album art during an update,
+        rather than in the add.  The filesystem permissions are bad
+        on the cover, though.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.add_art(filename='cover.jpg')
+        self.set_file_permissions('cover.jpg', readable=False)
+        self.run_update_errors()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
 
     def test_basic_add_album_art_parent_dir(self):
         """
@@ -5703,6 +5741,75 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
         self.assertEqual(al.art_filename, 'cover.jpg')
+
+    def test_admin_update_file_permissions_wrong_no_initial_art(self):
+        """
+        Test an admin album art update in which the new album art file
+        isn't actually readable.  (When the album did not have art,
+        initially.)
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
+
+        self.add_art(filename='cover.jpg')
+        self.set_file_permissions('cover.jpg', readable=False)
+
+        self.login()
+        response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
+        self.assertRedirects(response, reverse('exordium:album', args=(al.pk,)),
+            fetch_redirect_response=False)
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
+
+        # Check the next page to ensure we got an error message
+        response = self.client.get(reverse('exordium:album', args=(al.pk,)))
+        self.assertContains(response, 'found but not readable')
+
+    def test_admin_update_no_change_with_initial_art(self):
+        """
+        Test an admin album art update for an album which doesn't actually change.
+        In this scenario we did have art for the album initially.
+        """
+
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        orig_mtime = al.art_mtime
+        orig_filename = al.art_filename
+        orig_mime = al.art_mime
+        orig_ext = al.art_ext
+
+        self.set_file_permissions('cover.jpg', readable=False)
+
+        self.login()
+        response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
+        self.assertRedirects(response, reverse('exordium:album', args=(al.pk,)),
+            fetch_redirect_response=False)
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.art_filename, 'cover.jpg')
+        self.assertEqual(orig_mtime, al.art_mtime)
+        self.assertEqual(orig_filename, al.art_filename)
+        self.assertEqual(orig_mime, al.art_mime)
+        self.assertEqual(orig_ext, al.art_ext)
+
+        # Check the next page to ensure we got an error message
+        response = self.client.get(reverse('exordium:album', args=(al.pk,)))
+        self.assertContains(response, 'found but not readable')
 
 class BasicAlbumArtTests(TestCase):
     """

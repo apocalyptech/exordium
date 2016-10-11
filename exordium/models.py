@@ -351,7 +351,10 @@ class Album(models.Model):
         """
         Returns True if we have an album art record.
         """
-        return self.art_filename and self.art_filename != ''
+        if self.art_filename and self.art_filename != '':
+            return True
+        else:
+            return False
 
     def get_original_art_filename(self):
         """
