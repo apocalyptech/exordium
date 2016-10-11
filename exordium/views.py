@@ -316,6 +316,10 @@ class AlbumDownloadView(TitleDetailView):
             except App.AlbumZipfileError as e:
                 context['error'] = 'There was a problem generating the zipfile: %s' % (e.orig_exception)
             except App.AlbumZipfileNotSupported:
+                # There's actually no way to get here, since we test for App.support_zipfile()
+                # before we even try to create a zipfile.  Still, I'll keep it here just in
+                # case there's ever some weird bug which allows us to keep going even though
+                # we don't support it.
                 context['error'] = 'Exordium is not currently configured to allow zipfile creation'
             except App.AlbumZipfileAlreadyExists as e:
                 context['error'] = 'Zipfile already exists.  You should be able to download with the link below.'
@@ -437,6 +441,8 @@ class OriginalAlbumArtView(generic.View):
         try:
             albumid = int(kwargs['albumid'])
         except ValueError:
+            # Shouldn't be able to get here since our urls.py will
+            # only accept digits for albumid
             albumid = -1
         album = get_object_or_404(Album, pk=albumid)
 
@@ -467,6 +473,8 @@ class AlbumArtView(generic.View, UserAwareView):
         try:
             albumid = int(kwargs['albumid'])
         except ValueError:
+            # Shouldn't be able to get here since our urls.py will
+            # only accept digits for albumid
             albumid = -1
         album = get_object_or_404(Album, pk=albumid)
 

@@ -7770,6 +7770,89 @@ class SearchViewTests(ExordiumTests):
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
         self.assertContains(response, '1 artist')
 
+    def test_with_linefeed(self):
+        """
+        Test a search with a linefeed in the search string - should only
+        search for the bit before the newline
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+
+        response = self.client.get(reverse('exordium:search'), {'q': "artist\nname"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('song_results', response.context)
+        self.assertNotIn('album_results', response.context)
+        self.assertIn('artist_results', response.context)
+        self.assertIn('found_results', response.context)
+        self.assertEqual(response.context['found_results'], True)
+        self.assertNotContains(response, 'No results found!')
+
+        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertContains(response, 'Artists')
+        self.assertContains(response, '%s<' % (artist))
+        self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
+        self.assertContains(response, '1 artist')
+
+    def test_with_carriagereturn(self):
+        """
+        Test a search with a carriage return in the search string - should only
+        search for the bit before the newline
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+
+        response = self.client.get(reverse('exordium:search'), {'q': "artist\rname"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('song_results', response.context)
+        self.assertNotIn('album_results', response.context)
+        self.assertIn('artist_results', response.context)
+        self.assertIn('found_results', response.context)
+        self.assertEqual(response.context['found_results'], True)
+        self.assertNotContains(response, 'No results found!')
+
+        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertContains(response, 'Artists')
+        self.assertContains(response, '%s<' % (artist))
+        self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
+        self.assertContains(response, '1 artist')
+
+    def test_with_very_long_search(self):
+        """
+        We limit searches to 80 characters - anything more than that
+        will get truncated.  I'm... not exactly sure why I'm doing that?
+        I guess it does seem like a good idea to put some kind of a cap
+        on that, lest the database complain or something, but I rather
+        doubt it would actually be a problem.  Whatever, we'll test for
+        it anyway.
+        """
+        self.add_mp3(artist='here is a very long artist name whose name exceeds eighty characters and we will search on it',
+            title='Title 1', album='Album', filename='song1.mp3')
+        self.run_add()
+
+        artist = Artist.objects.get(name__startswith='here is a very')
+
+        response = self.client.get(reverse('exordium:search'),
+            {'q': 'here is a very long artist name whose name exceeds eighty characters and we will search xyzzy'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('song_results', response.context)
+        self.assertNotIn('album_results', response.context)
+        self.assertIn('artist_results', response.context)
+        self.assertIn('found_results', response.context)
+        self.assertEqual(response.context['found_results'], True)
+        self.assertNotContains(response, 'No results found!')
+
+        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertContains(response, 'Artists')
+        self.assertContains(response, '%s<' % (artist))
+        self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
+        self.assertContains(response, '1 artist')
+
     def test_find_album(self):
         """
         Test a successful search for an album

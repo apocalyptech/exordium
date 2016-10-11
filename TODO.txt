@@ -1,6 +1,8 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
+* Use annotate() for some of our aggregate information on
+  artist browse, for instance.
 * Should implement a max-number-of-results in search.  Probably
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.
@@ -33,6 +35,21 @@ Things which may or may not make that cut:
 Things which, if I'm being honest here, are likely to never
 actually happen:
 
+* Exordium can be slow, and it'd be nice to figure out if
+  there are reasonable ways to speed it up.  My initial
+  import of a 42k-track library takes about an hour, the
+  majority of which is spent doing checksums of the files.
+  I suspect that not much could be done to speed up the
+  checksumming, though perhaps I'm wrong - there's still
+  a good 15 minutes after that for database imports, too,
+  though.  I'd put in some logic so that if an artist
+  has more than 500 tracks, the track list isn't shown
+  on the artist page, because performance was lousy there,
+  too - it'd be nice to see if there's a good way to get
+  that faster as well.  The good news is that outside of
+  cases like that, it does seem to perform fine.  Adds/
+  updates are speedy enough for me, and in general the
+  app is pretty responsive.
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * Extra details on album song list (format, bitrate, etc)
@@ -87,3 +104,4 @@ actually happen:
   initially, because the user running the add/update won't
   be the same as the user Django is running as, so 
   permission issues come into play.)
+* Perhaps we should read genre from tags?

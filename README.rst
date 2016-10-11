@@ -251,6 +251,11 @@ As I think of them I'll add to the list.
   you'll end up with an album which spans directories.  Behavior may not
   be well-defined in that case.
 
+- Exordium completely ignores genre tags.  I've personally always been
+  lousy at putting reasonable values in there on my media, and so that's
+  been very unimportant to me.  It'd probably be good to support them
+  anyway, though.
+
 Migration from Other Libraries
 ------------------------------
 
