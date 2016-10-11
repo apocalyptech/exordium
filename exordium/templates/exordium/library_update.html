@@ -12,7 +12,14 @@ checksums, and then the rest of the process will take an additional 15 or so.</p
 <p>Remember, too, that the ETA listed on the checksum-computation step only
 applies to checksums, not the entire process.</p>
 </div>
-<p><strong>Processing Library...</strong></p>
+{% if update_type == 'add' %}
+<p><strong>Processing Library Additions...</strong></p>
+{% else %}
+<p><strong>Processing Library Adds/Updates/Deletes...</strong></p>
+{% endif %}
+{% if debug %}
+<p><em>(Showing debug output)</em></p>
+{% endif %}
 <blockquote class="library_update">
 @__LIBRARY_UPDATE_AREA__@
 </blockquote>

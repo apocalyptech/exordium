@@ -20,7 +20,6 @@ urlpatterns = [
     url(r'^album/(?P<albumid>[0-9]+)/cover.(?P<extension>[a-z]+)$', views.OriginalAlbumArtView.as_view(), name='origalbumart'),
     url(r'^album/(?P<albumid>[0-9]+)/cover-(?P<size>[a-z]+).jpg$', views.AlbumArtView.as_view(), name='albumart'),
     url(r'^library/$', views.LibraryView.as_view(), name='library'),
-    url(r'^library/add/$', views.LibraryAddView.as_view(), name='library_add'),
     url(r'^library/update/$', views.LibraryUpdateView.as_view(), name='library_update'),
 ]
 

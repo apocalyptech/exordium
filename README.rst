@@ -231,7 +231,7 @@ Quick start
    with the caveats mentioned above.
 
 8. Visit the "Library Upkeep" link from the Exordium main page and click on
-   "Add new music" to beginn the initial import into Exordium!
+   "Start Process" to beginn the initial import into Exordium!
 
 Limitations
 -----------

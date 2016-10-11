@@ -383,47 +383,57 @@ class LibraryView(TitleTemplateView):
         context['count_songs'] = Song.objects.count()
         return context
 
-class LibraryActionView(generic.View, UserAwareView):
-
-    exordium_title = 'Library Action'
-    update_func = staticmethod(App.add)
+@method_decorator(staff_member_required, name='dispatch')
+class LibraryUpdateView(generic.View, UserAwareView):
 
     def get(self, request, *args, **kwargs):
         """
         We support GET
         """
-        return StreamingHttpResponse((line for line in self.update_generator()))
+        update_type = None
+        if 'type' in request.GET:
+            if request.GET['type'] == 'add':
+                update_type = 'add'
+            elif request.GET['type'] == 'update':
+                update_type = 'update'
+            else:
+                add_session_fail(request, 'Invalid update type specified: "%s"' % (request.GET['type']))
+                return HttpResponseRedirect(reverse('exordium:library'))
+        else:
+            add_session_fail(request, 'No update type specified!')
+            return HttpResponseRedirect(reverse('exordium:library'))
+        
+        debug = 'debug' in request.GET
 
-    def update_generator(self):
+        return StreamingHttpResponse((line for line in self.update_generator(update_type, debug)))
+
+    def update_generator(self, update_type, debug=False):
         template_page = loader.get_template('exordium/library_update.html')
         template_line = loader.get_template('exordium/library_update_line.html')
+        if update_type == 'add':
+            title = 'Add Music to Library'
+            update_func = App.add
+        else:
+            title = 'Add/Update/Clean Library'
+            update_func = App.update
         context = Context({
             'request': self.request,
-            'exordium_title': self.exordium_title,
+            'exordium_title': title,
+            'update_type': update_type,
+            'debug': debug,
         })
         populate_session_msg_context(self.request, context)
         page = template_page.render(context)
         for line in page.split("\n"):
             if line == '@__LIBRARY_UPDATE_AREA__@':
-                for (status, line) in self.update_func():
+                for (status, line) in update_func():
                     yield template_line.render(Context({
                         'status': status,
                         'line': line,
+                        'debug': debug,
                     }))
             else:
                 yield "%s\n" % (line)
-
-@method_decorator(staff_member_required, name='dispatch')
-class LibraryAddView(LibraryActionView):
-
-    exordium_title = 'Add Music to Library'
-    update_func = staticmethod(App.add)
-
-@method_decorator(staff_member_required, name='dispatch')
-class LibraryUpdateView(LibraryActionView):
-
-    exordium_title = 'Update/Clean Libraries'
-    update_func = staticmethod(App.update)
 
 class OriginalAlbumArtView(generic.View):
     """

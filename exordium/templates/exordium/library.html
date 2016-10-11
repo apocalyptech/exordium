@@ -17,11 +17,20 @@
 {{ count_albums }} album{{ count_albums|pluralize }}, and
 {{ count_songs }} song{{ count_songs|pluralize }}.</p>
 
-<form method="GET" action="{% url 'exordium:library_add' %}">
-    <input type="submit" value="Add new music" />
-</form>
 <form method="GET" action="{% url 'exordium:library_update' %}">
-    <input type="submit" value="Update/Clean music (will also add)" />
+    <p><strong>Process Library Updates:</strong></p>
+    <blockquote class="update_form">
+        <p>
+        <strong>Update Type:</strong><br />
+        <input type="radio" name="type" value="add" checked /> Just Add New Music<br />
+        <input type="radio" name="type" value="update" /> Full Update (Add/Update/Clean)
+        </p>
+        <p>
+        <strong>Options:</strong><br />
+        <input type="checkbox" name="debug" value="yes" /> Include debug output
+        </p>
+        <input type="submit" value="Start Process" />
+    </blockquote>
 </form>
 
 {% endblock %}

@@ -29,6 +29,15 @@ BODY {
 .library_update {
     font-size: smaller;
 }
+.update_form {
+    border: 1px solid silver;
+    display: inline-block;
+    padding-top: 1em;
+    padding-bottom: 2em;
+    padding-left: 2em;
+    padding-right: 2em;
+    margin-top: 0px;
+}
 .update_info {
     font-size: smaller;
     max-width: 60em;
