@@ -7481,7 +7481,7 @@ class AlbumViewTests(ExordiumUserTests):
             self.assertContains(response, '%s<' % (songs[num]))
             self.assertContains(response, '"%s"' % (songs[num].get_download_url()))
 
-class AlbumDownloadViewTests(ExordiumTests):
+class AlbumDownloadViewTests(ExordiumUserTests):
     """
     Tests for album downloads
     """
@@ -7501,6 +7501,23 @@ class AlbumDownloadViewTests(ExordiumTests):
         """
         super(AlbumDownloadViewTests, self).tearDown()
         shutil.rmtree(self.zipfile_path)
+
+    def test_library_view_show_zipfile(self):
+        """
+        Test our library management view when we have zipfile configured.  Should
+        show our zipfile info.  (The rest of the library management page is tested
+        in ``LibraryViewTests``)
+        """
+
+        self.login()
+        response = self.client.get(reverse('exordium:library'))
+        self.assertEqual(response.status_code, 200)
+
+        App.ensure_prefs()
+        self.assertContains(response, 'Zipfile Support:</strong> Yes')
+        self.assertNotContains(response, 'Zipfile Support:</strong> No')
+        self.assertContains(response, App.prefs['exordium__zipfile_url'])
+        self.assertContains(response, App.prefs['exordium__zipfile_path'])
 
     def test_download_button_present(self):
         """
@@ -8439,6 +8456,13 @@ class LibraryViewTests(ExordiumUserTests):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('exordium:library_add'))
         self.assertContains(response, reverse('exordium:library_update'))
+
+        # We should show our library config, and not have zipfile info
+        App.ensure_prefs()
+        self.assertContains(response, App.prefs['exordium__base_path'])
+        self.assertContains(response, App.prefs['exordium__media_url'])
+        self.assertNotContains(response, 'Zipfile Support:</strong> Yes')
+        self.assertContains(response, 'Zipfile Support:</strong> No')
 
 class LibraryAddViewTests(ExordiumUserTests):
     """

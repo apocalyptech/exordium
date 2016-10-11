@@ -3,7 +3,15 @@
 
 {% block body %}
 <p><strong>Base Path:</strong> {{ base_path }}<br />
-<strong>Media URL Prefix:</strong> {{ media_url }}</p>
+<strong>Media URL Prefix:</strong> {{ media_url }}<br />
+{% if support_zipfile %}
+<strong>Zipfile Support:</strong> Yes<br />
+<strong>Zipfile Path:</strong> {{ zipfile_path }}<br />
+<strong>Zipfile URL Prefix:</strong> {{ zipfile_url }}
+{% else %}
+<strong>Zipfile Support:</strong> No<br />
+{% endif %}
+</p>
 
 <p>This catalog currently contains {{ count_artists }} artist{{ count_artists|pluralize }},
 {{ count_albums }} album{{ count_albums|pluralize }}, and

@@ -372,9 +372,12 @@ class LibraryView(TitleTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(LibraryView, self).get_context_data(**kwargs)
-        prefs = global_preferences_registry.manager()
-        context['base_path'] = prefs['exordium__base_path']
-        context['media_url'] = prefs['exordium__media_url']
+        App.ensure_prefs()
+        context['base_path'] = App.prefs['exordium__base_path']
+        context['media_url'] = App.prefs['exordium__media_url']
+        context['support_zipfile'] = App.support_zipfile()
+        context['zipfile_url'] = App.prefs['exordium__zipfile_url']
+        context['zipfile_path'] = App.prefs['exordium__zipfile_path']
         context['count_artists'] = Artist.objects.count()
         context['count_albums'] = Album.objects.count()
         context['count_songs'] = Song.objects.count()
