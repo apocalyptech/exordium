@@ -21,7 +21,7 @@ from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 
 from .models import Artist, Album, Song, App, AlbumArt
-from .views import UserAwareView, add_session_success, add_session_fail, add_session_msg
+from .views import UserAwareView, IndexView, add_session_success, add_session_fail, add_session_msg
 
 # These two imports are just here in case we want to examine SQL while running tests.
 # If so, set "settings.DEBUG = True" in the test and then use connection.queries
@@ -6193,6 +6193,27 @@ class UserPreferenceTests(ExordiumUserTests):
         
         response = self.client.post(reverse('exordium:updateprefs'), {}, HTTP_REFERER=reverse('exordium:browse_artist'))
         self.assertRedirects(response, reverse('exordium:browse_artist'))
+
+    def test_non_static_set_preference(self):
+        """
+        Our ``UserAwareView`` class has a non-static ``set_preference()`` method.  This
+        isn't currently actually used anywhere, but I don't really want to get rid of it,
+        since it makes sense to be in there.  So here's a test for it.
+        """
+
+        # First up - our default show_live should be None
+        response = self.client.get(reverse('exordium:index'))
+        self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), None)
+        self.assertNotIn('exordium__show_live', response.wsgi_request.session)
+
+        # This is a bit hokey - I'm actually not really sure how to correctly
+        # instansiate a view object with a request so that I can make calls as
+        # if I'm currently in the view.  This seems to work, though, so whatever.
+        view = IndexView()
+        view.request = response.wsgi_request
+        view.set_preference('show_live', True)
+        self.assertIn('exordium__show_live', response.wsgi_request.session)
+        self.assertEqual(response.wsgi_request.session['exordium__show_live'], True)
 
 class BrowseArtistViewTests(ExordiumTests):
     """

@@ -77,7 +77,7 @@ class UserAwareView(object):
         """
         Sets a perference value
         """
-        return UserAwareView.set_preference_static(self.request, prefname)
+        return UserAwareView.set_preference_static(self.request, prefname, value)
 
     @staticmethod
     def get_preference_static(request, prefname):
