@@ -409,7 +409,7 @@ class Album(models.Model):
         """
         suffixes = ['B', 'KB', 'MB', 'GB']
         sz_bytes = self.get_total_size()
-        if sz_bytes == 0:
+        if sz_bytes is None or sz_bytes == 0:
             return '0 B'
         i = 0
         while sz_bytes >= 1024 and i < len(suffixes)-1:

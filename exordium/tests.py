@@ -6117,6 +6117,22 @@ class BasicAlbumArtTests(TestCase):
         for (before, after) in order_tests:
             self.assertEqual(App.get_cover_images(before), after)
 
+class AlbumModelTests(TestCase):
+    """
+    Tests for our Album model which don't require our full fake
+    library test setup.
+    """
+
+    def test_get_total_size_str_zero_bytes(self):
+        """
+        ``Album.get_total_size_str()`` should return the string "0 B" when the
+        total size is zero bytes.  In reality this would never actually happen,
+        but we'll test anyway.
+        """
+        ar = Artist.objects.create(name='Artist', normname='artist')
+        al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
+        self.assertEqual(al.get_total_size_str(), '0 B')
+
 class IndexViewTests(ExordiumUserTests):
     """
     Tests of our main index view.  (Not a whole lot going on, really)
