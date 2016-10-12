@@ -305,7 +305,7 @@ class Album(models.Model):
                             filename, im.format))
                         return False
             except Exception as e:
-                yield (App.STATUS_ERROR, 'Error importing album art %s for "%s/ %s": %s' % (
+                yield (App.STATUS_ERROR, 'Error importing album art %s for "%s / %s": %s' % (
                     filename, self.artist, self, e))
                 return False
         else:

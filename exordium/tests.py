@@ -1010,7 +1010,7 @@ class BasicAddTests(ExordiumTests):
         Test adding an mp3 file which has no tags specified
         """
         self.add_mp3(apply_tags=False)
-        self.run_add_errors()
+        self.run_add_errors(error='Artist name not found')
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 0)
@@ -1020,17 +1020,17 @@ class BasicAddTests(ExordiumTests):
         Test adding an mp3 file which has no title tag specified
         """
         self.add_mp3(artist='Artist')
-        self.run_add_errors()
+        self.run_add_errors(error='Title not found')
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 0)
 
     def test_add_mp3_no_artist_tag(self):
         """
-        Test adding an mp3 file which has no title tag specified
+        Test adding an mp3 file which has no artist tag specified
         """
         self.add_mp3(title='Title', composer='Composer', album='Album')
-        self.run_add_errors()
+        self.run_add_errors(error='Artist name not found')
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 0)
@@ -2447,7 +2447,7 @@ class BasicUpdateTests(ExordiumTests):
         # Now make some changes.
         self.update_mp3(filename='song.mp3', title='New Title')
         self.set_file_unreadable('song.mp3')
-        self.run_update_errors()
+        self.run_update_errors(error='Could not read updated information')
 
         # Now the real verifications
         self.assertEqual(Song.objects.count(), 1)
@@ -5331,7 +5331,7 @@ class AlbumArtTests(ExordiumUserTests):
             album='Album', filename='song1.mp3')
         self.add_art(filename='cover.jpg')
         self.set_file_unreadable('cover.jpg')
-        self.run_add_errors()
+        self.run_add_errors(error='found but not readable')
 
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
@@ -5382,7 +5382,7 @@ class AlbumArtTests(ExordiumUserTests):
 
         self.add_art(filename='cover.jpg')
         self.set_file_unreadable('cover.jpg')
-        self.run_update_errors()
+        self.run_update_errors(error='found but not readable')
 
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
@@ -5440,7 +5440,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.add_mp3(artist='Artist', title='Title 1',
             album='Album', filename='song1.mp3')
         self.add_art(basefile='silence-vbr.mp3', filename='cover.jpg')
-        self.run_add_errors()
+        self.run_add_errors(error='cannot identify image file')
 
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
@@ -6535,7 +6535,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.add_mp3(artist='Artist', title='Title 1',
             album='Album', filename='song1.mp3')
         self.add_art(filename='cover.jpg', basefile='cover_400.tif')
-        self.run_add_errors()
+        self.run_add_errors(error='Unknown image type found')
 
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
