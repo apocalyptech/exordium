@@ -1868,6 +1868,12 @@ class App(object):
                     album_obj.name = album
                     album_obj.miscellaneous = miscellaneous
                     album_obj.live = live
+                    # Miscellaneous albums shouldn't have album art associated with them
+                    if miscellaneous:
+                        album_obj.art_filename = None
+                        album_obj.art_mtime = None
+                        album_obj.art_ext = None
+                        album_obj.art_mime = None
                     album_obj.save()
                     yield (App.STATUS_INFO, 'Updated album from "%s / %s" to "%s / %s"' %
                         (old_artist, old_name, album_obj.artist, album_obj))

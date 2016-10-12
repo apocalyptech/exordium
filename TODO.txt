@@ -3,8 +3,6 @@ bitrot:
 
 * Use annotate() for some of our aggregate information on
   artist browse, for instance.
-* Test what happens to album art when album location moves
-  (new location?  no more art?  etc.)
 * Should implement a max-number-of-results in search.  Probably
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.

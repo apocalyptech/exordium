@@ -5057,6 +5057,21 @@ class AlbumArtTests(ExordiumUserTests):
         al = Album.objects.get()
         self.assertEqual(al.has_album_art(), False)
 
+    def test_basic_add_album_art_miscellaneous(self):
+        """
+        Test a case where a miscellaneous album has an image cover.  The
+        image should not get loaded.
+        """
+        self.add_mp3(artist='Artist', title='Title 1', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(al.art_filename, None)
+
     def test_basic_update_add_album_art(self):
         """
         Test a simple case where we add album art during an update,
@@ -5335,6 +5350,133 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
         self.assertEqual(al.art_filename, 'cover.jpg')
+
+    def test_album_art_update_miscellaneous_to_regular(self):
+        """
+        Testing what happens when a miscellaneous album (therefore without
+        album art) is updated to be a "real" album - it should find the 
+        album art present.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+
+        self.update_mp3('song1.mp3', album='Album')
+        self.run_update()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, False)
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+    def test_album_art_update_regular_to_miscellaneous(self):
+        """
+        Testing what happens when a regular album (with album art)
+        is updated to be a miscellaneous album.  The album art info
+        should be discarded.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art()
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, False)
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'cover.jpg')
+
+        self.update_mp3('song1.mp3', album='')
+        self.run_update()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(al.art_filename, None)
+
+    def test_album_art_move_to_different_directory(self):
+        """
+        Testing what happens when a regular album (with album art)
+        is moved to a different directory.  The album art info
+        should be moved along with it.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Old')
+        self.add_art(path='Old')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'Old/cover.jpg')
+
+        self.move_file('Old/song1.mp3', 'New')
+        self.move_file('Old/cover.jpg', 'New')
+        self.run_update()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'New/cover.jpg')
+
+    def test_album_art_move_to_different_directory_and_leave_art(self):
+        """
+        Testing what happens when a regular album (with album art)
+        is moved to a different directory, but the album art is not
+        moved along with it.  In this case the album art remains where
+        it is, and though it seems a bit counterintuitive, we'll permit
+        the album art records to stay where they are.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Old')
+        self.add_art(path='Old')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'Old/cover.jpg')
+
+        self.move_file('Old/song1.mp3', 'New')
+        self.run_update()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'Old/cover.jpg')
+
+    def test_album_art_move_to_different_directory_and_remove_art(self):
+        """
+        Testing what happens when a regular album (with album art)
+        is moved to a different directory, but the album art is
+        deleted.  In this case the album art info should be removed.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3', path='Old')
+        self.add_art(path='Old')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.art_filename, 'Old/cover.jpg')
+
+        self.move_file('Old/song1.mp3', 'New')
+        self.delete_file('Old/cover.jpg')
+        self.run_update()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(al.art_filename, None)
 
     def test_album_art_view_retrieve_original_jpg(self):
         """
