@@ -9,16 +9,20 @@ import re
 import getpass
 import datetime
 
+# We're keeping basically this entire file under "pragma: no cover" because
+# the logistics involved in testing it are ludicrous - we'd have to have a
+# separate mysql database ready to go and populated, etc.  Not worth it, IMO!
+
 # We don't want this subcommand to give someone grief if they don't have
 # mysql.connector installed
-try:
+try:    # pragma: no cover
     import mysql.connector
     from mysql.connector.errors import InterfaceError, ProgrammingError
     have_mysql = True
-except ImportError:
+except ImportError: # pragma: no cover
     have_mysql = False
 
-class Command(BaseCommand):
+class Command(BaseCommand): # pragma: no cover
 
     # Help text
     help = 'Imports album addition times from an existing MySQL Ampache database'
