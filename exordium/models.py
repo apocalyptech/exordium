@@ -459,7 +459,9 @@ class Album(models.Model):
         common_dir = os.path.commonprefix(filenames_raw)
         if len(common_dir) > 0:
             common_dir = os.path.dirname(common_dir)
-        if common_dir == '':
+        if common_dir == '':    # pragma: no cover
+            # I'm actually not sure what could possibly get us in here.
+            # At the very least we'd have '/'
             for filename in filenames_raw:
                 filenames_inzip.append(filename)
         else:
@@ -485,7 +487,7 @@ class Album(models.Model):
                         # some fake info" instead.
                         with open(raw, 'rb') as df:
                             zf.writestr(inzip, df.read())
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             try:
                 os.remove(zip_full)
             except Exception:
