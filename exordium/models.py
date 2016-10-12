@@ -1823,7 +1823,9 @@ class App(object):
                                 song.album.name, song.album.normname,
                             song.artist.name, song.artist.normname,
                             song)
-                    except Song.DoesNotExist:
+                    except Song.DoesNotExist:   # pragma: no cover
+                        # I'm not sure how we'd ever get in here.  Either the song will be in
+                        # to_update_helpers or it'll be in the database.
                         yield (App.STATUS_ERROR, 'Could not find Song record for: %s' % (filename))
                         continue
 
@@ -1864,7 +1866,7 @@ class App(object):
 
                 try:
                     artist_obj = Artist.objects.get(name=artist)
-                except Artist.DoesNotExist:
+                except Artist.DoesNotExist: # pragma: no cover
                     # I don't think it should be possible to get here.
                     yield (App.STATUS_ERROR, 'Artist "%s" not found for file change on album "%s"' % (artist, album))
                     continue
@@ -1977,8 +1979,9 @@ class App(object):
                         artist.name, seen_name))
                     artist.name = seen_name
                     artist.save()
-            except Artist.DoesNotExist:
-                # Maybe we were deleted or something, whatever.
+            except Artist.DoesNotExist: # pragma: no cover
+                # Maybe we were deleted or something, whatever.  It really
+                # shouldn't be possible to get in here.
                 pass
 
         # Get album art

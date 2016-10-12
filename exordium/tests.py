@@ -4384,6 +4384,40 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(artist.name, 'Artist')
         self.assertEqual(artist.prefix, 'The')
 
+    def test_update_change_prefix_different_artist(self):
+        """
+        Test an update to a file which changes to a different artist
+        and also adds a prefix to that second artist.
+        """
+        self.add_mp3(filename='1-first.mp3',
+            artist='Artist', title='Title 1', album = 'Album')
+        self.add_mp3(filename='2-second.mp3',
+            artist='Artist', title='Title 2', album = 'Album')
+        self.add_mp3(filename='3-third.mp3',
+            artist='Other', title='Title 3', album = 'Other')
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 3)
+        self.assertEqual(Album.objects.count(), 2)
+        self.assertEqual(Artist.objects.count(), 3)
+        artist = Artist.objects.get(name='Other')
+        artist_pk = artist.pk
+        self.assertEqual(artist.name, 'Other')
+        self.assertEqual(artist.prefix, '')
+
+        # Do the update
+        self.update_mp3('2-second.mp3', artist='The Other')
+        self.run_update()
+
+        # Check
+        self.assertEqual(Song.objects.count(), 3)
+        self.assertEqual(Album.objects.count(), 2)
+        self.assertEqual(Artist.objects.count(), 3)
+        artist = Artist.objects.get(name='Other')
+        self.assertEqual(artist.name, 'Other')
+        self.assertEqual(artist.prefix, 'The')
+
     def test_update_change_prefix_group(self):
         """
         Test an update of a file which adds a previously-unknown
