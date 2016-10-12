@@ -997,12 +997,19 @@ class Song(models.Model):
                     tracknum = 0
 
             try:
-                if 'TYER' in audio:
-                    year = int(str(audio['TYER']).strip().strip("\x00"))
-                elif 'TDRL' in audio:
+                if 'TDRL' in audio:
                     year = int(str(audio['TDRL']).strip().strip("\x00"))
                 elif 'TDRC' in audio:
                     year = int(str(audio['TDRC']).strip().strip("\x00"))
+                elif 'TYER' in audio:   # pragma: no cover
+                    # I actually haven't found any case where we actually
+                    # SEE 'TYER' come out of mutagen.  For older id3 tags,
+                    # mutagen silently converts it on load (well, in memory,
+                    # not on disk).  I'm leaving this here just in case
+                    # there's a situation in which that doesn't happen, but
+                    # I'm excluding it from coverage.py since I can't
+                    # reproduce.
+                    year = int(str(audio['TYER']).strip().strip("\x00"))
             except ValueError:
                 year = 0
 
@@ -1038,21 +1045,21 @@ class Song(models.Model):
                 tracknum = str(audio['tracknumber'][0]).strip().strip("\x00")
                 # Not sure if slashes like this will ever show up in Ogg tags,
                 # but we'll process it anyway.
-                if '/' in tracknum:
+                if '/' in tracknum: # pragma: no cover
                     tracknum = tracknum.split('/', 2)[0]
                 try:
                     tracknum = int(tracknum)
-                except ValueError:
+                except ValueError: # pragma: no cover
                     tracknum = 0
 
             try:
                 if 'date' in audio:
                     year = int(str(audio['date'][0]).strip().strip("\x00"))
-                elif 'year' in audio:
+                elif 'year' in audio:   # pragma: no cover
                     # Not sure if 'year' is a tag which'll ever show up, but just
                     # in case, here it is.
                     year = int(str(audio['year'][0]).strip().strip("\x00"))
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 year = 0
 
             filetype = Song.OGG
@@ -1706,8 +1713,11 @@ class App(object):
             for retline in retlines:
                 yield retline
             if song_info is None:
-               yield (App.STATUS_ERROR, 'Could not read updated information for: %s' % (song.filename))
-               continue
+                # We could probably queue up this song for possible deletion,
+                # but we'll err on the side of caution and keep it around.
+                # Perhaps the permission thing is a transient issue.
+                yield (App.STATUS_ERROR, 'Could not read updated information for: %s' % (song.filename))
+                continue
 
             helper = SongHelper(*song_info)
 

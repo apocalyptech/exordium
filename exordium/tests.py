@@ -51,8 +51,8 @@ class ExordiumTests(TestCase):
         testing files exist, and then set up the base library path.
         """
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
-                'silence.ogg', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_400.tif',
-                'cover_100.jpg']:
+                'silence.ogg', 'silence.m4a', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png',
+                'cover_400.tif', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         self.library_path = tempfile.mkdtemp()
@@ -87,6 +87,29 @@ class ExordiumTests(TestCase):
             raise Exception('Given filename "%s" is invalid' % (filename))
         return os.path.join(self.library_path, filename)
 
+    def add_file(self, basefile, filename, path=''):
+        """
+        Adds an arbitrary datafile somewhere in our library.  Returns the
+        full filename.
+        """
+        if path != '' and ('..' in path or path[0] == '/'):
+            raise Exception('Given path "%s" is invalid' % (path))
+
+        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
+            raise Exception('Invalid basefile name: %s' % (basefile))
+
+        src_filename = os.path.join(self.testdata_path, basefile)
+        if not os.path.exists(src_filename):
+            raise Exception('Source filename %s is not found' % (src_filename))
+
+        full_path = os.path.join(self.library_path, path)
+        full_filename = os.path.join(full_path, filename)
+        os.makedirs(full_path, exist_ok=True)
+        shutil.copyfile(src_filename, full_filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        return full_filename
+
     def add_mp3(self, path='', filename='file.mp3', artist='', album='',
             title='', tracknum=0, maxtracks=None, year=0, yeartag='TDRC',
             group='', conductor='', composer='',
@@ -104,21 +127,8 @@ class ExordiumTests(TestCase):
         Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
         be present in the source basefile.
         """
-        if path != '' and ('..' in path or path[0] == '/'):
-            raise Exception('Given path "%s" is invalid' % (path))
 
-        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
-            raise Exception('Invalid basefile name: %s' % (basefile))
-
-        src_filename = os.path.join(self.testdata_path, basefile)
-        if not os.path.exists(src_filename):
-            raise Exception('Source filename %s is not found' % (src_filename))
-
-        full_path = os.path.join(self.library_path, path)
-        full_filename = os.path.join(full_path, filename)
-        os.makedirs(full_path, exist_ok=True)
-        shutil.copyfile(src_filename, full_filename)
-        self.assertEqual(os.path.exists(full_filename), True)
+        full_filename = self.add_file(basefile, filename, path=path)
 
         # Finish here if we've been told to.
         if not apply_tags:
@@ -238,21 +248,8 @@ class ExordiumTests(TestCase):
         Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
         be present in the source basefile.
         """
-        if path != '' and ('..' in path or path[0] == '/'):
-            raise Exception('Given path "%s" is invalid' % (path))
 
-        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
-            raise Exception('Invalid basefile name: %s' % (basefile))
-
-        src_filename = os.path.join(self.testdata_path, basefile)
-        if not os.path.exists(src_filename):
-            raise Exception('Source filename %s is not found' % (src_filename))
-
-        full_path = os.path.join(self.library_path, path)
-        full_filename = os.path.join(full_path, filename)
-        os.makedirs(full_path, exist_ok=True)
-        shutil.copyfile(src_filename, full_filename)
-        self.assertEqual(os.path.exists(full_filename), True)
+        full_filename = self.add_file(basefile, filename, path=path)
 
         # Finish here if we've been told to.
         if not apply_tags:
@@ -470,21 +467,8 @@ class ExordiumTests(TestCase):
         """
         Adds a new cover image to our library in the specified dir.
         """
-        if path != '' and ('..' in path or path[0] == '/'):
-            raise Exception('Given path "%s" is invalid' % (path))
 
-        if '/' in basefile or len(basefile) < 3 or '.' not in basefile:
-            raise Exception('Invalid basefile name: %s' % (basefile))
-
-        src_filename = os.path.join(self.testdata_path, basefile)
-        if not os.path.exists(src_filename):
-            raise Exception('Source filename %s is not found' % (src_filename))
-
-        full_path = os.path.join(self.library_path, path)
-        full_filename = os.path.join(full_path, filename)
-        os.makedirs(full_path, exist_ok=True)
-        shutil.copyfile(src_filename, full_filename)
-        self.assertEqual(os.path.exists(full_filename), True)
+        self.add_file(basefile, filename, path=path)
 
     def assertNoErrors(self, appresults):
         """
@@ -495,15 +479,20 @@ class ExordiumTests(TestCase):
             self.assertNotEqual(status, App.STATUS_ERROR, msg='Error found: "%s"' % (line))
         return appresults
 
-    def assertErrors(self, appresults, errors_min=1):
+    def assertErrors(self, appresults, errors_min=1, error=None):
         """
         Given a list of tuples (as returned from ``App.add()`` or ``App.update()``),
         ensure that we have at least ``errors_min`` with a status of App.STATUS_ERROR
+
+        Optionally, also ensure that the errors we DO find match the text specified
+        in ``error``.
         """
         error_count = 0
         for (status, line) in appresults:
             if status == App.STATUS_ERROR:
                 error_count += 1
+                if error is not None:
+                    self.assertIn(error, line)
         self.assertGreaterEqual(error_count, errors_min, msg='%d errors expected, %d found' %
             (errors_min, error_count))
         return appresults
@@ -514,12 +503,12 @@ class ExordiumTests(TestCase):
         """
         return self.assertNoErrors(list(App.add()))
 
-    def run_add_errors(self, errors_min=1):
+    def run_add_errors(self, errors_min=1, error=None):
         """
         Runs an ``add`` operation on our library, and expect to see at least
         one error.
         """
-        return self.assertErrors(list(App.add()), errors_min)
+        return self.assertErrors(list(App.add()), errors_min, error=error)
 
     def run_update(self):
         """
@@ -527,12 +516,12 @@ class ExordiumTests(TestCase):
         """
         return self.assertNoErrors(list(App.update()))
 
-    def run_update_errors(self, errors_min=1):
+    def run_update_errors(self, errors_min=1, error=None):
         """
         Runs an ``add`` operation on our library, and expect to see at least
         one error.
         """
-        return self.assertErrors(list(App.update()), errors_min)
+        return self.assertErrors(list(App.update()), errors_min, error=error)
 
 # My main Django installation uses an authentication backend of
 # django.contrib.auth.backends.RemoteUserBackend, which the test
@@ -857,6 +846,30 @@ class BasicAddTests(ExordiumTests):
         """
         self.add_mp3(title='Title', composer='Composer', album='Album')
         self.run_add_errors()
+        self.assertEqual(Song.objects.count(), 0)
+        self.assertEqual(Artist.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 0)
+
+    def test_add_without_filesystem_permissions(self):
+        """
+        Attempts adding a file that we don't actually have permission
+        to read.  Should produce some errors.
+        """
+        self.add_mp3(artist='Artist', title='Title', album='Album',
+            year=1970, tracknum=1, filename='song.mp3')
+        self.set_file_permissions('song.mp3', readable=False)
+        self.run_add()
+        self.assertEqual(Song.objects.count(), 0)
+        self.assertEqual(Artist.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 0)
+
+    def test_add_invalid_filetype(self):
+        """
+        Attempts adding a file of a type we don't support (masquerading as
+        one we do, with an invalid extension.  Using an .m4a here)
+        """
+        self.add_file('silence.m4a', 'song.mp3')
+        self.run_add_errors(error='not yet understood')
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 0)
@@ -2161,12 +2174,12 @@ class BasicUpdateAsAddTests(BasicAddTests):
         """
         return self.assertNoErrors(list(App.update()))
 
-    def run_add_errors(self, errors_min=1):
+    def run_add_errors(self, errors_min=1, error=None):
         """
         Runs an ``update`` operation on our library while pretending to be
         ``add``, and ensures that there's at least one error
         """
-        return self.assertErrors(list(App.update()), errors_min)
+        return self.assertErrors(list(App.update()), errors_min, error=error)
 
 class BasicUpdateTests(ExordiumTests):
     """
@@ -2219,6 +2232,29 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(song.artist.name, 'Artist')
         self.assertEqual(song.title, 'New Title Æ')
         self.assertEqual(song.normtitle, 'new title ae')
+
+    def test_update_file_no_longer_readable(self):
+        """
+        Test an update where the file becomes no longer readable.  We'll
+        err on the side of caution and NOT remove the data, for now.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title')
+        self.run_add()
+
+        # Quick verification
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+
+        # Now make some changes.
+        self.update_mp3(filename='song.mp3', title='New Title')
+        self.set_file_permissions('song.mp3', readable=False)
+        self.run_update_errors()
+
+        # Now the real verifications
+        self.assertEqual(Song.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Artist.objects.count(), 2)
 
     def test_basic_album_update(self):
         """

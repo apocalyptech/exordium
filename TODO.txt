@@ -50,6 +50,8 @@ actually happen:
   cases like that, it does seem to perform fine.  Adds/
   updates are speedy enough for me, and in general the
   app is pretty responsive.
+* Update our testing run_add_errors() and run_update_errors()
+  to also match for text in the errors.
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * Extra details on album song list (format, bitrate, etc)
