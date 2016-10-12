@@ -1493,7 +1493,11 @@ class App(object):
                     album.artist = Artist.objects.get(normname=App.norm_name(album_artist[album.normname]))
                     album.save()
                     known_artists[album.artist.normname][1][album.normname] = album
-                except Artist.DoesNotExist:
+                except Artist.DoesNotExist: # pragma: no cover
+                    # This section is written somewhat generically, but the only possible artist
+                    # that we'd be updating to here is "Various," since we're just in to_add()
+                    # and the nature of this loop.  The only way we could get here is if our
+                    # earlier call to App.ensure_various() somehow failed.
                     yield (App.STATUS_ERROR, 'Cannot find artist "%s" to convert to Various' %
                         (album_artist[albumname]))
 
@@ -1515,10 +1519,12 @@ class App(object):
                                 known_artists[norm_name] = (artist_obj, {}, {})
                                 yield (App.STATUS_INFO, 'Created new artist "%s"' % (artist_obj))
                                 artists_added += 1
-                            except IntegrityError:
+                            except IntegrityError:  # pragma: no cover
                                 # Apparently in this case we're not associating things according to our
                                 # database's collation values.  We'll just try to load the matching artist
-                                # for now...
+                                # for now.  Excluding this from coverage.py because we hope never to get
+                                # in here, and if I found a repeatable case I'd be updating my normalization
+                                # routines anyway.
                                 artist_obj = Artist.objects.get(normname=norm_name)
                                 known_artists[norm_name] = (artist_obj, {}, {})
                                 yield (App.STATUS_DEBUG, 'Loaded existing artist for "%s"' % (artist_obj))
@@ -1544,7 +1550,10 @@ class App(object):
                                 known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
                                 yield (App.STATUS_INFO, 'Created new miscellaneous album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
-                        except IntegrityError:
+                        except IntegrityError:  # pragma: no cover
+                            # I'm not sure how we'd actually get in here.  Something would have
+                            # to have changed in the database while we were in the middle of this
+                            # whole processing loop.
                             album_obj = Album.objects.get(miscellaneous=True, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][2]['miscellaneous'] = album_obj
                             yield (App.STATUS_DEBUG, 'Loaded existing miscellaneous album for "%s / %s"' % (album_obj.artist, album_obj))
@@ -1560,7 +1569,9 @@ class App(object):
                                 known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                                 yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                                 albums_added += 1
-                        except IntegrityError:
+                        except IntegrityError:  # pragma: no cover
+                            # As with above, there really shouldn't be any way to get in this loop,
+                            # so we're excluding from coverage.
                             album_obj = Album.objects.get(normname=helper.norm_album, artist=known_artists[helper.norm_album_artist][0])
                             known_artists[helper.norm_album_artist][1][helper.norm_album] = album_obj
                             yield (App.STATUS_DEBUG, 'Loaded existing album for "%s / %s"' % (album_obj.artist, album_obj))
