@@ -874,6 +874,19 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Artist.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 0)
 
+    def test_add_various_reserved_name(self):
+        """
+        Attempts adding a file which uses the artist name "Various", which
+        is currently a reserved value in Exordium.
+        """
+        self.add_mp3(artist='Various', title='Title',
+            album='Album', filename='song.mp3')
+        self.run_add_errors(error='Artist name "Various" is reserved')
+
+        self.assertEqual(Song.objects.count(), 0)
+        self.assertEqual(Artist.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 0)
+
     def test_add_mp3s_different_artist_case(self):
         """
         Adds two tracks by the same artist, but with different capitalization
@@ -6358,6 +6371,24 @@ class AlbumModelTests(TestCase):
         ar = Artist.objects.create(name='Artist', normname='artist')
         al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
         self.assertEqual(al.get_total_size_str(), '0 B')
+
+class AlbumZipfileErrorModelTests(TestCase):
+    """
+    Tests for our App.AlbumZipfileError exception, since we don't have
+    a way to legitimately generating one of those.  Mostly just checking
+    that the stored exception works all right.
+    """
+
+    def test_orig_exception(self):
+        """
+        Tests that our orig_exception attribute works as-expected
+        """
+        with self.assertRaises(App.AlbumZipfileError) as cm:
+            try:
+                a = int('a')
+            except ValueError as e:
+                raise App.AlbumZipfileError(e)
+        self.assertEqual(type(cm.exception.orig_exception), type(ValueError()))
 
 class IndexViewTests(ExordiumUserTests):
     """
