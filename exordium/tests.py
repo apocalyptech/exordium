@@ -51,7 +51,8 @@ class ExordiumTests(TestCase):
         testing files exist, and then set up the base library path.
         """
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
-                'silence.ogg', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_100.jpg']:
+                'silence.ogg', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_400.tif',
+                'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         self.library_path = tempfile.mkdtemp()
@@ -5952,6 +5953,135 @@ class AlbumArtTests(ExordiumUserTests):
         # Check the next page to ensure we got an error message
         response = self.client.get(reverse('exordium:album', args=(al.pk,)))
         self.assertContains(response, 'found but not readable')
+
+    def test_model_get_album_image_miscellaneous(self):
+        """
+        Ensure that Album.get_album_image() returns None when the album is
+        set to miscellaneous, regardless of if an album image is set.  This
+        can currently never actually happen in the app because we do that
+        check as soon as possible, but we'll check the method here, regardless.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            filename='song1.mp3')
+        self.add_art(filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(al.get_album_image(), None)
+
+        # Just for fun, pretend some album info made it into the database
+        # somehow and ensure that our call still returns None.
+        al.art_filename = 'cover.jpg'
+        al.art_mime = 'media/jpeg'
+        al.art_ext = 'jpg'
+        al.art_mtime = 0
+        al.save()
+
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.get_album_image(), None)
+
+    def test_model_get_album_image_no_tracks(self):
+        """
+        Ensure that Album.get_album_image() returns None when we encounter an
+        album with no tracks.  This shouldn't be possible under ordinary
+        operation, but check for it anyway.  We will manually inject into the
+        database to simulate this.
+        """
+        ar = Artist.objects.create(name='Artist', normname='artist')
+        al = Album.objects.create(
+            artist = ar,
+            name = 'Album',
+            normname = 'album',
+            art_filename = 'cover.jpg',
+            art_ext = 'jpg',
+            art_mime = 'media/jpeg',
+            art_mtime = 0,
+        )
+
+        self.assertEqual(al.has_album_art(), True)
+        self.assertEqual(al.get_album_image(), None)
+
+    def test_model_update_album_art_miscellaneous(self):
+        """
+        Ensure that ``Album.update_album_art()`` does nothing when the album is
+        set to miscellaneous.  I'm pretty sure this can't ever actually happen
+        in real life due to checks which occur prior to calling this, but
+        we're checking here regardless.  We're passing ``full_refresh=True``
+        to the procedure to ensure that we get right to the main bit.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            filename='song1.mp3')
+        self.add_art(filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(list(al.update_album_art(full_refresh=True)), [])
+        self.assertEqual(al.get_album_image(), None)
+        self.assertEqual(al.art_filename, None)
+        self.assertEqual(al.art_ext, None)
+        self.assertEqual(al.art_mime, None)
+        self.assertEqual(al.art_mtime, 0)
+
+    def test_model_import_album_image_from_filename_miscellaneous(self):
+        """
+        Ensure that Album.import_album_image_from_filename() does nothing
+        when the album is set to miscellaneous.  This can currently
+        never actually happen in the app because we do that check as soon
+        as possible, but we'll check the method here, regardless.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            filename='song1.mp3')
+        self.add_art(filename='cover.jpg')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.miscellaneous, True)
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(list(al.import_album_image_from_filename('cover.jpg', 'cover.jpg')), [])
+        self.assertEqual(al.has_album_art(), False)
+        self.assertEqual(al.art_filename, None)
+        self.assertEqual(al.art_ext, None)
+        self.assertEqual(al.art_mime, None)
+        self.assertEqual(al.art_mtime, 0)
+
+    def test_model_import_album_image_from_filename_invalid_extension(self):
+        """
+        Ensure that Album.import_album_image_from_filename() produces
+        an error when the passed-in filename is of an invalid extension.
+        This can currently never actually happen in the app because we do
+        that check as soon as possible, but we'll check the method here,
+        regardless.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='cover.pdf')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
+        self.assertErrors(list(al.import_album_image_from_filename('cover.pdf', 'cover.pdf')))
+
+    def test_add_image_with_invalid_internal_type(self):
+        """
+        Here we try importing album art which has a valid extension but is
+        in reality a .tif file.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_art(filename='cover.jpg', basefile='cover_400.tif')
+        self.run_add_errors()
+
+        self.assertEqual(Album.objects.count(), 1)
+        al = Album.objects.get()
+        self.assertEqual(al.has_album_art(), False)
 
 class BasicAlbumArtTests(TestCase):
     """

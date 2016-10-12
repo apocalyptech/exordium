@@ -268,6 +268,10 @@ class Album(models.Model):
         something needs to loop through our output in order for things to
         actually happen here.
 
+        Note too that despite some ``return False`` statements in here, because
+        we're a generator, those return values are pretty meaningless and
+        can't really be accessed.
+
         ``filename`` is the full path to the image, whereas ``short_filename``
         is what will get stored in the DB
         """
