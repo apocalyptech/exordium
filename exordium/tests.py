@@ -605,6 +605,30 @@ class BasicAddTests(ExordiumTests):
         """
         self.mp3_mode_test('abr')
 
+    def test_add_with_no_various_artist(self):
+        """
+        Test what happens when we run an add without having a Various artist.
+        It should be created.  Note that this won't actually happen unless
+        we're also adding at least one real track.
+        """
+        self.assertEqual(Artist.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 0)
+        self.assertEqual(Song.objects.count(), 0)
+        ar = Artist.objects.get()
+        self.assertEqual(ar.various, True)
+        ar.delete()
+        self.assertEqual(Artist.objects.count(), 0)
+
+        self.add_mp3(artist='Artist', title='Title',
+            filename='song.mp3')
+        self.run_add()
+
+        self.assertEqual(Artist.objects.count(), 2)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+        ar = Artist.objects.get(name='Various')
+        self.assertEqual(ar.various, True)
+
     def test_add_mp3_simple_tag_check(self):
         """
         Adds a single fully-tagged track and check that the resulting database
@@ -6390,6 +6414,56 @@ class AlbumZipfileErrorModelTests(TestCase):
                 raise App.AlbumZipfileError(e)
         self.assertEqual(type(cm.exception.orig_exception), type(ValueError()))
 
+class AppModelTests(TestCase):
+    """
+    Tests against our main App class which don't require our full
+    fake library setup.
+    """
+
+    def test_ensure_various_artists_create_artist(self):
+        """
+        Test our App.ensure_various_artists() function and ensure that
+        it creates a Various artist if needed.
+        """
+        self.assertEqual(Artist.objects.count(), 0)
+        self.assertEqual(App.ensure_various_artists(), True)
+        self.assertEqual(Artist.objects.count(), 1)
+        ar = Artist.objects.get()
+        self.assertEqual(ar.name, 'Various')
+        self.assertEqual(ar.various, True)
+
+    def test_ensure_various_artists_return_existing(self):
+        """
+        Test our App.ensure_various_artists() function and ensure that
+        it returns an existing 'Various' artist if one exists.
+        """
+        App.ensure_various_artists()
+        self.assertEqual(Artist.objects.count(), 1)
+        ar = Artist.objects.get()
+        ar_pk = ar.pk
+        self.assertEqual(ar.name, 'Various')
+        self.assertEqual(ar.various, True)
+
+        self.assertEqual(App.ensure_various_artists(), False)
+        ar = Artist.objects.get()
+        self.assertEqual(ar.pk, ar_pk)
+        self.assertEqual(ar.name, 'Various')
+        self.assertEqual(ar.various, True)
+
+    def test_add_with_empty_to_add_list(self):
+        """
+        Test what happens when we run ``App.add()`` with an empty to_add
+        list.  Calling this method with a list only happens inside
+        ``App.update()``, and that method checks for an empty list before
+        calling, so this should never actually happen in "real life,"
+        but we'll check it anyway.
+        """
+        retlines = list(App.add([]))
+        self.assertEqual(retlines, [])
+        self.assertEqual(Artist.objects.count(), 0)
+        self.assertEqual(Album.objects.count(), 0)
+        self.assertEqual(Song.objects.count(), 0)
+
 class IndexViewTests(ExordiumUserTests):
     """
     Tests of our main index view.  (Not a whole lot going on, really)
@@ -8243,7 +8317,46 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         Get rid of our zipfile download path
         """
         super(AlbumDownloadViewTests, self).tearDown()
+        if os.path.exists(self.zipfile_path):
+            shutil.rmtree(self.zipfile_path)
+
+    def test_model_support_zipfile_no_zip_dir(self):
+        """
+        Tests a few conditions of our App.support_zipfile() method to ensure that
+        it returns False when the zip dir doesn't exist.
+        """
+        # Should start out True
+        self.assertEqual(App.support_zipfile(), True)
+        
+        # Should return False if we're configured but the zip dir doesn't
+        # actually exist
         shutil.rmtree(self.zipfile_path)
+        self.assertEqual(App.support_zipfile(), False)
+
+    def test_model_support_zipfile_no_zip_path(self):
+        """
+        Tests a few conditions of our App.support_zipfile() method to ensure that
+        it returns False when the zip path isn't configured
+        """
+        # Should start out True
+        self.assertEqual(App.support_zipfile(), True)
+
+        # Return false when the configured path is blank
+        self.prefs['exordium__zipfile_path'] = ''
+        self.assertEqual(App.support_zipfile(), False)
+
+    def test_model_support_zipfile_no_zip_url(self):
+        """
+        Tests a few conditions of our App.support_zipfile() method to ensure that
+        it returns False when the zip path isn't configured
+        """
+
+        # Should start out True
+        self.assertEqual(App.support_zipfile(), True)
+
+        # When the URL isn't configured, return False
+        self.prefs['exordium__zipfile_url'] = ''
+        self.assertEqual(App.support_zipfile(), False)
 
     def test_library_view_show_zipfile(self):
         """

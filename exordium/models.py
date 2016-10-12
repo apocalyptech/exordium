@@ -1427,7 +1427,9 @@ class App(object):
                     current_check_time = timezone.localtime(timezone.now())
                     interval = current_check_time - checksum_last_notification
                     total_interval = current_check_time - checksum_start_time
-                    if interval.seconds > 10:
+                    if interval.seconds > 10:   # pragma: no cover
+                        # Excluding this from coverage.py since I really don't want to
+                        # have a test that runs >10 seconds.
                         checksum_last_notification = current_check_time
                         if total_interval.seconds > 30:
                             checksums_per_sec = checksums_computed / total_interval.seconds
