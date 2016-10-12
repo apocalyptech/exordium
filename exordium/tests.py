@@ -12,7 +12,6 @@ from dynamic_preferences.registries import global_preferences_registry
 
 import io
 import os
-import stat
 import shutil
 import pathlib
 import zipfile
@@ -55,7 +54,7 @@ class ExordiumTests(TestCase):
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
                 'silence.ogg', 'silence.m4a', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png',
                 'cover_400.tif', 'cover_100.jpg']:
-            if not os.path.exists(os.path.join(self.testdata_path, filename)):
+            if not os.path.exists(os.path.join(self.testdata_path, filename)):  # pragma: no cover
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         self.library_path = tempfile.mkdtemp()
         self.prefs = global_preferences_registry.manager()
@@ -384,7 +383,7 @@ class ExordiumTests(TestCase):
 
     def move_file(self, filename, destination):
         """
-        Deletes the given file from our fake library
+        Moves the given file in our fake library to a different destination
         """
         full_filename = self.check_library_filename(filename)
         self.assertEqual(os.path.exists(full_filename), True)
@@ -454,16 +453,13 @@ class ExordiumTests(TestCase):
         with open(full_filename, 'rb') as df:
             return df.read()
 
-    def set_file_permissions(self, filename, readable=True):
+    def set_file_unreadable(self, filename):
         """
-        Will set the given filename to either be ``readable`` or not.
+        Well set the given file to be unreadable by our add/update processes.
         """
 
         full_filename = self.check_library_filename(filename)
-        if readable:
-            os.chmod(full_filename, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        else:
-            os.chmod(full_filename, 0)
+        os.chmod(full_filename, 0)
 
     def add_art(self, path='', filename='cover.jpg', basefile='cover_400.jpg'):
         """
@@ -554,6 +550,169 @@ class ExordiumUserTests(ExordiumTests):
         Logs in as our staff user
         """
         self.client.force_login(self.user)
+
+class TestTests(ExordiumTests):
+    """
+    This is silly, but I've become a bit obsessed about 100% coverage.py
+    results.  This class just tests various cases in our main ExordiumTests
+    class which for whatever reason don't actually end up happening in the
+    main test areas.
+    """
+
+    def test_file_move_to_base_dir(self):
+        """
+        Move a file to the base library directory.
+        """
+        self.add_art(path='albumdir')
+        self.move_file('albumdir/cover.jpg', '')
+
+    def test_add_ogg_without_tags(self):
+        """
+        Add an ogg file without tags
+        """
+        self.add_ogg(filename='song.ogg', apply_tags=False)
+
+    def test_update_ogg_with_previously_empty_tags(self):
+        """
+        Update an ogg file which previously had no tags.
+        """
+        self.add_ogg(filename='song.ogg', apply_tags=False)
+        self.update_ogg('song.ogg',
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            group='Group',
+            conductor='Conductor',
+            composer='Composer')
+
+    def test_update_ogg_with_previously_full_tags(self):
+        """
+        Update an ogg file which previously had a full set of tags
+        """
+        self.add_ogg(filename='song.ogg', 
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            group='Group',
+            conductor='Conductor',
+            composer='Composer')
+        self.update_ogg('song.ogg',
+            artist='New Artist',
+            album='New Album',
+            title='New Title',
+            tracknum=2,
+            year=2006,
+            group='New Group',
+            conductor='New Conductor',
+            composer='New Composer')
+
+    def test_update_mp3_with_maxtracks(self):
+        """
+        Updates an mp3 with a track number which includes the max track count.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist',
+            album='Album', title='Title', tracknum=1)
+        self.update_mp3('song.mp3', tracknum=2, maxtracks=10)
+
+    def test_add_mp3_invalid_year_tags(self):
+        """
+        Adds an mp3 with an invalid year tag specified.
+        """
+        self.assertRaises(Exception, self.add_mp3, yeartag='INVALID')
+
+    def test_add_file_invalid_path_dotdot(self):
+        """
+        Attemps to add a file with an invalid path which includes '..'
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='foo', filename='file', path='..')
+
+        self.assertIn('Given path ".." is invalid', cm.exception.args[0])
+
+    def test_add_file_invalid_path_leading_slash(self):
+        """
+        Attemps to add a file with an invalid path which includes a leading
+        slash
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='foo', filename='file', path='/hello')
+
+        self.assertIn('Given path "/hello" is invalid', cm.exception.args[0])
+
+    def test_add_file_invalid_basefile_slash(self):
+        """
+        Attemps to add a file with an invalid basefile which includes
+        a slash anywhere in the filename
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='foo/bar.mp3', filename='file')
+
+        self.assertIn('Invalid basefile name:', cm.exception.args[0])
+
+    def test_add_file_invalid_basefile_too_short(self):
+        """
+        Attemps to add a file with an invalid basefile which is
+        too short
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='aa', filename='file')
+
+        self.assertIn('Invalid basefile name:', cm.exception.args[0])
+
+    def test_add_file_invalid_basefile_without_dot(self):
+        """
+        Attemps to add a file with an invalid basefile which does
+        not contain a dot in the filename
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='hellothere', filename='file')
+
+        self.assertIn('Invalid basefile name:', cm.exception.args[0])
+
+    def test_add_file_invalid_basefile_does_not_exist(self):
+        """
+        Attemps to add a file with an invalid basefile which does
+        not exist
+        """
+        with self.assertRaises(Exception) as cm:
+            self.add_file(basefile='hello.there', filename='hello.there')
+
+        self.assertIn('Source filename %s is not found' %
+            (os.path.join(self.testdata_path, 'hello.there')), cm.exception.args[0])
+
+    def test_check_library_filename_invalid_dotdot(self):
+        """
+        Tests a call to ``check_library_filename()`` with an invalid
+        filename (one which contains a '..')
+        """
+        with self.assertRaises(Exception) as cm:
+            self.check_library_filename('../stuff')
+
+        self.assertIn('Given filename "../stuff" is invalid', cm.exception.args[0])
+
+    def test_check_library_filename_invalid_too_short(self):
+        """
+        Tests a call to ``check_library_filename()`` with an invalid
+        filename (one which is too short)
+        """
+        with self.assertRaises(Exception) as cm:
+            self.check_library_filename('aa')
+
+        self.assertIn('Given filename "aa" is invalid', cm.exception.args[0])
+
+    def test_check_library_filename_invalid_leading_slash(self):
+        """
+        Tests a call to ``check_library_filename()`` with an invalid
+        filename (one which has a leading slash)
+        """
+        with self.assertRaises(Exception) as cm:
+            self.check_library_filename('/file')
+
+        self.assertIn('Given filename "/file" is invalid', cm.exception.args[0])
 
 class BasicAddTests(ExordiumTests):
     """
@@ -883,7 +1042,7 @@ class BasicAddTests(ExordiumTests):
         """
         self.add_mp3(artist='Artist', title='Title', album='Album',
             year=1970, tracknum=1, filename='song.mp3')
-        self.set_file_permissions('song.mp3', readable=False)
+        self.set_file_unreadable('song.mp3')
         self.run_add()
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
@@ -2287,7 +2446,7 @@ class BasicUpdateTests(ExordiumTests):
 
         # Now make some changes.
         self.update_mp3(filename='song.mp3', title='New Title')
-        self.set_file_permissions('song.mp3', readable=False)
+        self.set_file_unreadable('song.mp3')
         self.run_update_errors()
 
         # Now the real verifications
@@ -5171,7 +5330,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.add_mp3(artist='Artist', title='Title 1',
             album='Album', filename='song1.mp3')
         self.add_art(filename='cover.jpg')
-        self.set_file_permissions('cover.jpg', readable=False)
+        self.set_file_unreadable('cover.jpg')
         self.run_add_errors()
 
         self.assertEqual(Album.objects.count(), 1)
@@ -5222,7 +5381,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.run_add()
 
         self.add_art(filename='cover.jpg')
-        self.set_file_permissions('cover.jpg', readable=False)
+        self.set_file_unreadable('cover.jpg')
         self.run_update_errors()
 
         self.assertEqual(Album.objects.count(), 1)
@@ -6200,7 +6359,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(al.has_album_art(), False)
 
         self.add_art(filename='cover.jpg')
-        self.set_file_permissions('cover.jpg', readable=False)
+        self.set_file_unreadable('cover.jpg')
 
         self.login()
         response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
@@ -6234,7 +6393,7 @@ class AlbumArtTests(ExordiumUserTests):
         orig_mime = al.art_mime
         orig_ext = al.art_ext
 
-        self.set_file_permissions('cover.jpg', readable=False)
+        self.set_file_unreadable('cover.jpg')
 
         self.login()
         response = self.client.get(reverse('exordium:albumartupdate', args=(al.pk,)))
