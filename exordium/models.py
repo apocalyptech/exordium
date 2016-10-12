@@ -562,7 +562,9 @@ class AlbumArt(models.Model):
         # Get our resolution
         try:
             res = AlbumArt.resolutions[size]
-        except KeyError:
+        except KeyError:    # pragma: no cover
+            # Not sure how this could happen given the prior check,
+            # assuming we keep our data definitions in order.
             return None
 
         # See if we have an existing object
@@ -580,7 +582,8 @@ class AlbumArt(models.Model):
         # Doublecheck to see if the album's album art is still valid,
         # and update if need be.  Note that we'll have to check to make
         # sure that we DO still have album art after this.
-        album.update_album_art()
+        for retline in album.update_album_art():
+            pass
         if not album.has_album_art():
             return None
 
@@ -603,7 +606,7 @@ class AlbumArt(models.Model):
                         from_mtime=album.art_mtime,
                         image=image_out.read())
                     return albumart
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             # TODO: Should log this
             return None
 
