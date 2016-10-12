@@ -13,12 +13,6 @@ bitrot:
 Things which may or may not make that cut:
 
 * Might be nice to have a mobile-optimized CSS
-* Tests for what happens when Add or Update/Clean encounters
-  files it doesn't have permission to actually read. (I believe
-  this is actually okay, but I have no tests to verify at the
-  moment.)
-* Tests for some more direct model stuff, like normalization.
-  Similar to what we're doing in BasicAlbumArtTests
 * Split tests into multiple files?  That file is huge.
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
@@ -30,7 +24,7 @@ Things which may or may not make that cut:
   wordy and not needed most of the time.  Use 'view.varname'
   in the template and it'll pull from the named var/func.
   No fussy context fiddling required!
-* Convert our two forms to actual django Forms.
+* Convert our three forms to actual django Forms.
 
 Things which, if I'm being honest here, are likely to never
 actually happen:
@@ -49,9 +43,10 @@ actually happen:
   that faster as well.  The good news is that outside of
   cases like that, it does seem to perform fine.  Adds/
   updates are speedy enough for me, and in general the
-  app is pretty responsive.
-* Update our testing run_add_errors() and run_update_errors()
-  to also match for text in the errors.
+  app is pretty responsive.  Idea: we're using sha256sums,
+  but maybe that's overkill?  Can we save time by dropping
+  to sha1sum?  We shouldn't care about the loss of
+  checksum resolution, really...
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * Extra details on album song list (format, bitrate, etc)
@@ -69,17 +64,13 @@ actually happen:
   overly-complicate the backend, which I think I'd like
   to keep cleaner.  But it might be a monster anyway.)
 * "Random albums" page?
-* User preferences don't seem to always get applied quite
-  right?  I wonder if it's something to do with
-  threading?  For instance for a bit I could pretty
-  repeatably go back and forth between home/artistbrowse
-  and have one with show_live and the other without.
-  edit: yep, I'm guessing it's to do with having multiple
-  WSGI threads running.  Global options can end up not
-  "taking" on the other thread as well, it looks like.
-  The easiest to play with is probably the zipfile
-  path - change it to something invalid and note that
-  sometimes you'll get links, sometimes you won't.
+* If deployed with WSGI configured for multiple processes,
+  both user+global preferences only get applied properly
+  on the process for which they were set.  Subsequent page
+  loads may or may not come from the same process, so
+  results can be inconsistent.  I'm not sure if there's a
+  way around that or not - for now I've just dropped my
+  number of processes down to 1.
 * Maybe make "Various" a non-reserved artist name?  We
   could put in a big ol' random mess of characters for
   the name, and just rely on Artist.various to display
