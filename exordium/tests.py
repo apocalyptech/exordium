@@ -1038,7 +1038,10 @@ class BasicAddTests(ExordiumTests):
     def test_add_without_filesystem_permissions(self):
         """
         Attempts adding a file that we don't actually have permission
-        to read.  Should produce some errors.
+        to read.  This does NOT produce any errors, because I intentionally
+        mark some files as not readable by the user Django's running as,
+        in order to hide them from Exordium.  It does get logged as a
+        DEBUG message, but I won't bother looking for that.
         """
         self.add_mp3(artist='Artist', title='Title', album='Album',
             year=1970, tracknum=1, filename='song.mp3')
@@ -6525,7 +6528,8 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(Album.objects.count(), 1)
         al = Album.objects.get()
         self.assertEqual(al.has_album_art(), False)
-        self.assertErrors(list(al.import_album_image_from_filename('cover.pdf', 'cover.pdf')))
+        self.assertErrors(list(al.import_album_image_from_filename('cover.pdf', 'cover.pdf')),
+            error='Invalid extension for image')
 
     def test_add_image_with_invalid_internal_type(self):
         """
