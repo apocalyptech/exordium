@@ -1,7 +1,6 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Investigate sha1sum-vs-sha256sum.  (Mentioned below, too...)
 * Make sure our setup.py does the right things
 * Upload to PIP
 * Website
@@ -30,24 +29,24 @@ Things which may or may not make that cut:
 Things which, if I'm being honest here, are likely to never
 actually happen:
 
-* Exordium can be slow, and it'd be nice to figure out if
-  there are reasonable ways to speed it up.  My initial
-  import of a 42k-track library takes about an hour, the
-  majority of which is spent doing checksums of the files.
-  I suspect that not much could be done to speed up the
-  checksumming, though perhaps I'm wrong - there's still
-  a good 15 minutes after that for database imports, too,
-  though.  I'd put in some logic so that if an artist
-  has more than 500 tracks, the track list isn't shown
-  on the artist page, because performance was lousy there,
-  too - it'd be nice to see if there's a good way to get
-  that faster as well.  The good news is that outside of
-  cases like that, it does seem to perform fine.  Adds/
-  updates are speedy enough for me, and in general the
-  app is pretty responsive.  Idea: we're using sha256sums,
-  but maybe that's overkill?  Can we save time by dropping
-  to sha1sum?  We shouldn't care about the loss of
-  checksum resolution, really...
+* Exordium can be slow, and it'd be nice to figure out if there
+  are reasonable ways to speed it up, though it appears that in
+  my case I'm primarily I/O bound.  The initial import of a
+  42k-track library on my box takes about an hour, the majority
+  of which is spent doing checksums of the files.  I've tested
+  out using faster, less-secure checksum method (sha1sum, md5sum)
+  and while those technically save us some time in CPU, it turns
+  out that on my machine at least I'm primarily I/O bound while
+  doing such large imports, and using the faster methods don't
+  actually save any time.  Beyond the initial checksumming in the
+  add process, there's still a good 15 minutes after that for
+  database imports.  Relatedly, I'd put in some logic so that if
+  an artist has more than 500 tracks, the track list isn't shown
+  on the artist page, because performance was lousy there, too.
+  It'd be nice to see if there's a good way to get that faster as
+  well.  The good news is that outside of cases like that, it
+  does seem to perform fine.  Adds/ updates are speedy enough for
+  me, and in general the app is pretty responsive.
 * More precise summary text for classical
   * "Composer, tracks 1-5, 8: foo", etc.
 * Extra details on album song list (format, bitrate, etc)
