@@ -2,10 +2,6 @@
 Exordium
 ========
 
-**NOTE:** Exordium is currently a work-in-progress and may exhibit strange
-behavior or otherwise be non-feature-complete.  Proceed at your own risk!
-That said, it's working quite well for me.
-
 Exordium is a read-only web-based music library system for Django.
 Exordium will read mp3 and ogg files from the host filesystem and provide
 an online interface to browse, download (as zipfiles or otherwise), and
@@ -14,7 +10,13 @@ stream.
 The HTML5 media player `jPlayer <http://jplayer.org/>`_ is used to provide
 arbitrary streaming of music.
 
-Detailed documentation may eventually show up in the "docs" directory.
+Exordium was built with a very specific set of operational goals and does
+not attempt to be a generic library suitable for widespread use.  There are,
+in fact, no configuration options beyond those to define the file paths/URLs
+necessary for basic usage.  Patches to add/change functionality will be
+happily received so long as they don't interfere with or disable the current
+functionality by default, but there is no internal development goal to make
+Exordium a generic solution.
 
 The name "Exordium" comes from the fictional technology of the same name in
 Alastair Reynolds' "Revelation Space" novels.  It's not a perfect name for
@@ -40,6 +42,11 @@ Exordium requires the following additional third-party modules:
   - six (built on 1.10.0)
   - persisting_theory (built on 0.2.1)
 
+These requirements may be installed with ``pip``, if Exordium itself hasn't
+been installed that way::
+
+    pip install -r requirements.txt
+
 The tests in ``test.py`` make use of the ``exist_ok`` parameter to Python's
 ``os.makedirs()``, which was not introduced until Python 3.2, so the
 tests at least currently require at least Python 3.2.  I suspect that there
@@ -64,18 +71,20 @@ which fit my ideal very well but may not be a good fit for you:
   mounts), that's fine, but there is NO support for multiple libraries in
   Exordium.
 
-- All music files are managed outside of Exordium.  Exordium itself
-  will never attempt to write to your library directory for any reason.  It
-  requires read access only.  (Write access to a directory on the
-  filesystem is required for zipfile downloads, but that directory need not
-  be in your music library.)
+- All music files (and album art) are managed outside of Exordium.  Exordium
+  itself will never attempt to write to your library directory for any reason.
+  It requires read access only.  (Write access to a directory on the filesystem
+  is required for zipfile downloads, but that directory need not be in your
+  music library.)
 
 - Music files should be, in general, arranged scrupulously: All files
   within a single directory belong to the same album, and an album should
   never span multiple directories.  There's actually plenty of wiggle room
   here, and Exordium should correctly deal with directories full of
   "miscellaneous" files, etc, but in general the library should be
-  well-ordered and have albums contained in their own directories.
+  well-ordered and have albums contained in their own directories.  This
+  becomes more important when rearranging your filesystem layout or
+  updating music with fresh tags.
  
 - The artwork for albums should be contained in gif/jpg/png files stored
   alongside the mp3s/oggs, or in the immediate parent folder (in the case
@@ -178,7 +187,12 @@ Exordium are quite light, I've just made do with a single process.
 Quick start
 -----------
 
-1. Add exordium, django_tables2, and dynamic_preferences to your
+1. If Exordium hasn't been installed via ``pip`` or some other method which
+   automatically installs dependencies, install its dependencies::
+
+    pip install -r requirements.txt
+
+2. Add exordium, django_tables2, and dynamic_preferences to your
    ``INSTALLED_APPS`` setting like this::
 
      INSTALLED_APPS = [
@@ -188,26 +202,26 @@ Quick start
          'dynamic_preferences',
      ]
 
-2. Include the exordium URLconf in your project ``urls.py`` like this::
+3. Include the exordium URLconf in your project ``urls.py`` like this::
 
      url(r'^exordium', include('exordium.urls')),
 
-3. Run ``python manage.py migrate exordium`` to create the Exordium models.
+4. Run ``python manage.py migrate exordium`` to create the Exordium models.
    
-4. Run ``python manage.py migrate dynamic_preferences`` to create the
+5. Run ``python manage.py migrate dynamic_preferences`` to create the
    Dynamic Preferences models, if this wasn't already configured on your
    Django install.
 
-5. Run ``python manage.py loaddata --app exordium initial_data`` to load
+6. Run ``python manage.py loaddata --app exordium initial_data`` to load
    some initial data into the database.  (This is not actually strictly
    speaking necessary.)
 
-6. If running this from a webserver with static files present, make sure
+7. If running this from a webserver with static files present, make sure
    to run ``python manage.py collectstatic`` at some point to get the
    static files put in place properly, or otherwise configure your static
    file delivery solution.
 
-7. Either start the development server with ``python manage.py runserver``
+8. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Visit the administrative area in
    "Dynamic Preferences > Global preferences" and set the values for the
    following:
@@ -230,31 +244,33 @@ Quick start
    without the "*Exordium Media URL*" option being set properly, though
    with the caveats mentioned above.
 
-8. Visit the "Library Upkeep" link from the Exordium main page and click on
-   "Start Process" to beginn the initial import into Exordium!
+9. Visit the "Library Upkeep" link from the Exordium main page and click on
+   "Start Process" to begin the initial import into Exordium!
 
 Limitations
 -----------
 
 There are some inherent limitations of Exordium, based on the assumptions
 that have been made during its development (and in my own music library).
-As I think of them I'll add to the list.
 
-- The artist name "Various" is effectively reserved, or at least if there
-  is a band named Various, they'll get lumped in with all the other
-  Various Artists albums.
+- The artist name "Various" is reserved.  Tracks with an artist tag of
+  "Various" will not be added to the library.
 
 - If two Various Artists albums with the same title exist in the library,
   they'll end up stored as one single album in the DB.
 
-- If two directories contain files which seem to be in the same album,
-  you'll end up with an album which spans directories.  Behavior may not
-  be well-defined in that case.
+- If two directories contain files which seem to be in the same album (by
+  the same artist), you'll end up with an album which spans directories.
+  Behavior may not be well-defined in that case.
 
 - Exordium completely ignores genre tags.  I've personally always been
   lousy at putting reasonable values in there on my media, and so that's
   been very unimportant to me.  It'd probably be good to support them
   anyway, though.
+
+- Exordium only supports mp3 and ogg currently, though m4a and other
+  support should be reasonably simple to add in, so long as Mutagen
+  supports the format.
 
 Migration from Other Libraries
 ------------------------------

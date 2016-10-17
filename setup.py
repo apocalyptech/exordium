@@ -12,13 +12,13 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-exordium',
-    version='0.1',
+    version='1.0.0',
     packages=find_packages(),
     include_package_data=True,
     license='BSD License',
-    description='A Django-based web music library application.',
+    description='A Django-based readonly web music library application.',
     long_description=README,
-    url='https://apocalyptech.com',
+    url='https://apocalyptech.com/exordium/',
     author='CJ Kucera',
     author_email='pez@apocalyptech.com',
     install_requires=[

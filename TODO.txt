@@ -1,17 +1,15 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Use annotate() for some of our aggregate information on
-  artist browse, for instance.
-* Should implement a max-number-of-results in search.  Probably
-  only really an issue on Songs, maybe just use 500 like we do
-  on the artist view page.
 * Make sure our setup.py does the right things
 * Upload to PIP
 * Website
 
 Things which may or may not make that cut:
 
+* Should implement a max-number-of-results in search.  Probably
+  only really an issue on Songs, maybe just use 500 like we do
+  on the artist view page.
 * Might be nice to have a mobile-optimized CSS
 * Split tests into multiple files?  That file is huge.
 * Direct links to pages with django-tables2 (instead of just
@@ -24,6 +22,8 @@ Things which may or may not make that cut:
   wordy and not needed most of the time.  Use 'view.varname'
   in the template and it'll pull from the named var/func.
   No fussy context fiddling required!
+* Use annotate() for some of our aggregate information on
+  artist browse, for instance.
 * Convert our three forms to actual django Forms.
 
 Things which, if I'm being honest here, are likely to never
