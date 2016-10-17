@@ -1,6 +1,7 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
+* Investigate sha1sum-vs-sha256sum.  (Mentioned below, too...)
 * Make sure our setup.py does the right things
 * Upload to PIP
 * Website
