@@ -37,7 +37,8 @@ function jplayerOpen() {
 <body>
 <div class="sidebar">
     <h1>Exordium</h1>
-    <p>Welcome, {{ request.user }}</p>
+    <div class="version">v{{ exordium_version }}</div>
+    <p>Welcome, {{ request.user }}.</p>
     <p><a href="{% url 'exordium:index' %}">Home</a></p>
     <p><strong>Browse</strong></p>
     <ul>

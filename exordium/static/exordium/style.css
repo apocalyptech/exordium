@@ -50,6 +50,10 @@ BODY {
 }
 h1 {
     margin-top: 0px;
+    margin-bottom: 0px;
+}
+.version {
+    font-size: smaller;
 }
 .searchform {
     width: 100%;

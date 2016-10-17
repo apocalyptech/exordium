@@ -13,6 +13,7 @@ from dynamic_preferences.registries import global_preferences_registry
 
 from .models import Artist, Album, Song, App, AlbumArt
 from .tables import ArtistTable, AlbumTable, SongTableNoAlbum, SongTableWithAlbumNoTracknum, SongTableNoAlbumNoTracknum
+from . import __version__
 
 # Create your views here.
 
@@ -117,6 +118,7 @@ class TitleListView(generic.ListView, UserAwareView):
     def get_context_data(self, **kwargs):
         context = super(TitleListView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        context['exordium_version'] = __version__
         populate_session_msg_context(self.request, context)
         return context
 
@@ -133,6 +135,7 @@ class TitleDetailView(generic.DetailView, UserAwareView):
     def get_context_data(self, **kwargs):
         context = super(TitleDetailView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        context['exordium_version'] = __version__
         populate_session_msg_context(self.request, context)
         return context
 
@@ -149,6 +152,7 @@ class TitleTemplateView(generic.TemplateView, UserAwareView):
     def get_context_data(self, **kwargs):
         context = super(TitleTemplateView, self).get_context_data(**kwargs)
         context['exordium_title'] = self.exordium_title
+        context['exordium_version'] = __version__
         populate_session_msg_context(self.request, context)
         return context
 
@@ -419,6 +423,7 @@ class LibraryUpdateView(generic.View, UserAwareView):
         context = Context({
             'request': self.request,
             'exordium_title': title,
+            'exordium_version': __version__,
             'update_type': update_type,
             'debug': debug,
         })
