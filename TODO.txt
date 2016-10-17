@@ -98,4 +98,8 @@ actually happen:
   initially, because the user running the add/update won't
   be the same as the user Django is running as, so 
   permission issues come into play.)
+* Relatedly, the add/update stuff DOES sort of belong in
+  something like celery instead, but I don't actually have
+  any interest in implementing that on my host at the
+  moment.
 * Perhaps we should read genre from tags?
