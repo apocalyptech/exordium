@@ -35,18 +35,36 @@ class ArtistAdmin(admin.ModelAdmin):
 
 class AlbumAdmin(admin.ModelAdmin):
     fieldsets = [
-            ('Basic Information', {'fields':
-                ['artist', 'name', 'normname', 'year',
-                'miscellaneous', 'live']}),
-            ('Date Information', {'fields': ['time_added']}),
-            ('Album Art Information', {'fields':
-                ['art_filename', 'art_ext', 'art_mime',
-                'art_mtime']}),
+        ('Basic Information', {'fields':
+            ['artist', 'name', 'normname', 'year',
+            'miscellaneous', 'live']}),
+        ('Date Information', {'fields': ['time_added']}),
+        ('Album Art Information', {'fields':
+            ['art_filename', 'art_ext', 'art_mime',
+            'art_mtime']}),
     ]
     inlines = [SongInline]
     list_display = ('artist', 'name', 'year', 'has_album_art', 'time_added')
     search_fields = ['name', 'normname', 'artist__name', 'artist__normname']
 
+class SongAdmin(admin.ModelAdmin):
+    fieldsets = [
+        ('Regular Tag Information', {'fields':
+            ['album', 'artist', 'title', 'normtitle',
+            'year', 'tracknum']}),
+        ('Classical Tag Information', {'fields':
+            ['group', 'composer', 'conductor']}),
+        ('Raw Artist Tag Information', {'fields':
+            ['raw_artist', 'raw_group', 'raw_composer', 'raw_conductor'],
+            'classes': ['collapse']}),
+        ('Technical Information', {'fields':
+            ['filename', 'filetype', 'bitrate', 'mode', 'size', 'length',
+            'sha256sum']}),
+        ('Date Information', {'fields': ['time_added', 'time_updated']}),
+    ]
+    list_display = ('artist', 'album', 'title', 'year')
+    search_fields = ['title']
+
 admin.site.register(Artist, ArtistAdmin)
 admin.site.register(Album, AlbumAdmin)
-admin.site.register(Song)
+admin.site.register(Song, SongAdmin)

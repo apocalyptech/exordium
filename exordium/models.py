@@ -694,6 +694,9 @@ class Song(models.Model):
     num_conductors = 0
     num_composers = 0
 
+    class Meta:
+        ordering = ['artist', 'album', 'tracknum', 'title']
+
     def __str__(self):
         """
         Returns a string representation of ourselves
