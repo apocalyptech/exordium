@@ -16,6 +16,23 @@ class SongInline(admin.TabularInline):
     def has_add_permission(self, request):
         return False
 
+class AlbumInline(admin.TabularInline):
+    model = Album
+    list_display = ()
+    fields = ('name', 'year', 'live', 'has_album_art', 'time_added')
+    readonly_fields = ('name', 'year', 'live', 'has_album_art', 'time_added')
+    extra = 0
+    ordering = ['name']
+    show_change_link = True
+    can_delete = True
+
+    def has_add_permission(self, request):
+        return False
+
+class ArtistAdmin(admin.ModelAdmin):
+    search_fields = ['name', 'normname']
+    inlines = [AlbumInline]
+
 class AlbumAdmin(admin.ModelAdmin):
     fieldsets = [
             ('Basic Information', {'fields':
@@ -30,6 +47,6 @@ class AlbumAdmin(admin.ModelAdmin):
     list_display = ('artist', 'name', 'year', 'has_album_art', 'time_added')
     search_fields = ['name', 'normname', 'artist__name', 'artist__normname']
 
-admin.site.register(Artist)
+admin.site.register(Artist, ArtistAdmin)
 admin.site.register(Album, AlbumAdmin)
 admin.site.register(Song)
