@@ -1,12 +1,12 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Make sure our setup.py does the right things
-* Upload to PIP
-* Website
+* Nada, apart from an official v1.0.0 rollout
 
 Things which may or may not make that cut:
 
+* Might be nice to actually spend some time to make it look
+  better.  The sidebar's pretty ugly, etc.
 * Should implement a max-number-of-results in search.  Probably
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.
