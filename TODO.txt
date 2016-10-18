@@ -1,6 +1,7 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
+* Improve the Django admin area and make it actually-useful
 * Make sure our setup.py does the right things
 * Upload to PIP
 * Website
@@ -54,7 +55,6 @@ actually happen:
   I figure out a *reasonable* way to have dynamic column
   definitions in django-tables2.  I don't want to define
   a different class for each possibility.)
-* Improve the Django admin area and make it actually-useful
 * Might be nice to support some artist groupings.
   ("Amanda Palmer and the Grand Theft Orchestra" albums
   should probably show up alongside "Amanda Palmer" albums,

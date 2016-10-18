@@ -103,6 +103,9 @@ class Artist(models.Model):
     )
     various = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self):
         """
         Returns a string representation of ourselves
@@ -176,6 +179,7 @@ class Album(models.Model):
 
     class Meta:
         unique_together = ('artist', 'name')
+        ordering = ['artist', 'name']
 
     def __str__(self):
         """
@@ -359,6 +363,9 @@ class Album(models.Model):
             return True
         else:
             return False
+
+    # A bit of niceness on the admin side of things
+    has_album_art.boolean = True
 
     def get_original_art_filename(self):
         """
