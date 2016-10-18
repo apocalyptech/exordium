@@ -179,6 +179,21 @@ on:
 
     Live albums turned on
 
+Streaming
+---------
+
+.. figure:: images/streaming.png
+    :align: center
+    :scale: 50%
+    :alt: Streaming an album
+
+    Streaming an album
+
+The HTML5 media player jPlayer is used to handle in-browser streaming,
+via a popup.  It's not fancy, but it gets the job done.  It turns out
+that this player will even work on Android phones (and possibly iPhone,
+though I don't have one of those to test).
+
 Administration
 --------------
 
