@@ -53,6 +53,12 @@ Exordium sourcecode and release tarballs are available at
 `GitHub <https://github.com/apocalyptech/exordium/>`_.  Exordium is also
 available on PyPi.  (well, not yet.  But soon.)
 
+Documentation is included in the project's ``docs/`` directory, but
+is also uploaded to:
+
+ - `apocalyptech.com/exordium <http://apocalyptech.com/exordium>`_
+ - `exordium.readthedocs.io <http://exordium.readthedocs.io/>`_
+
 Detailed Documentation
 ----------------------
 
