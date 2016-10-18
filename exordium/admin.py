@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 
-from .models import Artist, Album, Song
+from .models import Artist, Album, Song, AlbumArt
 
 class SongInline(admin.TabularInline):
     model = Song
@@ -29,6 +29,19 @@ class AlbumInline(admin.TabularInline):
     def has_add_permission(self, request):
         return False
 
+class AlbumArtInline(admin.TabularInline):
+    model = AlbumArt
+    list_display = ()
+    fields = ('size', 'resolution')
+    readonly_fields = ('size', 'resolution')
+    extra = 0
+    ordering = ['size']
+    show_change_link = True
+    can_delete = True
+
+    def has_add_permission(self, request):
+        return False
+
 class ArtistAdmin(admin.ModelAdmin):
     search_fields = ['name', 'normname']
     inlines = [AlbumInline]
@@ -43,7 +56,7 @@ class AlbumAdmin(admin.ModelAdmin):
             ['art_filename', 'art_ext', 'art_mime',
             'art_mtime']}),
     ]
-    inlines = [SongInline]
+    inlines = [SongInline, AlbumArtInline]
     list_display = ('artist', 'name', 'year', 'has_album_art', 'time_added')
     search_fields = ['name', 'normname', 'artist__name', 'artist__normname']
 
@@ -65,6 +78,14 @@ class SongAdmin(admin.ModelAdmin):
     list_display = ('artist', 'album', 'title', 'year')
     search_fields = ['title']
 
+class AlbumArtAdmin(admin.ModelAdmin):
+    list_display = ('get_artist', 'album', 'size', 'resolution')
+
+    # Django admin doesn't handle our BinaryField, no sense in adding.
+    def has_add_permission(self, request):
+        return False
+
 admin.site.register(Artist, ArtistAdmin)
 admin.site.register(Album, AlbumAdmin)
 admin.site.register(Song, SongAdmin)
+admin.site.register(AlbumArt, AlbumArtAdmin)

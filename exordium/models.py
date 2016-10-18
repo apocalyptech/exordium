@@ -548,6 +548,17 @@ class AlbumArt(models.Model):
 
     class Meta:
         unique_together = ('album', 'size')
+        ordering = ['album__artist__name', 'album__name', 'size']
+        verbose_name_plural = 'Album Art'
+
+    def get_artist(self):
+        """
+        Returns our artist name (just used for the admin area)
+        """
+        return self.album.artist
+
+    # Another fix for the admin area
+    get_artist.admin_order_field = 'album__artist__name'
 
     @staticmethod
     def get_or_create(album, size):

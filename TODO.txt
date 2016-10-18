@@ -1,7 +1,6 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Improve the Django admin area and make it actually-useful
 * Make sure our setup.py does the right things
 * Upload to PIP
 * Website
