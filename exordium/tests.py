@@ -5900,6 +5900,10 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(art.from_mtime, al.art_mtime)
         self.assertEqual(art.image, data.read())
 
+        # Test our get_artist() method, for coverage.py
+        ar = Artist.objects.get(name='Artist')
+        self.assertEqual(art.get_artist(), ar)
+
     def test_album_art_generate_album_thumb_twice(self):
         """
         Test the creation of an album-sized thumbnail for our art,

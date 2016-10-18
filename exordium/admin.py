@@ -13,7 +13,9 @@ class SongInline(admin.TabularInline):
     show_change_link = True
     can_delete = True
 
-    def has_add_permission(self, request):
+    # Purposefully not testing this 'cause I'm not sure how,
+    # and the admin functionality is secondary at best
+    def has_add_permission(self, request):  # pragma: no cover
         return False
 
 class AlbumInline(admin.TabularInline):
@@ -26,7 +28,9 @@ class AlbumInline(admin.TabularInline):
     show_change_link = True
     can_delete = True
 
-    def has_add_permission(self, request):
+    # Purposefully not testing this 'cause I'm not sure how,
+    # and the admin functionality is secondary at best
+    def has_add_permission(self, request):  # pragma: no cover
         return False
 
 class AlbumArtInline(admin.TabularInline):
@@ -39,7 +43,9 @@ class AlbumArtInline(admin.TabularInline):
     show_change_link = True
     can_delete = True
 
-    def has_add_permission(self, request):
+    # Purposefully not testing this 'cause I'm not sure how,
+    # and the admin functionality is secondary at best
+    def has_add_permission(self, request):  # pragma: no cover
         return False
 
 class ArtistAdmin(admin.ModelAdmin):
@@ -81,8 +87,9 @@ class SongAdmin(admin.ModelAdmin):
 class AlbumArtAdmin(admin.ModelAdmin):
     list_display = ('get_artist', 'album', 'size', 'resolution')
 
-    # Django admin doesn't handle our BinaryField, no sense in adding.
-    def has_add_permission(self, request):
+    # Purposefully not testing this 'cause I'm not sure how,
+    # and the admin functionality is secondary at best
+    def has_add_permission(self, request):  # pragma: no cover
         return False
 
 admin.site.register(Artist, ArtistAdmin)
