@@ -50,6 +50,17 @@ Exordium requires the following additional third-party modules:
   - six (built on 1.10.0)
   - persisting_theory (built on 0.2.1)
 
+Getting Exordium
+----------------
+
+Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_.
+
+Sourcecode and `Wheel <https://pypi.python.org/pypi/wheel>`_ distributions are
+available at both PyPI and Github:
+
+ - https://pypi.python.org/pypi/django-exordium/
+ - https://github.com/apocalyptech/exordium/releases
+
 Quick start
 -----------
 

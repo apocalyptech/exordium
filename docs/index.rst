@@ -49,15 +49,19 @@ Exordium a generic solution.
 Download
 --------
 
-Exordium sourcecode and release tarballs are available at
-`GitHub <https://github.com/apocalyptech/exordium/>`_.  Exordium is also
-available on PyPi.  (well, not yet.  But soon.)
+Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_.
+
+Sourcecode and `Wheel <https://pypi.python.org/pypi/wheel>`_ distributions are
+available at both PyPI and Github:
+
+ - https://pypi.python.org/pypi/django-exordium/
+ - https://github.com/apocalyptech/exordium/releases
 
 Documentation is included in the project's ``docs/`` directory, but
 is also uploaded to:
 
- - `apocalyptech.com/exordium <http://apocalyptech.com/exordium>`_
- - `exordium.readthedocs.io <http://exordium.readthedocs.io/>`_
+ - http://apocalyptech.com/exordium/
+ - http://exordium.readthedocs.io/
 
 Detailed Documentation
 ----------------------

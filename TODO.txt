@@ -1,7 +1,7 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Nada, apart from an official v1.0.0 rollout
+* Nothing!
 
 Things which may or may not make that cut:
 
