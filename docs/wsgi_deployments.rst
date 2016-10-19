@@ -1,15 +1,15 @@
-.. WSGI Deployment Issues
+.. Apache/WSGI Deployment Issues
 
-WSGI Deployment Issues
-======================
+Apache/WSGI Deployment Issues
+=============================
 
 Locale Issues
 -------------
 
-If deploying via WSGI (on Apache, at least), there's a serious problem
+If deploying via Apache/WSGI, there's a serious problem
 which can occur if any non-ASCII characters are found in your filenames.
-Basically, by default the WSGI process will be launched with a $LANG of
-"C", making ascii the default encoding for various things, including the
+Basically, by default the WSGI process will be launched with a ``$LANG`` of
+``C``, making ascii the default encoding for various things, including the
 filesystem encoding as reported by ``sys.getfilesystemencoding()``.  If you
 try and import any files with non-ASCII characters in the filename, you can
 end up with absurd errors like this in your logs::
@@ -41,13 +41,13 @@ Process Count
 
 The ``WSGIDaemonProcess`` parameter in Apache lets you specify an arbitrary
 number of ``processes`` (in addition to ``threads``).  If ``processes`` is
-set to more than 1, problems can be encountered when setting preferences
+set to more than ``1``, problems can be encountered when setting preferences
 (such as library path, download URLs, live album display, etc).  Namely,
 the preference change will often only be seen by the process in which it
 was changed, which can lead to some vexing behavior.
 
 I believe the root of this problem is that the dynamic_preferences module
-uses a cache (presumably a builtin Django cache), and that cache must be
-configured properly so that multiple processes can share it, but I have not
-actually investigated this.  Given that my personal activity needs with
-Exordium are quite light, I've just made do with a single process.
+probably uses a cache (presumably a builtin Django cache), and that cache must
+be configured properly so that multiple processes can share it.  I have not
+actually investigated this, though.  Given that my personal activity needs
+with Exordium are quite light, I've just made do with a single process.

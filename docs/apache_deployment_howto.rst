@@ -77,9 +77,9 @@ I decided to name my Django project "hex", and created it like so::
     /var/www/django
     $ django-admin startproject hex
 
-At that point, inside ``/var/www/django`` I had a "virtenv" directory
-containing a Python virtenv, and a "hex" directory containing the Django
-project.
+At that point, inside ``/var/www/django`` I had a ``virtenv`` directory
+containing a Python virtual environment, and a ``hex`` directory containing
+the Django project.
 
 Django Configuration / settings.py
 ----------------------------------
@@ -125,19 +125,37 @@ DATABASES
 STATIC_URL and STATIC_ROOT
     Static file configuration for Django.
 
+Once these have been set up, and the necessary database created in MySQL,
+Django's basic database models can be created, and we can make sure that
+Django recognizes an administrative user.  Apache is handling authentication
+in my case, but I still needed to tell Django that "my" user was an
+administrator::
+
+    $ cd /var/www/django/hex
+    $ python manage.py migrate
+    $ python manage.py createsuperuser
+
+Any password given to ``createsuperuser`` won't actually be used in my case,
+since ``RemoteUserBackend`` just accepts the information given to it by
+Apache about authentication.
+
+At this point, Django functionality can be tested with their test server::
+
+    $ python manage.py runserver 0.0.0.0:8080
+
 WSGI Configuration in Apache
 ----------------------------
 
-Next up was configuring WSGI/Django inside Apache, so it's accessible.  The
-full config section that I used in my SSL-enabled virtual host, including
-Django static file configuration, was::
+Next up was configuring WSGI/Django inside Apache, so it's accessible via
+my existing SSL vhost.  The full config section that I used in the relevant
+virtual host, including Django static file configuration, was::
 
     WSGIDaemonProcess servername socket-timeout=480 processes=1 threads=15 display-name=django python-path=/var/www/django/hex:/var/www/django/virtenv/lib/python3.4/site-packages lang='en_US.UTF-8' locale='en_US.UTF-8'
     WSGIProcessGroup servername
     WSGIScriptAlias /hex /var/www/django/hex/hex/wsgi.py
 
     Alias /hex/static /var/www/django/hex/static
-    <Directory /var/www/django/static>
+    <Directory /var/www/django/hex/static>
         Require all granted
     </Directory>
 
@@ -159,25 +177,59 @@ processes
     eventually, but for now I've been happy enough with ``1``.
 
 threads
-    Number of threads to use.  Not sure where I got ``15`` from, really.
+    Number of threads to use.  Not sure where I got ``15`` from.
 
 python-path
     These are important for ensuring that WSGI is using our virtenv properly.
 
 lang and locale
     By default, WSGI will operate using a ``$LANG`` value of ``C``, which
-    makes the default locale only really accept ASCII characters.  If those
-    are left to their default values, Exordium will have problems if any files
-    it tries to process contain non-ASCII characters in the filenames, and it'll
-    be difficult to track down.  See :doc:`wsgi_deployments` for a bit more
-    information.
+    causes problems for Exordium if it encounters music files with non-ASCII
+    characters in their filenames.  See :doc:`wsgi_deployments` for a bit more
+    information, but regardless: just set these to appropriate values for your
+    system.
+
+Apache Configuration: mp3/zipfile access
+----------------------------------------
+
+Exordium requires that the files in the music library be accessible directly
+via a webserver, which I had configured already on a non-SSL Apache vhost.
+It also needs a URL for zipfile downloads, if you want album zipfile downloads.
+A vhost similar to the following would do the trick::
+
+    <VirtualHost servername:80>
+        ServerName servername
+        # other common Apache config directives here
+
+        Alias /music /var/audio
+        <Directory /var/audio>
+            Require all granted
+            Options -Indexes
+        </Directory>
+
+        Alias /zipfiles /var/www/django/zipfiles
+        <Directory /var/www/django/zipfiles>
+            Require all granted
+            Options -Indexes
+        </Directory>
+
+    </VirtualHost>
+
+With that configuration, you'd end up setting the following in Django's settings:
+
+- **Exordium Library Base Path:** ``/var/audio``
+- **Exordium Media URL:** ``http://servername/music``
+- **Exordium Zip File Generation Path:** ``/var/www/django/zipfiles``
+- **Exordium Zip File Retrieval URL:** ``http://servername/zipfiles``
 
 Other Minor Tweaks
 ------------------
 
-At this point, after an ``apachectl graceful`` (and running Django migrations,
-etc), Django itself was working properly.  Other apps (such as Exordium itself)
-can be installed with the virtenv active with simple ``pip install foo`` commands.
+At this point, after an ``apachectl graceful`` Django itself should be
+working properly inside the SSL vhost.  Other apps (such as Exordium itself)
+can be installed with the virtenv active with simple
+``pip install django-exordium`` commands, and following the other instructions
+from :doc:`installation`.
 
 One more thing I've done which required some Googling to figure out is that I wanted
 Django's base project URL to redirect to Exordium, since Exordium is currently my

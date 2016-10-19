@@ -57,11 +57,11 @@ albums explicitly belonging to the artist have been shown, any "Various
 Artists" album they appear in will be listed.  In this case, Plaid can
 be found on two compilation albums.
 
-In the song list, below, there are two links for each track.  The first,
-the arrow pointing down, provides a direct link to the track.  The
-second will open up a popup window with the HTML5 media player jPlayer,
-which will then stream the track.  Clicking on more than one track will
-add that to jPlayer's playlist.
+Below the album list will be a song list.  Each song will have two icons
+on the lefthand side of the table.  The first, the arrow pointing down,
+provides a direct link to the track.  The second will open up a popup window
+with the HTML5 media player jPlayer, which will then stream the track.
+Clicking on more than one track will add that to jPlayer's playlist.
 
 Browsing Albums
 ---------------
@@ -94,8 +94,9 @@ player applications should be able to use.  The "Force Album Art Regen"
 button will only be visible to logged-in staff members, and will tell Exordium
 to look for new/updated album art in the album's directory.
 
-A list of all tracks in the album is below.  Like in the Artist view above,
-each track will have a download and stream button.
+A list of all tracks in the album is shown after the summary information.
+Like in the Artist view above, each track will have a download and stream
+button.
 
 Classical Tags
 --------------

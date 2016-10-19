@@ -117,8 +117,8 @@ Assumptions
   updated while keeping the addition time intact.  Some specific cases in
   which this is ensured:
 
-  - Fixing typos in album names / artist names
-  - Moving music files from one directory to another
+  - Updating album/artist names in the file's tags
+  - Moving music files from one directory to another, or renaming the files
 
   Combining the two may, however, result in the album being deleted from
   the library and then re-added.  If the tags on a collection of files are
@@ -143,8 +143,8 @@ that have been made during its development (and in my own music library).
 - The artist name "Various" is reserved.  Tracks with an artist tag of
   "Various" will not be added to the library.
 
-- If two Various Artists albums with the same title exist in the library,
-  they'll end up stored as one single album in the DB.
+- If two Various Artists albums with the same album name exist in the
+  library, they'll end up stored as one single album in the DB.
 
 - If two directories contain files which seem to be in the same album (by
   the same artist), you'll end up with an album which spans directories.

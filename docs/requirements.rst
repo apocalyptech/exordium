@@ -3,10 +3,12 @@
 Requirements
 ============
 
-Exordium is only currently tested on Python 3.4 and Django 1.10.
+Exordium is only currently tested on Python 3.4 (and requires at 
+least Python 3.4), and Django 1.10.
+
 Exordium makes use of Django's session handling (enabled by default
-in Django), so session support must be enabled in Django.  A user
-backend must exist as well.
+in Django), so session support must be enabled.  A user backend
+must exist as well.
 
 Exordium requires the following additional third-party modules:
 
@@ -22,9 +24,3 @@ These requirements may be installed with ``pip``, if Exordium itself hasn't
 been installed that way::
 
     pip install -r requirements.txt
-
-The tests in ``test.py`` make use of the ``exist_ok`` parameter to Python's
-``os.makedirs()``, which was not introduced until Python 3.2, so the
-tests at least currently require at least Python 3.2.  I suspect that there
-may be one or two other functions in use which might cause the base
-required Python to be 3.4, but I have yet to investigate closely.
