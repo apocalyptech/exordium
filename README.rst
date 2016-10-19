@@ -53,21 +53,27 @@ Exordium requires the following additional third-party modules:
 Getting Exordium
 ----------------
 
-Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_.
+Exordium is available to install on PyPI via ``pip install django-exordium``.
+PyPI also hosts Python packages for Exordium in both source and
+`Wheel <https://pypi.python.org/pypi/wheel>`_ formats, at 
+https://pypi.python.org/pypi/django-exordium/.
 
-Sourcecode and `Wheel <https://pypi.python.org/pypi/wheel>`_ distributions are
-available at both PyPI and Github:
+Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_,
+and sourcecode archives of released versions can be found there at
+https://github.com/apocalyptech/exordium/releases
 
- - https://pypi.python.org/pypi/django-exordium/
- - https://github.com/apocalyptech/exordium/releases
+Installation
+------------
 
-Quick start
------------
+These instructions assume that you already have a Django project up and
+running.
 
-1. If Exordium hasn't been installed via ``pip`` or some other method which
-   automatically installs dependencies, install its dependencies::
+1. Install Exordium via ``pip install django-exordium``
 
-    pip install -r requirements.txt
+   - If Exordium hasn't been installed via ``pip`` or some other method which
+     automatically installs dependencies, install its dependencies::
+
+        pip install -r requirements.txt
 
 2. Add exordium, django_tables2, and dynamic_preferences to your
    ``INSTALLED_APPS`` setting like this::
@@ -81,7 +87,7 @@ Quick start
 
 3. Include the exordium URLconf in your project ``urls.py`` like this::
 
-     url(r'^exordium', include('exordium.urls')),
+     url(r'^exordium/', include('exordium.urls')),
 
 4. Run ``python manage.py migrate exordium`` to create the Exordium models.
    
@@ -90,17 +96,17 @@ Quick start
    Django install.
 
 6. Run ``python manage.py loaddata --app exordium initial_data`` to load
-   some initial data into the database.  (This is not actually strictly
-   speaking necessary.)
+   some initial data into the database.  *(This is not actually strictly
+   speaking necessary - the app will create the necessary data
+   automatically if it's not found.)*
 
-7. If running this from a webserver with static files present, make sure
-   to run ``python manage.py collectstatic`` at some point to get the
-   static files put in place properly, or otherwise configure your static
-   file delivery solution.
+7. If running this from a "real" webserver, ensure that it's configured
+   to serve Django static files. Then run ``python manage.py collectstatic``
+   to get Exordium's static files in place.
 
 8. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Visit the administrative area in
-   "Dynamic Preferences > Global preferences" and set the values for the
+   *Dynamic Preferences > Global preferences* and set the values for the
    following:
 
    - **Exordium Library Base Path**: This is what defines where your music
@@ -127,5 +133,5 @@ Quick start
 
       0 2 * * * /usr/bin/find /var/audio/exordiumzips -type f -name "*.zip" -mtime +2 -print -exec unzip -v {} \; -exec rm {} \;
 
-10. Visit the "Library Upkeep" link from the Exordium main page and click on
+10. Visit the **Library Upkeep** link from the Exordium main page and click on
     "Start Process" to begin the initial import into Exordium!

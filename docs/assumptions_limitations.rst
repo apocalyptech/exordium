@@ -6,7 +6,7 @@ Assumptions and Limitations
 As mentioned on the main page, Exordium does not really attempt to be
 a general-purpose web music library suitable for widespread use.  The
 only configuration options currently available are those necessary for
-basic operation.  Exordium was bourne out of my persistent
+basic operation.  Exordium was born out of my persistent
 dissatisfaction with existing web music library applications.  I've
 been using various library applications over the years but have always
 ended up maintaining my own patchsets to alter their behavior to suit

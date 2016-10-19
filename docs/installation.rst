@@ -1,12 +1,24 @@
-.. Quick start guide
+.. Installation
 
-Quick Start
-===========
+Installation
+============
 
-1. If Exordium hasn't been installed via ``pip`` or some other method which
-   automatically installs dependencies, install its dependencies::
+These instructions assume that you already have a Django project up and
+running.  For instructions on setting up Django for the first time, if
+installing a brand new application server just for a web music library
+doesn't deter you, djangoproject.com has some good documentation:
 
-    pip install -r requirements.txt
+- https://docs.djangoproject.com/en/1.10/intro/install/
+- https://docs.djangoproject.com/en/1.10/intro/tutorial01/
+
+Once Django is installed and running:
+
+1. Install Exordium via ``pip install django-exordium``
+
+   - If Exordium hasn't been installed via ``pip`` or some other method which
+     automatically installs dependencies, install its dependencies::
+
+        pip install -r requirements.txt
 
 2. Add exordium, django_tables2, and dynamic_preferences to your
    ``INSTALLED_APPS`` setting like this::
@@ -38,9 +50,12 @@ Quick Start
    to get Exordium's static files in place.
 
 8. Either start the development server with ``python manage.py runserver``
-   or bring up your existing server.  Visit the administrative area in
-   *Dynamic Preferences > Global preferences* and set the values for the
-   following:
+   or bring up your existing server.  Also ensure that you have a webserver
+   configured to allow access directly to your music library files, and 
+   optionally to the zipfile downloads Exordium will create.
+   
+9. Visit the administrative area in *Dynamic Preferences > Global preferences*
+   and set the values for the following:
 
    - **Exordium Library Base Path**: This is what defines where your music
      library can be found on disk.
@@ -60,11 +75,11 @@ Quick Start
    without the "*Exordium Media URL*" option being set properly, though
    with the caveats mentioned above.
 
-9. If Zipfile downloads are configured, a process should be put into place
-   to delete the zipfiles after a period of time.  I personally use a cronjob
-   to do this::
+10. If Zipfile downloads are configured, a process should be put into place
+    to delete the zipfiles after a period of time.  I personally use a cronjob
+    to do this::
 
       0 2 * * * /usr/bin/find /var/audio/exordiumzips -type f -name "*.zip" -mtime +2 -print -exec unzip -v {} \; -exec rm {} \;
 
-10. Visit the **Library Upkeep** link from the Exordium main page and click on
+11. Visit the **Library Upkeep** link from the Exordium main page and click on
     "Start Process" to begin the initial import into Exordium!

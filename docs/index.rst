@@ -10,7 +10,7 @@
    self
    assumptions_limitations
    requirements
-   quick_start
+   installation
    administration
    screenshots
    wsgi_deployments
@@ -49,19 +49,20 @@ Exordium a generic solution.
 Download
 --------
 
-Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_.
+Exordium is available to install on PyPI via ``pip install django-exordium``.
+PyPI also hosts Python packages for Exordium in both source and
+`Wheel <https://pypi.python.org/pypi/wheel>`_ formats, at 
+https://pypi.python.org/pypi/django-exordium/.
 
-Sourcecode and `Wheel <https://pypi.python.org/pypi/wheel>`_ distributions are
-available at both PyPI and Github:
-
- - https://pypi.python.org/pypi/django-exordium/
- - https://github.com/apocalyptech/exordium/releases
+Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_,
+and sourcecode archives of released versions can be found there at
+https://github.com/apocalyptech/exordium/releases
 
 Documentation is included in the project's ``docs/`` directory, but
 is also uploaded to:
 
- - http://apocalyptech.com/exordium/
- - http://exordium.readthedocs.io/
+- http://apocalyptech.com/exordium/
+- http://exordium.readthedocs.io/
 
 Detailed Documentation
 ----------------------
@@ -75,7 +76,7 @@ app you're looking for.
 pages, and is probably the best place to look to get a feel for how
 Exordium operates from a user perspective.
 
-See :doc:`requirements` for Exordium's requirements, :doc:`quick_start`
+See :doc:`requirements` for Exordium's requirements, :doc:`installation`
 for installation instructions onto an existing Django project, and
 :doc:`administration` for information on administration and library
 upkeep.
