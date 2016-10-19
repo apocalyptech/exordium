@@ -3,12 +3,11 @@
 Requirements
 ============
 
-Exordium is only currently tested on Python 3.4 (and requires at 
-least Python 3.4), and Django 1.10.
+Exordium requires at least Python 3.4, and Django 1.10.
 
-Exordium makes use of Django's session handling (enabled by default
-in Django), so session support must be enabled.  A user backend
-must exist as well.
+Exordium makes use of Django's session handling and user backend
+mechanisms, both of which are enabled by default.  This shouldn't
+be a problem unless they've purposefully disabled.
 
 Exordium requires the following additional third-party modules:
 

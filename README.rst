@@ -38,7 +38,7 @@ future.
 Requirements
 ------------
 
-Exordium is only currently tested on Python 3.4 and Django 1.10.
+Exordium requires at least Python 3.4, and Django 1.10.
 
 Exordium requires the following additional third-party modules:
 
@@ -105,9 +105,12 @@ running.
    to get Exordium's static files in place.
 
 8. Either start the development server with ``python manage.py runserver``
-   or bring up your existing server.  Visit the administrative area in
-   *Dynamic Preferences > Global preferences* and set the values for the
-   following:
+   or bring up your existing server.  Also ensure that you have a webserver
+   configured to allow access directly to your music library files, and 
+   optionally to the zipfile downloads Exordium will create.
+   
+9. Visit the administrative area in *Dynamic Preferences > Global preferences*
+   and set the values for the following:
 
    - **Exordium Library Base Path**: This is what defines where your music
      library can be found on disk.
@@ -127,11 +130,11 @@ running.
    without the "*Exordium Media URL*" option being set properly, though
    with the caveats mentioned above.
 
-9. If Zipfile downloads are configured, a process should be put into place
-   to delete the zipfiles after a period of time.  I personally use a cronjob
-   to do this::
+10. If Zipfile downloads are configured, a process should be put into place
+    to delete the zipfiles after a period of time.  I personally use a cronjob
+    to do this::
 
       0 2 * * * /usr/bin/find /var/audio/exordiumzips -type f -name "*.zip" -mtime +2 -print -exec unzip -v {} \; -exec rm {} \;
 
-10. Visit the **Library Upkeep** link from the Exordium main page and click on
+11. Visit the **Library Upkeep** link from the Exordium main page and click on
     "Start Process" to begin the initial import into Exordium!
