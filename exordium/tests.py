@@ -6691,7 +6691,10 @@ class IndexViewTests(ExordiumUserTests):
         # links anywhere.
         self.assertNotContains(response, reverse('exordium:library'))
         self.assertNotContains(response, reverse('admin:dynamic_preferences_globalpreferencemodel_changelist'))
-        self.assertNotContains(response, reverse('admin:index'))
+        self.assertNotContains(response, '%s"' % (reverse('admin:index')))
+
+        # But we SHOULD see a login link
+        self.assertContains(response, reverse('admin:login'))
 
     def test_no_albums_admin(self):
         """
@@ -6715,6 +6718,9 @@ class IndexViewTests(ExordiumUserTests):
         self.assertContains(response, reverse('exordium:library'))
         self.assertContains(response, reverse('admin:dynamic_preferences_globalpreferencemodel_changelist'))
         self.assertContains(response, reverse('admin:index'))
+
+        # But we should NOT see a login link
+        self.assertNotContains(response, reverse('admin:login'))
 
     def test_single_album(self):
         """

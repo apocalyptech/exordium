@@ -58,15 +58,17 @@ function jplayerOpen() {
             <input type="submit" id="prefbut" class="prefsform" value="Update Preferences" />
         </form>
     </div>
-{% if request.user.is_staff %}
 <hr />
 <div class="adminlinks">
+{% if request.user.is_staff %}
     <p>Administrative Links</p>
     <p><a href="{% url 'admin:dynamic_preferences_globalpreferencemodel_changelist' %}">Library Configuration</a></p>
     <p><a href="{% url 'exordium:library' %}">Library Upkeep</a></p>
     <p><a href="{% url 'admin:index' %}">Django Admin</a></p>
-</div>
+{% else %}
+    <p><a href="{% url 'admin:login' %}?next={{ request.path }}">Log In</a></p>
 {% endif %}
+</div>
 </div>
 <div class="body">
 {% if exordium_title and exordium_title != '' %}<h2>{{ exordium_title }}</h2>{% endif %}
