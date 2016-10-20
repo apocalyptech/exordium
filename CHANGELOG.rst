@@ -9,6 +9,7 @@
   - Album Art tests
 - Tweaked/reworked some documentation
 - Set ``setup.py`` development classifier to Production
+- Reordered a few fields on the admin screens
 
 1.0.0 (2016-10-18)
 ------------------

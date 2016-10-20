@@ -69,7 +69,7 @@ class AlbumAdmin(admin.ModelAdmin):
 class SongAdmin(admin.ModelAdmin):
     fieldsets = [
         ('Regular Tag Information', {'fields':
-            ['album', 'artist', 'title', 'normtitle',
+            ['artist', 'album', 'title', 'normtitle',
             'year', 'tracknum']}),
         ('Classical Tag Information', {'fields':
             ['group', 'composer', 'conductor']}),
