@@ -1,12 +1,7 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Turns out many of our tests related to case sensitivity end
-  up failing when Django's configured with Postgres or SQLite.
-  Discovered this when testing it out on Python 3.5 on a
-  "fresh" minimal Django project dir.  Could be that we're
-  relying on some case-insensitivity in the app logic itself.
-  Will have to figure that out...
+* Nothing!
 
 Things which may or may not make that cut:
 

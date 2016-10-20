@@ -1089,7 +1089,7 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 2)
         # Note the mixed-case in the query, just checking that too.
-        artist = Artist.objects.get(name='artist Name')
+        artist = Artist.objects.get(name__iexact='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
 
     def test_add_song_different_composer_case(self):
@@ -1101,7 +1101,7 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 2)
-        artist = Artist.objects.get(name='artist Name')
+        artist = Artist.objects.get(name__iexact='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
         song = Song.objects.get()
         self.assertEqual(song.artist.name.lower(), 'artist name')
@@ -1116,7 +1116,7 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 2)
-        artist = Artist.objects.get(name='artist Name')
+        artist = Artist.objects.get(name__iexact='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
         song = Song.objects.get()
         self.assertEqual(song.artist.name.lower(), 'artist name')
@@ -1131,7 +1131,7 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 2)
-        artist = Artist.objects.get(name='artist Name')
+        artist = Artist.objects.get(name__iexact='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
         song = Song.objects.get()
         self.assertEqual(song.artist.name.lower(), 'artist name')
@@ -1146,9 +1146,9 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='artist One')
+        artist = Artist.objects.get(name__iexact='artist One')
         self.assertEqual(artist.name.lower(), 'artist one')
-        artist = Artist.objects.get(name='artist Two')
+        artist = Artist.objects.get(name__iexact='artist Two')
         self.assertEqual(artist.name.lower(), 'artist two')
         song = Song.objects.get(filename='song1.mp3')
         self.assertEqual(song.artist.name.lower(), 'artist one')
@@ -1166,9 +1166,9 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='artist One')
+        artist = Artist.objects.get(name__iexact='artist One')
         self.assertEqual(artist.name.lower(), 'artist one')
-        artist = Artist.objects.get(name='artist Two')
+        artist = Artist.objects.get(name__iexact='artist Two')
         self.assertEqual(artist.name.lower(), 'artist two')
         song = Song.objects.get(filename='song1.mp3')
         self.assertEqual(song.artist.name.lower(), 'artist one')
@@ -1186,9 +1186,9 @@ class BasicAddTests(ExordiumTests):
         self.run_add()
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='artist One')
+        artist = Artist.objects.get(name__iexact='artist One')
         self.assertEqual(artist.name.lower(), 'artist one')
-        artist = Artist.objects.get(name='artist Two')
+        artist = Artist.objects.get(name__iexact='artist Two')
         self.assertEqual(artist.name.lower(), 'artist two')
         song = Song.objects.get(filename='song1.mp3')
         self.assertEqual(song.artist.name.lower(), 'artist one')
@@ -1214,7 +1214,7 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Album.objects.count(), 1)
 
         # Note the mixed-case in the query, just checking that too.
-        album = Album.objects.get(name='album Name')
+        album = Album.objects.get(name__iexact='album Name')
         self.assertEqual(album.name.lower(), 'album name')
         self.assertEqual(album.song_set.count(), 2)
 
@@ -1235,10 +1235,10 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(Album.objects.count(), 1)
 
         # Note the mixed-case in the query, just checking that too.
-        album = Album.objects.get(name='album Name')
+        album = Album.objects.get(name__iexact='album Name')
         self.assertEqual(album.name.lower(), 'album name')
         self.assertEqual(album.song_set.count(), 2)
-        artist = Artist.objects.get(name='artist Name')
+        artist = Artist.objects.get(name__iexact='artist Name')
         self.assertEqual(artist.name.lower(), 'artist name')
 
     def test_add_mp3s_differing_umlaut_artist(self):
@@ -2909,7 +2909,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 2)
-        artist = Artist.objects.get(name='Artist Name')
+        artist = Artist.objects.get(name__iexact='Artist Name')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'artist name')
 
@@ -2938,7 +2938,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='Group')
+        artist = Artist.objects.get(name__iexact='Group')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'group')
 
@@ -2967,7 +2967,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='Conductor')
+        artist = Artist.objects.get(name__iexact='Conductor')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'conductor')
 
@@ -2996,7 +2996,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 3)
-        artist = Artist.objects.get(name='Composer')
+        artist = Artist.objects.get(name__iexact='Composer')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'composer')
 
@@ -3399,10 +3399,10 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 1)
         self.assertEqual(Album.objects.count(), 1)
         self.assertEqual(Artist.objects.count(), 2)
-        artist = Artist.objects.get(name='Artist Name')
+        artist = Artist.objects.get(name__iexact='Artist Name')
         self.assertEqual(artist.pk, artist_pk)
         self.assertEqual(artist.name, 'Artist Name')
-        album = Album.objects.get(name='Album Name')
+        album = Album.objects.get(name__iexact='Album Name')
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'album name')
 
@@ -3661,7 +3661,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 2)
         self.assertEqual(Album.objects.count(), 1)
-        artist = Artist.objects.get(name='umlaut')
+        artist = Artist.objects.get(normname__iexact='umlaut')
         artist_pk = artist.pk
         self.assertEqual(artist.name, 'Umläut')
         
@@ -3673,7 +3673,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 2)
         self.assertEqual(Album.objects.count(), 1)
-        artist = Artist.objects.get(name='umlaut')
+        artist = Artist.objects.get(normname__iexact='umlaut')
         self.assertEqual(artist_pk, artist.pk)
         self.assertEqual(artist.name, 'Umläut')
 
@@ -3905,7 +3905,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 2)
         self.assertEqual(Album.objects.count(), 1)
-        album = Album.objects.get(name='album')
+        album = Album.objects.get(normname='album')
         album_pk = album.pk
         self.assertEqual(album.name, 'Albüm')
         
@@ -3917,7 +3917,7 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(Song.objects.count(), 2)
         self.assertEqual(Artist.objects.count(), 2)
         self.assertEqual(Album.objects.count(), 1)
-        album = Album.objects.get(name='album')
+        album = Album.objects.get(normname='album')
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.song_set.count(), 2)
         self.assertEqual(album.name, 'Albüm')
@@ -5898,7 +5898,7 @@ class AlbumArtTests(ExordiumUserTests):
         art = AlbumArt.objects.get(album=al, size=size)
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
         # Test our get_artist() method, for coverage.py
         ar = Artist.objects.get(name='Artist')
@@ -5940,7 +5940,7 @@ class AlbumArtTests(ExordiumUserTests):
         art_pk = art.pk
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
         # Now the second request - may as well do all the same checks
         # one more time.
@@ -5960,7 +5960,7 @@ class AlbumArtTests(ExordiumUserTests):
         self.assertEqual(art.pk, art_pk)
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
     def test_album_art_generate_album_thumb_gif(self):
         """
@@ -5995,7 +5995,7 @@ class AlbumArtTests(ExordiumUserTests):
         art = AlbumArt.objects.get(album=al, size=size)
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
     def test_album_art_generate_album_thumb_png(self):
         """
@@ -6030,7 +6030,7 @@ class AlbumArtTests(ExordiumUserTests):
         art = AlbumArt.objects.get(album=al, size=size)
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
     def test_album_art_generate_list_thumb(self):
         """
@@ -6064,7 +6064,7 @@ class AlbumArtTests(ExordiumUserTests):
         art = AlbumArt.objects.get(album=al, size=size)
         self.assertEqual(art.resolution, resolution)
         self.assertEqual(art.from_mtime, al.art_mtime)
-        self.assertEqual(art.image, data.read())
+        self.assertEqual(bytes(art.image), data.read())
 
     def test_album_art_attempt_invalid_thumb_generation(self):
         """
