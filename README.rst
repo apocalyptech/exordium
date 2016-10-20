@@ -38,7 +38,8 @@ future.
 Requirements
 ------------
 
-Exordium requires at least Python 3.4, and Django 1.10.
+Exordium requires at least Python 3.4 *(tested in 3.4 and 3.5)*,
+and Django 1.10.
 
 Exordium requires the following additional third-party modules:
 
