@@ -1,7 +1,10 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Nothing!
+* Turns out many of our tests related to case sensitivity end
+  up failing when Django's configured with SQLite.  Discovered
+  this when testing it out on Python 3.5 on a "fresh" minimal
+  Django project dir.
 
 Things which may or may not make that cut:
 
