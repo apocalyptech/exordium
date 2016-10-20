@@ -8599,7 +8599,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertContains(response, '"%s"' % (reverse('exordium:albumdownload', args=(album.pk,))))
 
     def test_album_download_without_configuration(self):
         """
@@ -8621,7 +8621,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:albumdownload', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Exordium is not currently configured to allow zipfile creation')
-        self.assertNotContains(response, reverse('exordium:albumdownload', args=(album.pk,)))
+        self.assertNotContains(response, '"%s"' % (reverse('exordium:albumdownload', args=(album.pk,))))
 
     def test_model_create_zip_without_configuration(self):
         """
@@ -9867,7 +9867,7 @@ class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
         self.assertQuerysetEqual(response.context['albums'].data, [])
         self.assertQuerysetEqual(response.context['songs'].data, [])
         self.assertNotContains(response, reverse('exordium:album', args=(album.pk,)))
-        self.assertNotContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertNotContains(response, '"%s"' % (reverse('exordium:artist', args=(album.artist.normname,))))
 
         # Now flip it on
         self.set_show_live()
@@ -9877,7 +9877,7 @@ class LiveAlbumViewTestsAnonymous(ExordiumUserTests):
         self.assertQuerysetEqual(response.context['albums'].data, [repr(album)])
         self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
-        self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
+        self.assertContains(response, '"%s"' % (reverse('exordium:artist', args=(album.artist.normname,))))
         self.assertContains(response, '1 album')
         self.assertContains(response, '1 song')
 
