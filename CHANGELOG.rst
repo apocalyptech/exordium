@@ -1,5 +1,5 @@
-1.0.1 (2016-10-??) *(unreleased)*
----------------------------------
+1.0.1 (2016-10-21)
+------------------
 
 - Added a "login" link in the sidebar for not-logged-in users
 - Fixes for tests which were failing when run against databases
