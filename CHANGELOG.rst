@@ -1,7 +1,9 @@
-1.0.2 (????-??-??) *(not released)*
------------------------------------
+1.0.2 (2016-10-21)
+------------------
 
-- Nothing, yet.
+- Fixed packaging manifest to include changelog, and exclude
+  rendered HTML documentation (the latter was causing the source
+  archive to be twice as large as it should be)
 
 1.0.1 (2016-10-21)
 ------------------

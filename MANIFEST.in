@@ -1,5 +1,6 @@
 include LICENSE*
 include README.rst
+include CHANGELOG.rst
 include TODO.txt
 include requirements.txt
 recursive-include exordium/static *
@@ -7,3 +8,5 @@ recursive-include exordium/fixtures *
 recursive-include exordium/testdata *
 recursive-include exordium/templates *
 recursive-include docs *
+exclude docs/sync_to_apocalyptech.sh
+prune docs/_build
