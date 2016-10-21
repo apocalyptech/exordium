@@ -8,7 +8,7 @@ and Django 1.10.
 
 Exordium makes use of Django's session handling and user backend
 mechanisms, both of which are enabled by default.  This shouldn't
-be a problem unless they've purposefully disabled.
+be a problem unless they've been purposefully disabled.
 
 Exordium requires the following additional third-party modules:
 
@@ -21,6 +21,7 @@ Exordium requires the following additional third-party modules:
   - persisting_theory (built on 0.2.1)
 
 These requirements may be installed with ``pip``, if Exordium itself hasn't
-been installed that way::
+been installed via ``pip`` or some other method which automatically
+installs dependencies::
 
     pip install -r requirements.txt

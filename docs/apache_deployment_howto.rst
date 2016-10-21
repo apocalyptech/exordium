@@ -65,17 +65,17 @@ Apache web root).  My initial steps for this were just::
     $ cd /var/www/django
     $ pyvenv-3.4 virtenv
     $ source virtenv/bin/activate
-    $ pip install django
-    $ pip install mysqlclient
+    (virtenv) $ pip install django
+    (virtenv) $ pip install mysqlclient
 
 That last step, I believe, is what required the ``python34u-devel`` and ``mariadb-devel``
-packages above.
+packages above, since it probably does some actual compilation.
 
 I decided to name my Django project "hex", and created it like so::
 
-    $ pwd
+    (virtenv) $ pwd
     /var/www/django
-    $ django-admin startproject hex
+    (virtenv) $ django-admin startproject hex
 
 At that point, inside ``/var/www/django`` I had a ``virtenv`` directory
 containing a Python virtual environment, and a ``hex`` directory containing
@@ -131,9 +131,9 @@ Django recognizes an administrative user.  Apache is handling authentication
 in my case, but I still needed to tell Django that "my" user was an
 administrator::
 
-    $ cd /var/www/django/hex
-    $ python manage.py migrate
-    $ python manage.py createsuperuser
+    (virtenv) $ cd /var/www/django/hex
+    (virtenv) $ python manage.py migrate
+    (virtenv) $ python manage.py createsuperuser
 
 Any password given to ``createsuperuser`` won't actually be used in my case,
 since ``RemoteUserBackend`` just accepts the information given to it by
@@ -141,7 +141,7 @@ Apache about authentication.
 
 At this point, Django functionality can be tested with their test server::
 
-    $ python manage.py runserver 0.0.0.0:8080
+    (virtenv) $ python manage.py runserver 0.0.0.0:8080
 
 WSGI Configuration in Apache
 ----------------------------
@@ -170,7 +170,7 @@ socket-timeout
 
 processes
     I'd originally had this set to ``2``, but as mentioned elsewhere in
-    these docs, if you set ``processes`` to a value greater than 1, changing
+    these docs, if you set ``processes`` to a value greater than ``1``, changing
     Exordium's preferences (library paths, zipfile paths, etc) will only
     change the preference effectively in the process it was actually set
     on, which can lead to inconsistency.  I'd like to figure that out

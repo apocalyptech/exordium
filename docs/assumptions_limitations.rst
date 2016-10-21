@@ -27,8 +27,9 @@ given that Exordium's target market is exactly one individual.
 Assumptions
 -----------
 
-- Except for the Javascript necessary to hook into jPlayer, all content is
-  generated server-side.  There is no other Javascript, and the application is
+- Except for the Javascript necessary to hook into jPlayer, and jPlayer
+  itself, there is no client-side Javascript or AJAX-style dynamic page
+  content.  All HTML is generated server-side.  The application is
   quite usable from text-based browsers.
 
 - Music files must be accessible via the local filesystem on which Django
@@ -39,11 +40,11 @@ Assumptions
   mounts), that's fine, but there is NO support for multiple libraries in
   Exordium.
 
-- All music files (and album art) are managed outside of Exordium.  Exordium
-  itself will never attempt to write to your library directory for any reason.
-  It requires read access only.  (Write access to a directory on the filesystem
-  is required for zipfile downloads, but that directory need not be in your
-  music library.)
+- Exordium itself will never attempt to write to your library directory for
+  any reason - all music files (and album art) are managed outside of
+  this app.  Write access to a directory on the filesystem is required
+  for zipfile downloads, but that directory need not be in your music
+  library.
 
 - Music files should be, in general, arranged scrupulously: All files
   within a single directory belong to the same album, and an album should
@@ -51,8 +52,10 @@ Assumptions
   here, and Exordium should correctly deal with directories full of
   "miscellaneous" files, etc, but in general the library should be
   well-ordered and have albums contained in their own directories.  This
-  becomes more important when rearranging your filesystem layout or
-  updating music with fresh tags.
+  is less important during the initial library import, but becomes much
+  more important when updating tags or rearranging your filesystem layout,
+  as Exordium uses the directory structure to help determine what kind of
+  changes have been made.
 
   - Directory containment is the primary method through which Various Artists
     albums are collated.  A group of files in the same directory with different
@@ -68,27 +71,27 @@ Assumptions
 - The artwork for albums should be contained in gif/jpg/png files stored
   alongside the mp3s/oggs, or in the immediate parent folder (in the case
   of multi-disc albums, for instance).  Filenames which start with "cover"
-  will be preferred over other graphics in the directory.
+  will be preferred over other graphics in the directory.  PNGs will be
+  preferred over JPGs, and JPGs will be preferred over GIFs.
 
-- Artwork thumbnails will be stored directly in Django's database, in
-  blatant disregard for Django best practices.  IMO the benefits far
-  outweigh the performance concerns, given the scale of data involved.
+  - Artwork thumbnails will be stored directly in Django's database, in
+    blatant disregard for Django best practices.  IMO the benefits far
+    outweigh the performance concerns, given the scale of data involved.
 
 - Music files should be available directly via HTTP/HTTPS, using the same
   directory structure as the library.  This does not have to be on the same
   port or even server as Django, but the direct download and streaming
-  functionality rely on having a direct URL to the files.  Album downloads
-  via zipfiles will still work even if this is not the case.
+  functionality rely on having a direct URL to the files.
 
 - Album zipfile downloads, similarly, require that the zipfile directory be
   accessible directly over the web.  As with the music files, this does not
   need to be on the same port or even server as Django, but Django will not
-  serve the zipfile itself.  The reason for this is that I want zipfile
-  downloads to be easily resumable in the event they're accidentally
-  cancelled before they're finished.  The text on the download page
-  mentions that zipfiles are kept for around 48 hours, but that cleanup is
-  actually not a function of Exordium itself.  Instead, I just have a
-  cronjob set on the box like so::
+  serve the zipfile itself.  The reason for this is that I want to be able
+  to pass the zipfile URL to other apps for downloading, and for downloads
+  to be easily resumable in the event they're accidentally cancelled before
+  they're finished.  The text on the download page mentions that zipfiles
+  are kept for around 48 hours, but that cleanup is actually not a function
+  of Exordium itself.  Instead, I just have a cronjob set on the box like so::
 
     0 2 * * * /usr/bin/find /var/audio/exordiumzips -type f -name "*.zip" -mtime +2 -print -exec unzip -v {} \; -exec rm {} \;
 
@@ -96,15 +99,16 @@ Assumptions
   supported, namely: Group/Ensemble, Conductor, and Composer.  *(For ID3
   tags: TPE2, TPE3, and TCOM, respectively.  In Ogg Vorbis, the more
   sensible ENSEMBLE, CONDUCTOR, and COMPOSER.)*  Albums will still be
-  defined by their main Artist/Album association, though, and Artist is
+  defined by their main Artist/Album association, and Artist is
   always a required field, whereas Group/Conductor/Composer are all
-  optional.  Internally, these are all stored as "artists," and Exordium
-  should do the right thing and show you all albums containing an artist,
-  whether they showed up as an Artist or as an Ensemble, for instance.
+  optional.  Internally, these are all stored as "artists," so when
+  browsing by artist, Exordium should do the right thing and show you
+  all albums containing an artist, whether they showed up as artist,
+  composer, conductor, or ensemble.
 
 - There are many live concert recordings in my personal library, which I've
   uniformly tagged with an album name starting with "YYYY.MM.DD - Live".
-  Given the volume of these albums, Exordium will automatically tag any
+  Given the volume of these albums, Exordium will automatically consider any
   album matching that name as a "live" album.  *(Dashes and underscores are
   also acceptable inbetween the date components.)*  By default, Exordium
   will hide those live albums from its display, since they otherwise often
@@ -142,6 +146,9 @@ that have been made during its development (and in my own music library).
 
 - The artist name "Various" is reserved.  Tracks with an artist tag of
   "Various" will not be added to the library.
+
+- Artist and Trackname tags are required.  Tracks will not be added to
+  the library if either of those tags are missing.
 
 - If two Various Artists albums with the same album name exist in the
   library, they'll end up stored as one single album in the DB.

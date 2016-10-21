@@ -15,8 +15,7 @@ Things which may or may not make that cut:
 * Direct links to pages with django-tables2 (instead of just
   next/prev)
 * Ability to specify subdirectories when doing add/update
-  actions, to only process a subset of the library.  (Might
-  change add/update to a dropdown or radio selection, too.)
+  actions, to only process a subset of the library.
 * http://reinout.vanrees.org/weblog/2014/05/19/context.html
   Basically, overriding get_context_data() in our views is
   wordy and not needed most of the time.  Use 'view.varname'
@@ -25,6 +24,9 @@ Things which may or may not make that cut:
 * Use annotate() for some of our aggregate information on
   artist browse, for instance.
 * Convert our three forms to actual django Forms.
+* Might be nice to include an admin subcommand to clean the
+  zip directory, which could be plugged into a cron rather than
+  having to do your own.
 
 Things which, if I'm being honest here, are likely to never
 actually happen:
@@ -81,11 +83,6 @@ actually happen:
 * Theme support might be nice, and should be pretty
   trivial, though I doubt I'll take the time to figure
   it out.
-* Option to defer checksum calculations when doing initial
-  imports?  (Perhaps with a management subcommand to do
-  those from the CLI?) Would make imports quicker,
-  though I'd have to make sure to have checks in place to
-  ensure checksums are present before processing updates.
 * Could maybe apply some sorting while adding/updating so
   that updates appear in some kind of order rather than
   effectively randomly (would be especially nice for the

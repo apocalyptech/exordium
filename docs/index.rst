@@ -17,6 +17,7 @@
    migration
    apache_deployment_howto
    changelog
+   todo
 
 Exordium Music Library
 ======================
@@ -84,6 +85,9 @@ upkeep.
 If deploying via Apache, :doc:`wsgi_deployments` contains some information
 that might be useful.  :doc:`apache_deployment_howto` is a complete guide to
 how Django is deployed for my own use.
+
+:doc:`changelog` and :doc:`todo` contain some information about version
+history and future plans.
 
 Other Information
 -----------------

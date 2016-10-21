@@ -72,10 +72,9 @@ is all you need. If there have been changes to existing files on
 disk (or if files have been deleted, etc), then you can use the
 "Full Update" option to do a full comparison of the database to
 the on-disk state.  In practice there isn't much difference between
-the two options, speedwise, even though the update step technically
-does more work.  The "Full Update" can also be used to have Exordium
-re-scan for album art, for albums which have not yet found any
-album art.
+the two options, speedwise, even though the update option technically
+does more work.  The "Full Update" will also re-scan for album art,
+for albums which do not have album art already.
 
 The checkbox to "Include debug output" can be used to include more
 information about the update process as it proceeds, though in general

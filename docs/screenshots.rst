@@ -58,10 +58,13 @@ Artists" album they appear in will be listed.  In this case, Plaid can
 be found on two compilation albums.
 
 Below the album list will be a song list.  Each song will have two icons
-on the lefthand side of the table.  The first, the arrow pointing down,
+on the right-hand side of the table.  The first, the arrow pointing down,
 provides a direct link to the track.  The second will open up a popup window
 with the HTML5 media player jPlayer, which will then stream the track.
-Clicking on more than one track will add that to jPlayer's playlist.
+Clicking on more than one track will add the track to jPlayer's playlist.
+
+Artists with more than 500 songs will not have their song lists shown here,
+for performance reasons.
 
 Browsing Albums
 ---------------
