@@ -57,7 +57,9 @@ Getting Exordium
 Exordium is available to install on PyPI via ``pip install django-exordium``.
 PyPI also hosts Python packages for Exordium in both source and
 `Wheel <https://pypi.python.org/pypi/wheel>`_ formats, at 
-https://pypi.python.org/pypi/django-exordium/.
+https://pypi.python.org/pypi/django-exordium/.  Source and Wheel downloads
+of all released versions can also be found at Exordium's hompeage at
+http://apocalyptech.com/exordium/.
 
 Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_,
 and sourcecode archives of released versions can be found there at
