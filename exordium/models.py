@@ -100,6 +100,7 @@ class Artist(models.Model):
     )
     prefix = models.CharField(
         max_length=32,
+        blank=True,
     )
     various = models.BooleanField(default=False)
 
@@ -695,9 +696,9 @@ class Song(models.Model):
     # since this value will omit any of our defined prefixes
     # regardless of the *actual* raw value.
     raw_artist = models.CharField(max_length=255)
-    raw_group = models.CharField(max_length=255, default='')
-    raw_composer = models.CharField(max_length=255, default='')
-    raw_conductor = models.CharField(max_length=255, default='')
+    raw_group = models.CharField(max_length=255, blank=True, default='')
+    raw_composer = models.CharField(max_length=255, blank=True, default='')
+    raw_conductor = models.CharField(max_length=255, blank=True, default='')
 
     # Technical information
     filetype = models.CharField(

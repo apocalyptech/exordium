@@ -1,7 +1,8 @@
 1.0.3 (????-??-??) *(not released)*
 -----------------------------------
 
-- Fixed admin area to allow blank album art fields
+- Fixed admin area to allow blank album art, song, and
+  artist fields, where the fields shouldn't be required
 
 1.0.2 (2016-10-21)
 ------------------
