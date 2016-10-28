@@ -172,10 +172,10 @@ class Album(models.Model):
     # with art without having to bring in possibly-expensive JOINs.
     # Also lets us just pass through original files from the filesystem
     # rather than unnecessarily bloating our database.
-    art_filename = models.CharField(max_length=4096, null=True, default=None)
-    art_mtime = models.IntegerField(null=True, default=0)
-    art_ext = models.CharField(max_length=4, null=True, default=None)
-    art_mime = models.CharField(max_length=64, null=True, default=None)
+    art_filename = models.CharField(max_length=4096, null=True, blank=True, default=None)
+    art_mtime = models.IntegerField(null=True, blank=True, default=0)
+    art_ext = models.CharField(max_length=4, null=True, blank=True, default=None)
+    art_mime = models.CharField(max_length=64, null=True, blank=True, default=None)
 
     class Meta:
         unique_together = ('artist', 'name')
@@ -193,9 +193,29 @@ class Album(models.Model):
     def save(self, *args, **kwargs):
         """
         Custom handler for save() which populates our normname field
-        automatically.
+        automatically, and does a few other things.
         """
+
+        # First compute our normname
         self.normname = App.norm_name(self.name)
+
+        # This bit is unnecessary, really, but causes us to be consistent
+        # with the type of data being put into the DB.  Our app's App.add()
+        # and App.update() procedures will leave album art fields as NULL/None
+        # when not found.  However, when edited in the admin area, currently
+        # Django will insert a blank string into these fields if they're blank,
+        # which would change them from NULL.  I'm a fan of consistency, so
+        # let's just set them to null explicitly for now.  It looks like this
+        # has been fixed in github, though?  Doesn't seem to be in Django 1.10
+        # yet.  https://code.djangoproject.com/ticket/4136
+        if self.art_filename == '':
+            self.art_filename = None
+        if self.art_ext == '':
+            self.art_ext = None
+        if self.art_mime == '':
+            self.art_mime = None
+
+        # Now continue with the save.
         super(Album, self).save(*args, **kwargs)
 
     def get_songs_ordered(self):

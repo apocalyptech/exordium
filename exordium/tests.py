@@ -5275,6 +5275,39 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album_pk, album.pk)
         self.assertEqual(album.live, True)
 
+    def test_update_album_art_empty_string_manually(self):
+        """
+        This is actually something which would only happen through the admin
+        interface, but I don't feel like figuring out how to test admin
+        submissions, so we'll just fudge it.  Basically, if empty strings get
+        put in for an album's album art fields, we'd like to be sure to save
+        them as NULL for consistency's sake.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Song.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Artist.objects.count(), 2)
+        album = Album.objects.get()
+        self.assertEqual(album.art_filename, None)
+        self.assertEqual(album.art_mime, None)
+        self.assertEqual(album.art_ext, None)
+
+        # Simulate submitting via the admin area, which will try to
+        # use empty strings rather than None/NULL
+        album.art_filename = ''
+        album.art_mime = ''
+        album.art_ext = ''
+        album.save()
+
+        # Load again, to be sure, and check.
+        album = Album.objects.get()
+        self.assertEqual(album.art_filename, None)
+        self.assertEqual(album.art_mime, None)
+        self.assertEqual(album.art_ext, None)
+
 class AlbumArtTests(ExordiumUserTests):
     """
     Tests about album art specifically
