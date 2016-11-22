@@ -1,9 +1,7 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* I think that there's probably an error with mp4 track number
-  processing; we're probably missing a [0], as with the other
-  tags.
+* Nothing!
 
 Things which may or may not make that cut:
 
