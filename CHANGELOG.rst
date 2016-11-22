@@ -1,5 +1,5 @@
-1.0.3 (????-??-??) *(not released)*
------------------------------------
+1.0.3 (2016-11-22)
+------------------
 
 - Fixed admin area to allow blank album art, song, and
   artist fields, where the fields shouldn't be required
