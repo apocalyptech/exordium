@@ -1,7 +1,10 @@
 1.0.4 (unreleased)
 ------------------
 
-- No changes yet
+- Added a few more "normalization" characters, for easy searching
+  from the web UI and correct association across possibly-
+  inconsistent tags.  Specifically: İ, ğ, and ş.  Also fixed
+  normalizing filenames (for zipfile downloads) for capital Ç.
 
 1.0.3 (2016-11-22)
 ------------------

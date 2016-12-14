@@ -1188,10 +1188,10 @@ class App(object):
     prefixre = re.compile('^((the)\s+)?(.+)$', re.IGNORECASE)
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
-    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðçř“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydcr""\'\'')
+    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðçřğş“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydcrgs""\'\'')
     norm_translation_filename = str.maketrans(
-        'äÄáÁàÀâÂãÃåÅëËéÉèÈêÊẽẼïÏíÍìÌîÎĩĨöÖóÓòÒôÔõÕøØüÜúÚùÙûÛũŨůŮÿŸýÝỳỲŷŶỹỸðÐçřŘ',
-        'aAaAaAaAaAaAeEeEeEeEeEiIiIiIiIiIoOoOoOoOoOoOuuuUuUuUuUuUyYyYyYyYyYdDcrR'
+        'äÄáÁàÀâÂãÃåÅëËéÉèÈêÊẽẼïÏíÍìÌîÎĩĨİöÖóÓòÒôÔõÕøØüÜúÚùÙûÛũŨůŮÿŸýÝỳỲŷŶỹỸðÐçÇřŘğĞşŞ',
+        'aAaAaAaAaAaAeEeEeEeEeEiIiIiIiIiIIoOoOoOoOoOoOuuuUuUuUuUuUyYyYyYyYyYdDcCrRgGsS'
     )
 
     cover_extensions = ['.png', '.jpg', '.gif']
@@ -1262,9 +1262,20 @@ class App(object):
         values.
         """
         # TODO: Translations and replacements could use some expansion
-        return name.lower().translate(App.norm_translation).replace(
+
+        # We do an initial replacement on "İ", before calling .lower(),
+        # because calling .lower() on that character ends up resulting in
+        # a "regular" lowercase "i" plus a combining upper dot character
+        # (COMBINING DOT ABOVE, or U+0307).  There's no "single" char which
+        # can represent it, since it's visually indistinguishable from a
+        # regular lowercase i.  So it'll never get hit by our norm_translation
+        # stuff, and ends up looking a bit weird regardless.  Anyway, we'll
+        # just special-case getting rid of it before anything else.
+
+        return name.replace('İ', 'I').lower().translate(App.norm_translation).replace(
             'æ', 'ae').replace('ß', 'ss').replace('þ', 'th').replace(
             'œ', 'oe').replace('&', 'and')
+
         #lower = name.lower()
         #lower = lower.translate(App.norm_translation).replace(
         #    'æ', 'ae').replace('ß', 'ss').replace('þ', 'th')
