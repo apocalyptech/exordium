@@ -284,11 +284,22 @@ class AlbumView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(AlbumView, self).get_context_data(**kwargs)
         songs = Song.objects.filter(album=self.object).order_by('tracknum')
-        (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
+        (groups, have_empty_group, conductors, have_empty_conductor,
+            composers, have_empty_composer) = self.object.get_secondary_artists_tuple()
         data = []
+        len_groups = len(groups)
+        len_conductors = len(conductors)
+        len_composers = len(composers)
+        if have_empty_group:
+            len_groups += 1
+        if have_empty_conductor:
+            len_conductors += 1
+        if have_empty_composer:
+            len_composers += 1
         for song in songs:
-            song.set_album_secondary_artist_counts(num_groups=len(groups),
-                num_conductors=len(conductors), num_composers=len(composers))
+            song.set_album_secondary_artist_counts(num_groups=len_groups,
+                num_conductors=len_conductors,
+                num_composers=len_composers)
             data.append(song)
         if self.object.miscellaneous:
             table = SongTableNoAlbumNoTracknum(data)
@@ -302,6 +313,9 @@ class AlbumView(TitleDetailView):
         context['groups'] = groups
         context['conductors'] = conductors
         context['composers'] = composers
+        context['have_empty_group'] = have_empty_group
+        context['have_empty_conductor'] = have_empty_conductor
+        context['have_empty_composer'] = have_empty_composer
         return context
 
 class AlbumDownloadView(TitleDetailView):
@@ -311,7 +325,8 @@ class AlbumDownloadView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(AlbumDownloadView, self).get_context_data(**kwargs)
         context['show_download_button'] = False
-        (groups, conductors, composers) = self.object.get_secondary_artists_tuple()
+        (groups, have_empty_group, conductors, have_empty_conductor,
+            composers, have_empty_composer) = self.object.get_secondary_artists_tuple()
         if App.support_zipfile():
             try:
                 (filenames, zipfile) = self.object.create_zip()
@@ -338,6 +353,9 @@ class AlbumDownloadView(TitleDetailView):
         context['groups'] = groups
         context['conductors'] = conductors
         context['composers'] = composers
+        context['have_empty_group'] = have_empty_group
+        context['have_empty_conductor'] = have_empty_conductor
+        context['have_empty_composer'] = have_empty_composer
         return context
 
 class BrowseArtistView(TitleListView):

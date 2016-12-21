@@ -8287,6 +8287,9 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertQuerysetEqual(response.context['groups'], [repr(group)])
         self.assertQuerysetEqual(response.context['composers'], [repr(composer)])
         self.assertQuerysetEqual(response.context['conductors'], [repr(conductor)])
+        self.assertEqual(response.context['have_empty_group'], False)
+        self.assertEqual(response.context['have_empty_composer'], False)
+        self.assertEqual(response.context['have_empty_conductor'], False)
         self.assertContains(response, 'Ensemble:')
         self.assertContains(response, 'Conductor:')
         self.assertContains(response, 'Composer:')
@@ -8349,6 +8352,9 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertQuerysetEqual(response.context['groups'], [repr(group) for group in groups])
         self.assertQuerysetEqual(response.context['composers'], [repr(composer) for composer in composers])
         self.assertQuerysetEqual(response.context['conductors'], [repr(conductor) for conductor in conductors])
+        self.assertEqual(response.context['have_empty_group'], False)
+        self.assertEqual(response.context['have_empty_composer'], False)
+        self.assertEqual(response.context['have_empty_conductor'], False)
         self.assertContains(response, 'Ensembles:')
         self.assertContains(response, 'Conductors:')
         self.assertContains(response, 'Composers:')
@@ -8415,10 +8421,72 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertQuerysetEqual(response.context['groups'], [repr(group) for group in groups])
         self.assertQuerysetEqual(response.context['composers'], [repr(composer) for composer in composers])
         self.assertQuerysetEqual(response.context['conductors'], [repr(conductor) for conductor in conductors])
+        self.assertEqual(response.context['have_empty_group'], False)
+        self.assertEqual(response.context['have_empty_composer'], False)
+        self.assertEqual(response.context['have_empty_conductor'], False)
         self.assertContains(response, 'Ensembles:')
         self.assertContains(response, 'Conductors:')
         self.assertContains(response, 'Composers:')
         for a in artists + groups + conductors + composers:
+            self.assertContains(response, reverse('exordium:artist', args=(a.normname,)))
+            self.assertContains(response, str(a))
+        self.assertContains(response, str(album))
+        self.assertContains(response, str(album.artist))
+        self.assertContains(response, 'Year: <strong>2016</strong>')
+        self.assertContains(response, 'Tracks: <strong>2</strong>')
+        self.assertContains(response, 'Length: <strong>0:04</strong>')
+        for song in songs:
+            self.assertContains(response, song.title)
+        self.assertContains(response, '"?sort=tracknum"')
+        self.assertContains(response, '2 items')
+
+    def test_album_some_tracks_with_classical_tags_others_without(self):
+        """
+        Tests display of an album in which one track has classical tags defined
+        but the other does not.  The classical tags should be displayed up in
+        the top header, but also with a note that some tracks don't have the
+        tags.  Technically we should have a check for making sure the tracks
+        themselves are showing the information, though we can't really do that
+        without hooking into selenium or whatever.
+        """
+        self.add_mp3(artist='Artist', title='Title 1', tracknum=1,
+            year=2016, group='Group', conductor='Conductor',
+            composer='Composer',
+            album='Album', filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2', tracknum=2,
+            year=2016, album='Album', filename='song2.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 2)
+        songs = [
+            Song.objects.get(filename='song1.mp3'),
+            Song.objects.get(filename='song2.mp3'),
+        ]
+
+        artist = Artist.objects.get(name='Artist')
+        group = Artist.objects.get(name='Group')
+        conductor = Artist.objects.get(name='Conductor')
+        composer = Artist.objects.get(name='Composer')
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
+        self.assertQuerysetEqual(response.context['groups'], [repr(group)])
+        self.assertQuerysetEqual(response.context['composers'], [repr(composer)])
+        self.assertQuerysetEqual(response.context['conductors'], [repr(conductor)])
+        self.assertEqual(response.context['have_empty_group'], True)
+        self.assertEqual(response.context['have_empty_composer'], True)
+        self.assertEqual(response.context['have_empty_conductor'], True)
+        self.assertContains(response, 'Ensemble:')
+        self.assertContains(response, 'Conductor:')
+        self.assertContains(response, 'Composer:')
+        self.assertContains(response, 'Some tracks have no ensemble')
+        self.assertContains(response, 'Some tracks have no conductor')
+        self.assertContains(response, 'Some tracks have no composer')
+        for a in [artist, group, conductor, composer]:
             self.assertContains(response, reverse('exordium:artist', args=(a.normname,)))
             self.assertContains(response, str(a))
         self.assertContains(response, str(album))

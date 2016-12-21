@@ -5,6 +5,9 @@
   from the web UI and correct association across possibly-
   inconsistent tags.  Specifically: İ, ğ, and ş.  Also fixed
   normalizing filenames (for zipfile downloads) for capital Ç.
+- Fixed album summary information when some tracks have classical
+  music tags (ensemble, composer, conductor) but other tracks
+  don't.  (Explicitly say that not all tracks have the tags.)
 
 1.0.3 (2016-11-22)
 ------------------

@@ -1,5 +1,5 @@
 {# vim: set syntax=htmldjango: #}
-<a href="{% url 'exordium:artist' record.artist.normname %}">{{ record.artist }}</a>{% if record.group and record.num_groups != 1%},
+<a href="{% url 'exordium:artist' record.artist.normname %}">{{ record.artist }}</a>{% if record.group and record.num_groups != 1 %},
 Ensemble: <a href="{% url 'exordium:artist' record.group.normname %}">{{ record.group }}</a>{% endif %}{% if record.conductor and record.num_conductors != 1%},
 Conductor: <a href="{% url 'exordium:artist' record.conductor.normname %}">{{ record.conductor }}</a>{% endif %}{% if record.composer and record.num_composers != 1 %},
 Composer: <a href="{% url 'exordium:artist' record.composer.normname %}">{{ record.composer }}</a>{% endif %}

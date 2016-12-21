@@ -21,19 +21,19 @@
 {% for artist in groups %}
 {% if forloop.first %}<p>Ensemble{{ groups|pluralize }}: {% endif %}
 <strong><a href="{% url 'exordium:artist' artist.normname %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
-{% if forloop.last %}</p>{% endif %}
+{% if forloop.last %}{% if have_empty_group %} <em>(Some tracks have no ensemble)</em>{% endif %}</p>{% endif %}
 {% endfor %}
 
 {% for artist in conductors %}
 {% if forloop.first %}<p>Conductor{{ conductors|pluralize }}: {% endif %}
 <strong><a href="{% url 'exordium:artist' artist.normname %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
-{% if forloop.last %}</p>{% endif %}
+{% if forloop.last %}{% if have_empty_conductor %} <em>(Some tracks have no conductor)</em>{% endif %}</p>{% endif %}
 {% endfor %}
 
 {% for artist in composers %}
 {% if forloop.first %}<p>Composer{{ composers|pluralize }}: {% endif %}
 <strong><a href="{% url 'exordium:artist' artist.normname %}">{{ artist }}</a></strong>{% if not forloop.last %},{% endif %}
-{% if forloop.last %}</p>{% endif %}
+{% if forloop.last %}{% if have_empty_composer %} <em>(Some tracks have no composer)</em>{% endif %}</p>{% endif %}
 {% endfor %}
 
 <p>Album: <strong>{{ album }}</strong></p>

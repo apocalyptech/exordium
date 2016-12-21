@@ -253,20 +253,38 @@ class Album(models.Model):
         Since these are inherent to Songs, not Albums, the best we
         can really do is just loop through 'em.
 
-        The tuple order is: (groups, conductors, composers)
+        Included in the tuple are a set of booleans detailing if
+        there are tracks without group/conductor/composer tags.
+
+        The tuple order is: (groups, have_empty_group,
+            conductors, have_empty_conductor,
+            composers, have_empty_composer)
         """
         groups = {}
         conductors = {}
         composers = {}
+        have_empty_group = False
+        have_empty_conductor = False
+        have_empty_composer = False
         for song in self.song_set.all():
-            if song.group and song.group not in groups:
-                groups[song.group] = True
-            if song.conductor and song.conductor not in conductors:
-                conductors[song.conductor] = True
-            if song.composer and song.composer not in composers:
-                composers[song.composer] = True
-        return (sorted(groups.keys()), sorted(conductors.keys()),
-                sorted(composers.keys()))
+            if song.group:
+                if song.group not in groups:
+                    groups[song.group] = True
+            else:
+                have_empty_group = True
+            if song.conductor:
+                if song.conductor not in conductors:
+                    conductors[song.conductor] = True
+            else:
+                have_empty_conductor = True
+            if song.composer:
+                if song.composer not in composers:
+                    composers[song.composer] = True
+            else:
+                have_empty_composer = True
+        return (sorted(groups.keys()), have_empty_group,
+                sorted(conductors.keys()), have_empty_conductor,
+                sorted(composers.keys()), have_empty_composer)
 
     def get_album_image(self):
         """
