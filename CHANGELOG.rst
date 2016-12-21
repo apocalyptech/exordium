@@ -8,6 +8,9 @@
 - Fixed album summary information when some tracks have classical
   music tags (ensemble, composer, conductor) but other tracks
   don't.  (Explicitly say that not all tracks have the tags.)
+- Change the display order of a few elements on the album download
+  page, and use an HTML ``<meta>`` tag to automatically queue up
+  the download, rather than only having the direct link.
 
 1.0.3 (2016-11-22)
 ------------------

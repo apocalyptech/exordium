@@ -8723,6 +8723,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Exordium is not currently configured to allow zipfile creation')
         self.assertNotContains(response, '"%s"' % (reverse('exordium:albumdownload', args=(album.pk,))))
+        self.assertNotContains(response, 'meta http-equiv')
 
     def test_model_create_zip_without_configuration(self):
         """
@@ -8769,6 +8770,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album/song1.mp3<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8806,6 +8808,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, '%s<' % (song_full))
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8843,6 +8846,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album/song1.mp3<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8880,6 +8884,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertNotContains(response, 'Album/song1.mp3<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8912,6 +8917,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, 'Album/cover.jpg<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8945,6 +8951,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, 'Artist/cover.jpg<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
@@ -8982,6 +8989,7 @@ class AlbumDownloadViewTests(ExordiumUserTests):
         self.assertContains(response, 'Artist/MoreTracks/song2.mp3<')
         self.assertContains(response, response.context['zip_file'])
         self.assertContains(response, response.context['zip_url'])
+        self.assertContains(response, 'meta http-equiv')
         zip_file = os.path.join(self.zipfile_path, response.context['zip_file'])
         self.assertEqual(os.path.exists(zip_file), True)
 
