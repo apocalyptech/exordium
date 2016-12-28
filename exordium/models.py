@@ -680,9 +680,11 @@ class Song(models.Model):
 
     MP3 = 'mp3'
     OGG = 'ogg'
+    M4A = 'm4a'
     TYPE_CHOICES = (
         (MP3, MP3),
         (OGG, OGG),
+        (M4A, M4A),
     )
 
     # Filename
@@ -1129,6 +1131,42 @@ class Song(models.Model):
             # Ogg Vorbis is always VBR
             mode = Song.VBR
 
+        elif str(type(audio)) == "<class 'mutagen.mp4.MP4'>":
+
+            # NOTE: mp4 tags don't seem to support either ensemble/group/tpe2 or
+            # conductor/tpe3 tags the way the other tag systems do, so mp4 files
+            # will never load in those values.
+            if '\xa9ART' in audio:
+                artist_full = str(audio['\xa9ART'][0]).strip().strip("\x00")
+                (prefix, raw_artist) = Artist.extract_prefix(artist_full)
+            if '\xa9wrt' in audio:
+                composer = str(audio['\xa9wrt'][0]).strip().strip("\x00")
+                (prefix, raw_composer) = Artist.extract_prefix(composer)
+            if '\xa9alb' in audio:
+                album = str(audio['\xa9alb'][0]).strip().strip("\x00")
+            if '\xa9nam' in audio:
+                title = str(audio['\xa9nam'][0]).strip().strip("\x00")
+            if 'trkn' in audio:
+                (tracknum, total_tracks) = audio['trkn'][0]
+                try:
+                    tracknum = int(tracknum)
+                except ValueError:  # pragma: no cover
+                    tracknum = 0
+            try:
+                if '\xa9day' in audio:
+                    year = int(str(audio['\xa9day'][0]).strip().strip("\x00"))
+            except ValueError:  # pragma: no cover
+                year = 0
+
+            filetype = Song.M4A
+            length = audio.info.length
+            bitrate = audio.info.bitrate
+
+            # It seems as though m4a doesn't actually provide info as to whether
+            # it's CBR/VBR/ABR, whatever.  The ones that I have seem to be all
+            # CBR, so I'm just going to default to that.
+            mode = Song.CBR
+
         else:
 
             retlines.append((App.STATUS_ERROR,
@@ -1346,7 +1384,7 @@ class App(object):
         for (dirpath, dirnames, filenames) in os.walk(start_base, followlinks=True):
             for filename in filenames:
                 filename_lower = filename.lower()
-                if filename_lower[-4:] == '.mp3' or filename_lower[-4:] == '.ogg':
+                if filename_lower[-4:] in ['.mp3', '.ogg', '.m4a']:
                     short_filename = os.path.join(dirpath, filename)[len(base_path)+1:]
                     all_files.append(short_filename)
         return all_files

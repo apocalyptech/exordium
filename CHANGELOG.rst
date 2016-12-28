@@ -1,5 +1,11 @@
-1.0.4 (unreleased)
+1.1.0 (unreleased)
 ------------------
+
+**New Features**
+
+- Added support for M4A audio files
+
+**Bugfixes/Tweaks**
 
 - Added a few more "normalization" characters, for easy searching
   from the web UI and correct association across possibly-
@@ -15,11 +21,15 @@
 1.0.3 (2016-11-22)
 ------------------
 
+**Bugfixes/Tweaks**
+
 - Fixed admin area to allow blank album art, song, and
   artist fields, where the fields shouldn't be required
 
 1.0.2 (2016-10-21)
 ------------------
+
+**Bugfixes/Tweaks**
 
 - Fixed packaging manifest to include changelog, and exclude
   rendered HTML documentation (the latter was causing the source
@@ -27,6 +37,8 @@
 
 1.0.1 (2016-10-21)
 ------------------
+
+**Bugfixes/Tweaks**
 
 - Added a "login" link in the sidebar for not-logged-in users
 - Fixes for tests which were failing when run against databases

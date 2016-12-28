@@ -22,6 +22,8 @@ function jplayerAdd(tracks) {
                 dict['mp3'] = track['url'];
             } else if (track['type'] == 'ogg') {
                 dict['oga'] = track['url'];
+            } else if (track['type'] == 'm4a') {
+                dict['m4a'] = track['url'];
             } else {
                 continue;
             }
@@ -30,7 +32,7 @@ function jplayerAdd(tracks) {
     }
 }
 function jplayerOpen() {
-    jplayerWindow = window.open('{% static 'exordium/jplayer/popup.html' %}', 'exordiumJPlayer', 'width=650,height=700');
+    jplayerWindow = window.open('{% static 'exordium/jplayer/popup.html' %}?v2', 'exordiumJPlayer', 'width=650,height=700');
 }
 //]]>
 </script>

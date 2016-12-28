@@ -20,6 +20,7 @@ import tempfile
 
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 from mutagen.oggvorbis import OggVorbis
+from mutagen.mp4 import MP4
 from PIL import Image
 
 from .models import Artist, Album, Song, App, AlbumArt
@@ -52,8 +53,8 @@ class ExordiumTests(TestCase):
         testing files exist, and then set up the base library path.
         """
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
-                'silence.ogg', 'silence.m4a', 'cover_400.jpg', 'cover_400.gif', 'cover_400.png',
-                'cover_400.tif', 'cover_100.jpg']:
+                'silence.ogg', 'silence.m4a', 'silence.flac', 'cover_400.jpg', 'cover_400.gif',
+                'cover_400.png', 'cover_400.tif', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):  # pragma: no cover
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         self.library_path = tempfile.mkdtemp()
@@ -370,6 +371,117 @@ class ExordiumTests(TestCase):
             new_mtime = ending_mtime + 1
             os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
 
+    def add_m4a(self, path='', filename='file.m4a', artist='', album='',
+            title='', tracknum=None, year=None, composer='',
+            basefile='silence.m4a', apply_tags=True):
+        """
+        Adds a new m4a with the given parameters to our library.
+
+        Note that m4a tagging doesn't seem to support conductor or group/ensemble. 
+
+        Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
+        be present in the source basefile.
+        """
+
+        full_filename = self.add_file(basefile, filename, path=path)
+
+        # Finish here if we've been told to.
+        if not apply_tags:
+            return
+
+        # Apply the tags as specified
+        tags = MP4(full_filename)
+        tags['\xa9ART'] = artist
+        tags['\xa9alb'] = album
+        tags['\xa9nam'] = title
+
+        if composer != '':
+            tags['\xa9wrt'] = composer
+        if tracknum is not None:
+            tags['trkn'] = [(tracknum, 0)]
+        if year is not None:
+            tags['\xa9day'] = str(year)
+
+        # Save to our filename
+        tags.save()
+
+    def update_m4a(self, filename, artist=None, album=None,
+            title=None, tracknum=None, year=None,
+            composer=None):
+        """
+        Updates an on-disk ogg with the given tag data.  Any passed-in
+        variable set to None will be ignored.
+
+        Note again that m4a tagging apparently doesn't support conductor or
+        group/ensemble.
+
+        If composer is a blank string, that field will be completely
+        removed from the file.  Any of the other fields set to blank will
+        leave the tag in place.
+
+        Will ensure that the file's mtime is updated.
+        """
+
+        full_filename = self.check_library_filename(filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        starting_mtime = int(os.stat(full_filename).st_mtime)
+
+        tags = MP4(full_filename)
+
+        if artist is not None:
+            try:
+                del tags['\xa9ART']
+            except KeyError:
+                pass
+            tags['\xa9ART'] = artist
+
+        if album is not None:
+            try:
+                del tags['\xa9alb']
+            except KeyError:
+                pass
+            tags['\xa9alb'] = album
+
+        if title is not None:
+            try:
+                del tags['\xa9nam']
+            except KeyError:
+                pass
+            tags['\xa9nam'] = title
+
+        if composer is not None:
+            try:
+                del tags['\xa9wrt']
+            except KeyError:
+                pass
+            if composer != '':
+                tags['\xa9wrt'] = composer
+
+        if tracknum is not None:
+            try:
+                del tags['trkn']
+            except KeyError:
+                pass
+            tags['trkn'] = [(tracknum, 0)]
+
+        if year is not None:
+            try:
+                del tags['\xa9day']
+            except KeyError:
+                pass
+            tags['\xa9day'] = str(year)
+
+        # Save
+        tags.save()
+
+        # Check on mtime update and manually fix it if it's not updated
+        stat_result = os.stat(full_filename)
+        ending_mtime = int(stat_result.st_mtime)
+        if starting_mtime == ending_mtime:
+            new_mtime = ending_mtime + 1
+            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+
     def delete_file(self, filename):
         """
         Deletes the given file from our fake library
@@ -608,6 +720,44 @@ class TestTests(ExordiumTests):
             year=2006,
             group='New Group',
             conductor='New Conductor',
+            composer='New Composer')
+
+    def test_add_m4a_without_tags(self):
+        """
+        Add an m4a file without tags
+        """
+        self.add_m4a(filename='song.m4a', apply_tags=False)
+
+    def test_update_m4a_with_previously_empty_tags(self):
+        """
+        Update an m4a file which previously had no tags.
+        """
+        self.add_m4a(filename='song.m4a', apply_tags=False)
+        self.update_m4a('song.m4a',
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            composer='Composer')
+
+    def test_update_m4a_with_previously_full_tags(self):
+        """
+        Update an m4a file which previously had a full set of tags
+        """
+        self.add_m4a(filename='song.m4a', 
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            composer='Composer')
+        self.update_m4a('song.m4a',
+            artist='New Artist',
+            album='New Album',
+            title='New Title',
+            tracknum=2,
+            year=2006,
             composer='New Composer')
 
     def test_update_mp3_with_maxtracks(self):
@@ -932,6 +1082,66 @@ class BasicAddTests(ExordiumTests):
         self.assertEqual(song.conductor.name, 'Conductor')
         self.assertEqual(song.composer.name, 'Composer')
 
+    def test_add_m4a_simple_tag_check(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_m4a(artist='Artist', title='Title', album='Album',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.normtitle, 'title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+
+    def test_add_classical_simple_tag_check_m4a(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_m4a(artist='Artist', title='Title', album='Album',
+            composer='Composer', year=1970, tracknum=1)
+        self.run_add()
+
+        self.assertEqual(Song.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Artist.objects.count(), 3)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.composer.name, 'Composer')
+
     def test_add_mp3_total_track_tag_check(self):
         """
         Adds a single track to check for the alternate tracknum format
@@ -1054,9 +1264,9 @@ class BasicAddTests(ExordiumTests):
     def test_add_invalid_filetype(self):
         """
         Attempts adding a file of a type we don't support (masquerading as
-        one we do, with an invalid extension.  Using an .m4a here)
+        one we do, with an invalid extension.  Using a .flac here)
         """
-        self.add_file('silence.m4a', 'song.mp3')
+        self.add_file('silence.flac', 'song.ogg')
         self.run_add_errors(error='not yet understood')
         self.assertEqual(Song.objects.count(), 0)
         self.assertEqual(Artist.objects.count(), 1)
@@ -2426,6 +2636,30 @@ class BasicUpdateTests(ExordiumTests):
 
         # Now make some changes.
         self.update_ogg(filename='song.ogg', title='New Title Æ')
+        self.run_update()
+
+        # Now the real verifications
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'New Title Æ')
+        self.assertEqual(song.normtitle, 'new title ae')
+
+    def test_basic_update_m4a(self):
+        """
+        Test a simple track update to the title, on an m4a file.  (This
+        is really more testing our m4a update function than it is Exordium,
+        at this point.)
+        """
+        self.add_m4a(filename='song.m4a', artist='Artist', title='Title')
+        self.run_add()
+
+        # Quick verification
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+
+        # Now make some changes.
+        self.update_m4a(filename='song.m4a', title='New Title Æ')
         self.run_update()
 
         # Now the real verifications
