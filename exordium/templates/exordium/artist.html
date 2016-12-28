@@ -3,11 +3,11 @@
 {% load render_table from django_tables2 %}
 
 {% block body %}
-{% render_table albums %}
+{% render_table albums "exordium/table.html" %}
 
 {% if have_songs %}
 <h2>Songs by {{ artist }}</h2>
-{% render_table songs %}
+{% render_table songs "exordium/table.html" %}
 {% endif %}
 
 {% endblock %}

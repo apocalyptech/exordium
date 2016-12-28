@@ -11,17 +11,17 @@
 
 {% if artist_results %}
 <h3>Artists</h3>
-{% render_table artist_results %}
+{% render_table artist_results "exordium/table.html" %}
 {% endif %}
 
 {% if album_results %}
 <h3>Albums</h3>
-{% render_table album_results %}
+{% render_table album_results "exordium/table.html" %}
 {% endif %}
 
 {% if song_results %}
 <h3>Songs</h3>
-{% render_table song_results %}
+{% render_table song_results "exordium/table.html" %}
 {% endif %}
 
 {% else %}

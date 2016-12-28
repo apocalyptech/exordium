@@ -17,6 +17,8 @@
 - Change the display order of a few elements on the album download
   page, and use an HTML ``<meta>`` tag to automatically queue up
   the download, rather than only having the direct link.
+- Override table footers to always include item counts, as was
+  present in ``django-tables2`` 1.2.6 but patched out in 1.2.7.
 
 1.0.3 (2016-11-22)
 ------------------

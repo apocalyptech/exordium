@@ -3,5 +3,5 @@
 {% load render_table from django_tables2 %}
 
 {% block albumbody %}
-{% render_table songs %}
+{% render_table songs "exordium/table.html" %}
 {% endblock %}
