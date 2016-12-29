@@ -98,7 +98,8 @@ Assumptions
 - Tags for information commonly associated with classical music are
   supported, namely: Group/Ensemble, Conductor, and Composer.  *(For ID3
   tags: TPE2, TPE3, and TCOM, respectively.  In Ogg Vorbis, the more
-  sensible ENSEMBLE, CONDUCTOR, and COMPOSER.)*  Albums will still be
+  sensible ENSEMBLE, CONDUCTOR, and COMPOSER.  M4A files only support
+  a flag for Composer.)*  Albums will still be
   defined by their main Artist/Album association, and Artist is
   always a required field, whereas Group/Conductor/Composer are all
   optional.  Internally, these are all stored as "artists," so when
