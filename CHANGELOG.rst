@@ -19,6 +19,8 @@
   the download, rather than only having the direct link.
 - Override table footers to always include item counts, as was
   present in ``django-tables2`` 1.2.6 but patched out in 1.2.7.
+- Use newlines when reporting multiple artists in tables, to keep
+  the table width down as much as possible.
 
 1.0.3 (2016-11-22)
 ------------------
