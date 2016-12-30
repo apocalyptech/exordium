@@ -1,4 +1,11 @@
-1.1.0 (unreleased)
+1.1.1 (2016-12-30)
+------------------
+
+**Bugfixes/Tweaks**
+
+- Fixed the release date in the Changelog.  Bah.
+
+1.1.0 (2016-12-30)
 ------------------
 
 **New Features**
