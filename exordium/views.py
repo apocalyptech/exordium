@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.urls import reverse
-from django.template import loader, Context
+from django.template import loader
 from django.http import HttpResponse, StreamingHttpResponse, Http404, HttpResponseRedirect
 
 from django_tables2 import RequestConfig
@@ -438,23 +438,23 @@ class LibraryUpdateView(generic.View, UserAwareView):
         else:
             title = 'Add/Update/Clean Library'
             update_func = App.update
-        context = Context({
+        context = {
             'request': self.request,
             'exordium_title': title,
             'exordium_version': __version__,
             'update_type': update_type,
             'debug': debug,
-        })
+        }
         populate_session_msg_context(self.request, context)
         page = template_page.render(context)
         for line in page.split("\n"):
             if line == '@__LIBRARY_UPDATE_AREA__@':
                 for (status, line) in update_func():
-                    yield template_line.render(Context({
+                    yield template_line.render({
                         'status': status,
                         'line': line,
                         'debug': debug,
-                    }))
+                    })
             else:
                 yield "%s\n" % (line)
 
