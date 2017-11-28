@@ -150,7 +150,7 @@ Next up was configuring WSGI/Django inside Apache, so it's accessible via
 my existing SSL vhost.  The full config section that I used in the relevant
 virtual host, including Django static file configuration, was::
 
-    WSGIDaemonProcess servername socket-timeout=480 processes=1 threads=15 display-name=django python-path=/var/www/django/hex:/var/www/django/virtenv/lib/python3.4/site-packages lang='en_US.UTF-8' locale='en_US.UTF-8'
+    WSGIDaemonProcess servername socket-timeout=480 processes=1 threads=15 display-name=django python-path=/var/www/django/hex:/var/www/django/virtenv/lib/python3.6/site-packages lang='en_US.UTF-8' locale='en_US.UTF-8'
     WSGIProcessGroup servername
     WSGIScriptAlias /hex /var/www/django/hex/hex/wsgi.py
 
