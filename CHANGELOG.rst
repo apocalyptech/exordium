@@ -1,7 +1,10 @@
-1.2.1 (unreleased)
+1.2.1 (2017-11-28)
 ------------------
 
-**(Nothing yet!)**
+**Bugfixes/Tweaks**
+
+- Updates to documentation, to have ``django-dynamic-preferences``
+  properly configured.
 
 1.2.0 (2017-11-28)
 ------------------

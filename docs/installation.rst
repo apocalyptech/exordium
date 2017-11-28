@@ -28,6 +28,7 @@ Once Django is installed and running:
          'exordium',
          'django_tables2',
          'dynamic_preferences',
+         'dynamic_preferences.users.apps.UserPreferencesConfig',
      ]
 
 3. Include the exordium URLconf in your project ``urls.py`` like this::
