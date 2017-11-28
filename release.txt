@@ -1,0 +1,49 @@
+Things to check before releasing:
+
+    * version in exordium/__init__.py
+    * Make sure that docs look good and are current
+    * Update doc version in docs/conf.py (only applies to self-hosted
+      apocalyptech.com docs)
+    * Finalized Changelog entries (update the release date!)
+
+To build:
+
+    First tag the release on github
+
+    git fetch --tags
+    python setup.py sdist
+    python setup.py bdist_wheel
+
+    (git statement not really required)
+
+Then to upload:
+
+    twine upload dist/*x.x.x*
+
+Post-release maintenance:
+
+    apocalyptech.com updates:
+
+        cd dist
+        sha256sum *x.x.x* > CHECKSUMS-x.x.x.txt
+        scp *x.x.x* pez@apocalyptech.com:/var/www/sites/apocalyptech.com/exordium/dist
+
+        Sync docs to apocalyptech.com using the shell script in docs/
+
+        Update webpage HTML to point to the new version, check links.
+
+    project update:
+
+        Bump version in exordium/__init__.py
+        Bump version in docs/conf.py
+        Put an empty changelog entry in place
+
+    readthedocs.org:
+
+        In the admin area of the project, I tend to only let the latest
+        version get built, plus 'stable' and 'latest'.  Verify that those
+        links are working properly afterwards.
+
+    PyPI
+
+        Just make sure that the latest version is showing up, basically.
