@@ -7338,6 +7338,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertEqual(UserAwareView.get_preference_static(response.wsgi_request, 'show_live'), None)
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
 
+        # Check to make sure our checkbox is in the state we expect
+        self.assertNotContains(response, '"show_live" checked')
+
         # Next: submit our preferences form to enable show_live.
         response = self.client.post(reverse('exordium:updateprefs'), {'show_live': 'yes'})
         self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
@@ -7347,6 +7350,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertEqual(response.wsgi_request.session['exordium__show_live'], True)
         self.assertContains(response, 'Set user preferences')
 
+        # Check to make sure our checkbox is in the state we expect
+        self.assertContains(response, '"show_live" checked')
+
         # And now, submit one more, flipping back to False.
         response = self.client.post(reverse('exordium:updateprefs'), {})
         self.assertRedirects(response, reverse('exordium:index'), fetch_redirect_response=False)
@@ -7355,6 +7361,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.session['exordium__show_live'], False)
         self.assertContains(response, 'Set user preferences')
+
+        # Check to make sure our checkbox is in the state we expect
+        self.assertNotContains(response, '"show_live" checked')
 
     def test_show_live_user(self):
         """
@@ -7371,6 +7380,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
 
+        # Check to make sure our checkbox is in the state we expect
+        self.assertNotContains(response, '"show_live" checked')
+
         # Next: submit our preferences form to enable show_live.  Actually loading
         # the index again here isn't really required, but this simulates a browser,
         # so I dig it.
@@ -7382,6 +7394,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], True)
         self.assertContains(response, 'Set user preferences')
 
+        # Check to make sure our checkbox is in the state we expect
+        self.assertContains(response, '"show_live" checked')
+
         # And now, submit one more, flipping back to False.  Once again, the extra
         # redirect to index is a bit gratuitous.
         response = self.client.post(reverse('exordium:updateprefs'), {})
@@ -7391,6 +7406,9 @@ class UserPreferenceTests(ExordiumUserTests):
         self.assertNotIn('exordium__show_live', response.wsgi_request.session)
         self.assertEqual(response.wsgi_request.user.preferences['exordium__show_live'], False)
         self.assertContains(response, 'Set user preferences')
+
+        # Check to make sure our checkbox is in the state we expect
+        self.assertNotContains(response, '"show_live" checked')
 
     def test_preferences_referer_redirect(self):
         """

@@ -1,7 +1,11 @@
-1.1.2 (unreleased)
+1.2.0 (unreleased)
 ------------------
 
-- Nothing yet
+**Bugfixes/Tweaks**
+
+- Updates to work properly with Django 1.11 and
+  ``django-dynamic-preferences`` >= 1.0
+- Fixed live recording checkbox when not logged in to Django
 
 1.1.1 (2016-12-30)
 ------------------
