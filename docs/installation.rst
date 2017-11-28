@@ -8,8 +8,8 @@ running.  For instructions on setting up Django for the first time, if
 installing a brand new application server just for a web music library
 doesn't deter you, djangoproject.com has some good documentation:
 
-- https://docs.djangoproject.com/en/1.10/intro/install/
-- https://docs.djangoproject.com/en/1.10/intro/tutorial01/
+- https://docs.djangoproject.com/en/1.11/intro/install/
+- https://docs.djangoproject.com/en/1.11/intro/tutorial01/
 
 Once Django is installed and running:
 

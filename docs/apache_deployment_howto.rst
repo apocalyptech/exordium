@@ -42,13 +42,13 @@ System Preparation
 
 The default Python provided by CentOS is still 2.7, and I'd wanted to use
 Python 3 for this project.  I used the `IUS Repository <https://ius.io/GettingStarted/>`_
-to give me the version I wanted, and used ``python34u`` at the time.  The
+to give me the version I wanted, and used ``python36u``.  The
 full list of packages I installed, after activating IUS, was:
 
-- python34u
-- python34u-pip
-- python34u-mod_wsgi *(this package was actually only in ius-devel at the time)*
-- python34u-devel
+- python36u
+- python36u-pip
+- python36u-mod_wsgi
+- python36u-devel
 - mariadb-devel
 
 The last two packages were required at one point for building the mysql client
@@ -63,12 +63,12 @@ Django code, and Exordium dependencies.  I chose to put that under a
 Apache web root).  My initial steps for this were just::
 
     $ cd /var/www/django
-    $ pyvenv-3.4 virtenv
+    $ python3.6 -m venv virtenv
     $ source virtenv/bin/activate
     (virtenv) $ pip install django
     (virtenv) $ pip install mysqlclient
 
-That last step, I believe, is what required the ``python34u-devel`` and ``mariadb-devel``
+That last step, I believe, is what required the ``python36u-devel`` and ``mariadb-devel``
 packages above, since it probably does some actual compilation.
 
 I decided to name my Django project "hex", and created it like so::
