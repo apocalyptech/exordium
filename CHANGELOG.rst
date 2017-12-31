@@ -1,7 +1,7 @@
-1.2.2 (unreleased)
+1.3.0 (unreleased)
 ------------------
 
-*(nothing yet)*
+- Updates to work properly with Django 2.0
 
 1.2.1 (2017-11-28)
 ------------------

@@ -86,7 +86,7 @@ class UserAwareView(object):
         Get a preference, or None
         """
         full_name = 'exordium__%s' % (prefname)
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             return request.user.preferences[full_name]
         else:
             if full_name in request.session:
@@ -100,7 +100,7 @@ class UserAwareView(object):
         Sets a perference value
         """
         full_name = 'exordium__%s' % (prefname)
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             request.user.preferences[full_name] = value
         else:
             request.session[full_name] = value

@@ -23,11 +23,11 @@ setup(
     author='CJ Kucera',
     author_email='pez@apocalyptech.com',
     install_requires=[
-        'django >= 1.11',
+        'Django >= 1.11',
         'mutagen >= 1.39',
         'Pillow >= 4.3.0',
-        'django-tables2 >= 1.16.0',
-        'django-dynamic-preferences >= 1.4.2',
+        'django-tables2 >= 1.17.1',
+        'django-dynamic-preferences >= 1.5',
     ],
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -35,6 +35,7 @@ setup(
         'Environment :: Web Environment',
         'Framework :: Django',
         'Framework :: Django :: 1.11',
+        'Framework :: Django :: 2.0',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',

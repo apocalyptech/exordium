@@ -1,5 +1,5 @@
-django >= 1.11
+Django >= 1.11
 mutagen >= 1.39
 Pillow >= 4.3.0
-django-tables2 >= 1.16.0
-django-dynamic-preferences >= 1.4.2
+django-tables2 >= 1.17.1
+django-dynamic-preferences >= 1.5
