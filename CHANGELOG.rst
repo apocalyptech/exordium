@@ -1,7 +1,10 @@
 1.3.0 (unreleased)
 ------------------
 
+**Bugfixes/Tweaks**
+
 - Updates to work properly with Django 2.0
+- Use time-added as secondary sorting for albums when sorting by Year
 
 1.2.1 (2017-11-28)
 ------------------

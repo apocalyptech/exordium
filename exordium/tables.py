@@ -84,6 +84,11 @@ class AlbumTable(tables.Table):
         orderable=False,
         empty_values=(),
     )
+    year = tables.Column(
+        verbose_name='Year',
+        orderable=True,
+        order_by=('year', 'time_added'),
+    )
 
     def render_year(self, value=0, **kwargs):
         """

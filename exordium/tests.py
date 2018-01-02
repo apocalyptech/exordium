@@ -8293,6 +8293,38 @@ class ArtistViewTests(ExordiumTests):
         self.assertQuerysetEqual(response.context['albums'].data, [repr(al) for al in reversed(albums)])
         self.assertContains(response, '"?album-sort=-year"')
 
+    def test_sorting_album_year_time_added(self):
+        """
+        Test album sorting by year when two albums are in the same year; should
+        use time_added as the secondary sorting field.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', year=2017, filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2',
+            album='Album 2', year=2017, filename='song2.mp3')
+        self.run_add()
+        al2 = self.age_album('Artist', 'Album 2', 10)
+        self.assertEqual(Album.objects.count(), 2)
+
+        albums = [
+            al2,
+            Album.objects.get(name='Album 1'),
+        ]
+        artist = Artist.objects.get(name='Artist')
+
+        response = self.client.get(reverse('exordium:artist', args=(artist.normname,)), {'album-sort': 'year'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['albums'].data), 2)
+        self.assertQuerysetEqual(response.context['albums'].data, [repr(al) for al in albums])
+        self.assertContains(response, '"?album-sort=-year"')
+
+        # test reverse sort
+        response = self.client.get(reverse('exordium:artist', args=(artist.normname,)), {'album-sort': '-year'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['albums'].data), 2)
+        self.assertQuerysetEqual(response.context['albums'].data, [repr(al) for al in reversed(albums)])
+        self.assertContains(response, '"?album-sort=year"')
+
     def test_sorting_song(self):
         """
         Test at least one case of song sorting.
@@ -9918,6 +9950,39 @@ class SearchViewTests(ExordiumTests):
         self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in reversed(albums)])
         self.assertContains(response, 'album-sort=-year')
         self.assertContains(response, '3 albums')
+
+    def test_sorting_album_year_time_added(self):
+        """
+        Test album sorting by year when two albums are in the same year; should
+        use time_added as the secondary sorting field.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album 1', year=2017, filename='song1.mp3')
+        self.add_mp3(artist='Artist', title='Title 2',
+            album='Album 2', year=2017, filename='song2.mp3')
+        self.run_add()
+        al2 = self.age_album('Artist', 'Album 2', 10)
+        self.assertEqual(Album.objects.count(), 2)
+
+        albums = [
+            al2,
+            Album.objects.get(name='Album 1'),
+        ]
+
+        response = self.client.get(reverse('exordium:search'), {'q': 'album', 'album-sort': 'year'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['album_results'].data), 2)
+        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in albums])
+        self.assertContains(response, 'album-sort=-year')
+        self.assertContains(response, '2 albums')
+
+        # test reverse sort
+        response = self.client.get(reverse('exordium:search'), {'q': 'album', 'album-sort': '-year'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['album_results'].data), 2)
+        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in reversed(albums)])
+        self.assertContains(response, 'album-sort=year')
+        self.assertContains(response, '2 albums')
 
     def test_sorting_song(self):
         """
