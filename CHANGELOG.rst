@@ -5,6 +5,10 @@
 
 - Use a label for our "live album" checkbox so the text can be clicked
   in addition to the checkbox itself
+- Disallow django-tables2 >= 2.0 until an issue with that has been either
+  fixed or denied: https://github.com/jieter/django-tables2/issues/621
+  (we can work around, if they opt not to merge that fix, but I'd prefer
+  to use the fix on that Issue)
 
 1.3.0 (2018-01-02)
 ------------------

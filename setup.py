@@ -26,7 +26,7 @@ setup(
         'Django >= 1.11',
         'mutagen >= 1.39',
         'Pillow >= 4.3.0',
-        'django-tables2 >= 1.17.1',
+        'django-tables2 >= 1.17.1, < 2',
         'django-dynamic-preferences >= 1.5',
     ],
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
