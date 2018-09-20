@@ -8,13 +8,10 @@ Things to check before releasing:
 
 To build:
 
-    First tag the release on github
-
-    git fetch --tags
+    git tag vx.x.x
+    git push --tags
     python setup.py sdist
     python setup.py bdist_wheel
-
-    (git statement not really required)
 
 Then to upload:
 

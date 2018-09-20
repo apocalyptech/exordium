@@ -1,3 +1,10 @@
+1.3.2 (2018-09-20)
+------------------
+
+**Bugfixes/Tweaks**
+
+- Stupid little formatting fix in README and docs requirements RST
+
 1.3.1 (2018-09-20)
 ------------------
 

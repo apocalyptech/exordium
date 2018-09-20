@@ -47,8 +47,10 @@ Exordium requires the following additional third-party modules:
 - mutagen (built on 1.39)
 - Pillow (built on 4.3.0)
 - django-tables2 (built on 1.17.1)
+
   - the 2.x line of django-tables2 currently doesn't fully work, though
     the problems are entirely cosmetic
+
 - django-dynamic-preferences (built on 1.5), which in turn requires:
 
   - six (built on 1.11.0)
