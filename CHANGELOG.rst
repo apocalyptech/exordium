@@ -1,7 +1,10 @@
 1.3.1 (unreleased)
 ------------------
 
-**Nothing yet**
+**Bugfixes/Tweaks**
+
+- Use a label for our "live album" checkbox so the text can be clicked
+  in addition to the checkbox itself
 
 1.3.0 (2018-01-02)
 ------------------

@@ -58,7 +58,7 @@ function jplayerOpen() {
     <div class="userprefs">
         <form action="{% url 'exordium:updateprefs' %}" method="post">
             {% csrf_token %}
-            <nobr><input type="checkbox" name="show_live" id="show_live"{% if request.user.is_authenticated %}{% if request.user.preferences.exordium__show_live %} checked{% endif %}{% else %}{% if request.session.exordium__show_live %} checked{% endif %}{% endif %}> Include live recordings?</nobr><br />
+            <nobr><input type="checkbox" name="show_live" id="show_live"{% if request.user.is_authenticated %}{% if request.user.preferences.exordium__show_live %} checked{% endif %}{% else %}{% if request.session.exordium__show_live %} checked{% endif %}{% endif %}><label for="show_live"> Include live recordings?</label></nobr><br />
             <input type="submit" id="prefbut" class="prefsform" value="Update Preferences" />
         </form>
     </div>
