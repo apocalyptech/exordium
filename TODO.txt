@@ -1,7 +1,12 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
-* Nothing!
+* When we added Opus support, we did various checks to make
+  sure that we don't try to stream Opus files w/ the HTML5
+  jPlayer, since that doesn't support Opus.  We should probably
+  have an "is_streamable" method on the Song class, though,
+  rather than just checking for Opus all over the place.
+  Something to think about...
 
 Things which may or may not make that cut:
 
