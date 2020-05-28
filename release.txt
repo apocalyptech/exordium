@@ -31,6 +31,13 @@ Post-release maintenance:
 
         Update webpage HTML to point to the new version, check links.
 
+    github release management:
+
+        Browse over to the repo and create an "official" release based on
+        the tag.  Ordinarily all that shows there is the commit message,
+        which the user would have to click through to get to anyway.  Write
+        up something reasonable, for all our zero users who Aren't Me!
+
     project update:
 
         Bump version in exordium/__init__.py
