@@ -33,7 +33,7 @@ Assumptions
   quite usable from text-based browsers.
 
 - Music files must be accessible via the local filesystem on which Django
-  is running, and stored as either mp3, ogg vorbis, or m4a (mp4a).
+  is running, and stored as either mp3, ogg vorbis, ogg opus, or m4a (mp4a).
 
 - The entire music library must be available from a single directory
   prefix.  If subdirs of this root dir span multiple volumes (or network
@@ -69,7 +69,7 @@ Assumptions
     this virtual "album" might span multiple directories.
  
 - The artwork for albums should be contained in gif/jpg/png files stored
-  alongside the mp3s/oggs/m4as, or in the immediate parent folder (in the case
+  alongside the mp3s/oggs/opus/m4as, or in the immediate parent folder (in the case
   of multi-disc albums, for instance).  Filenames which start with "cover"
   will be preferred over other graphics in the directory.  PNGs will be
   preferred over JPGs, and JPGs will be preferred over GIFs.
@@ -163,9 +163,9 @@ that have been made during its development (and in my own music library).
   been very unimportant to me.  It'd probably be good to support them
   anyway, though.
 
-- Exordium only supports mp3, ogg, and m4a currently, though other
-  support should be reasonably simple to add in, so long as Mutagen
-  supports the format.
+- Exordium only supports mp3, ogg vorbus, ogg opus, and m4a currently,
+  though other support should be reasonably simple to add in, so long as
+  Mutagen supports the format.
 
 - m4a tags don't seem to allow for Ensemble or Conductor, so that data
   will never be present for m4a files.  (If support for those tags is
