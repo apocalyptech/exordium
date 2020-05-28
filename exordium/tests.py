@@ -9162,6 +9162,75 @@ class AlbumViewTests(ExordiumUserTests):
             self.assertContains(response, '%s<' % (songs[num]))
             self.assertContains(response, '"%s"' % (songs[num].get_download_url()))
 
+    def test_play_button_single(self):
+        """
+        Test to make sure we have a "play" button for a single (streamable) track
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertContains(response, 'playbutton')
+        self.assertContains(response, 'Stream this track')
+
+    def test_no_play_button_single(self):
+        """
+        Test to make sure we do NOT have a "play" button for a single
+        (non-streamable) track.  That just means Ogg Opus, for now.
+        """
+        self.add_opus(artist='Artist', title='Title 1',
+            album='Album', filename='song1.opus')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertNotContains(response, 'playbutton')
+        self.assertNotContains(response, 'Stream this track')
+        self.assertContains(response, 'Track cannot be streamed')
+
+    def test_play_button_two_tracks_mixed(self):
+        """
+        Test to make sure we have both a "play" button and a non-streamable notice,
+        for an album with one streamable and one non-streamable track.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_opus(artist='Artist', title='Title 2',
+            album='Album', filename='song2.opus')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+
+        self.assertEqual(Song.objects.count(), 2)
+        songs = [
+            Song.objects.get(filename='song1.mp3'),
+            Song.objects.get(filename='song2.opus'),
+        ]
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
+        self.assertContains(response, 'playbutton')
+        self.assertContains(response, 'Stream this track')
+        self.assertContains(response, 'Track cannot be streamed')
+
 class AlbumDownloadViewTests(ExordiumUserTests):
     """
     Tests for album downloads
