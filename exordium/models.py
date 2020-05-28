@@ -681,10 +681,12 @@ class Song(models.Model):
     MP3 = 'mp3'
     OGG = 'ogg'
     M4A = 'm4a'
+    OPUS = 'opus'
     TYPE_CHOICES = (
         (MP3, MP3),
         (OGG, OGG),
         (M4A, M4A),
+        (OPUS, OPUS),
     )
 
     # Filename
@@ -722,7 +724,7 @@ class Song(models.Model):
 
     # Technical information
     filetype = models.CharField(
-        max_length=3,
+        max_length=4,
         choices=TYPE_CHOICES,
     )
     bitrate = models.IntegerField()
@@ -1085,7 +1087,15 @@ class Song(models.Model):
             else:
                 mode = Song.CBR
 
-        elif str(type(audio)) == "<class 'mutagen.oggvorbis.OggVorbis'>":
+        elif str(type(audio)) == "<class 'mutagen.oggvorbis.OggVorbis'>" \
+                or str(type(audio)) == "<class 'mutagen.oggopus.OggOpus'>":
+
+            # Nearly everything about these two formats can be processed
+            # identically, so we're just gonna do 'em all in one for now.
+            # The differences between Vorbis and Opus are:
+            #  - `filetype` is missing on Opus, so we default to VBR (even though
+            #    that may not be true)
+            #  - `bitrate` is also missing on Opus, so we just default to 0.
 
             if 'artist' in audio:
                 artist_full = str(audio['artist'][0]).strip().strip("\x00")
@@ -1124,12 +1134,20 @@ class Song(models.Model):
             except ValueError:  # pragma: no cover
                 year = 0
 
-            filetype = Song.OGG
-            length = audio.info.length
-            bitrate = audio.info.bitrate
-            
-            # Ogg Vorbis is always VBR
-            mode = Song.VBR
+            if 'OggVorbis' in str(type(audio)):
+                filetype = Song.OGG
+                length = audio.info.length
+                bitrate = audio.info.bitrate
+                # Ogg Vorbis is always VBR.
+                mode = Song.VBR
+            else:
+                filetype = Song.OPUS
+                length = audio.info.length
+                bitrate = 0
+                # Ogg Opus is *not* always VBR, but Mutagen doesn't give us info
+                # on that, so it doesn't really matter.  Default to VBR even if
+                # that's not true for Opus.
+                mode = Song.VBR
 
         elif str(type(audio)) == "<class 'mutagen.mp4.MP4'>":
 
@@ -1376,6 +1394,7 @@ class App(object):
         """
         App.ensure_prefs()
         base_path = App.prefs['exordium__base_path']
+        valid_extensions = set(['mp3', 'ogg', 'm4a', 'opus'])
         all_files = []
         if extra_base is None:
             start_base = base_path
@@ -1384,7 +1403,7 @@ class App(object):
         for (dirpath, dirnames, filenames) in os.walk(start_base, followlinks=True):
             for filename in filenames:
                 filename_lower = filename.lower()
-                if filename_lower[-4:] in ['.mp3', '.ogg', '.m4a']:
+                if filename_lower.rsplit('.', 1)[-1] in valid_extensions:
                     short_filename = os.path.join(dirpath, filename)[len(base_path)+1:]
                     all_files.append(short_filename)
         return all_files

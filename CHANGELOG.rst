@@ -1,7 +1,9 @@
 1.3.3 (UNRELEASED)
 ------------------
 
-**Nothing Yet**
+**Bugfixes/Tweaks**
+
+- Added support for Ogg Opus files (``.opus``)
 
 1.3.2 (2018-09-20)
 ------------------

@@ -20,6 +20,7 @@ import tempfile
 
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TDRC, TRCK, TDRL, TPE2, TPE3, TCOM
 from mutagen.oggvorbis import OggVorbis
+from mutagen.oggopus import OggOpus
 from mutagen.mp4 import MP4
 from PIL import Image
 
@@ -53,8 +54,8 @@ class ExordiumTests(TestCase):
         testing files exist, and then set up the base library path.
         """
         for filename in ['silence-abr.mp3', 'silence-cbr.mp3', 'silence-vbr.mp3', 'invalid-tags.mp3',
-                'silence.ogg', 'silence.m4a', 'silence.flac', 'cover_400.jpg', 'cover_400.gif',
-                'cover_400.png', 'cover_400.tif', 'cover_100.jpg']:
+                'silence.ogg', 'silence.m4a', 'silence.flac', 'silence.opus',
+                'cover_400.jpg', 'cover_400.gif', 'cover_400.png', 'cover_400.tif', 'cover_100.jpg']:
             if not os.path.exists(os.path.join(self.testdata_path, filename)):  # pragma: no cover
                 raise Exception('Required testing file "%s" does not exist!' % (filename))
         self.library_path = tempfile.mkdtemp()
@@ -297,6 +298,136 @@ class ExordiumTests(TestCase):
         starting_mtime = int(os.stat(full_filename).st_mtime)
 
         tags = OggVorbis(full_filename)
+
+        if artist is not None:
+            try:
+                del tags['ARTIST']
+            except KeyError:
+                pass
+            tags['ARTIST'] = artist
+
+        if album is not None:
+            try:
+                del tags['ALBUM']
+            except KeyError:
+                pass
+            tags['ALBUM'] = album
+
+        if title is not None:
+            try:
+                del tags['TITLE']
+            except KeyError:
+                pass
+            tags['TITLE'] = title
+
+        if group is not None:
+            try:
+                del tags['ENSEMBLE']
+            except KeyError:
+                pass
+            if group != '':
+                tags['ENSEMBLE'] = group
+
+        if conductor is not None:
+            try:
+                del tags['CONDUCTOR']
+            except KeyError:
+                pass
+            if conductor != '':
+                tags['CONDUCTOR'] = conductor
+
+        if composer is not None:
+            try:
+                del tags['COMPOSER']
+            except KeyError:
+                pass
+            if composer != '':
+                tags['COMPOSER'] = composer
+
+        if tracknum is not None:
+            try:
+                del tags['TRACKNUMBER']
+            except KeyError:
+                pass
+            tags['TRACKNUMBER'] = str(tracknum)
+
+        if year is not None:
+            try:
+                del tags['DATE']
+            except KeyError:
+                pass
+            try:
+                del tags['YEAR']
+            except KeyError:
+                pass
+            tags['DATE'] = str(year)
+
+        # Save
+        tags.save()
+
+        # Check on mtime update and manually fix it if it's not updated
+        stat_result = os.stat(full_filename)
+        ending_mtime = int(stat_result.st_mtime)
+        if starting_mtime == ending_mtime:
+            new_mtime = ending_mtime + 1
+            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+
+    def add_opus(self, path='', filename='file.opus', artist='', album='',
+            title='', tracknum=None, year=None, group='', conductor='', composer='',
+            basefile='silence.opus', apply_tags=True):
+        """
+        Adds a new ogg opus file with the given parameters to our library.
+
+        Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
+        be present in the source basefile.
+        """
+
+        full_filename = self.add_file(basefile, filename, path=path)
+
+        # Finish here if we've been told to.
+        if not apply_tags:
+            return
+
+        # Apply the tags as specified
+        tags = OggOpus(full_filename)
+        tags['ARTIST'] = artist
+        tags['ALBUM'] = album
+        tags['TITLE'] = title
+
+        if group != '':
+            tags['ENSEMBLE'] = group
+        if conductor != '':
+            tags['CONDUCTOR'] = conductor
+        if composer != '':
+            tags['COMPOSER'] = composer
+        if tracknum is not None:
+            tags['TRACKNUMBER'] = str(tracknum)
+        if year is not None:
+            tags['DATE'] = str(year)
+
+        # Save to our filename
+        tags.save()
+
+    def update_opus(self, filename, artist=None, album=None,
+            title=None, tracknum=None, year=None,
+            group=None, conductor=None, composer=None):
+        """
+        Updates an on-disk ogg opus file with the given tag data.  Any passed-in
+        variable set to None will be ignored.
+
+        If group/conductor/composer is a blank string, those fields will
+        be completely removed from the file.  Any of the other fields set
+        to blank will leave the tag in place.
+
+        Will ensure that the file's mtime is updated.
+        """
+
+        full_filename = self.check_library_filename(filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        starting_mtime = int(os.stat(full_filename).st_mtime)
+
+        tags = OggOpus(full_filename)
 
         if artist is not None:
             try:
@@ -722,6 +853,50 @@ class TestTests(ExordiumTests):
             conductor='New Conductor',
             composer='New Composer')
 
+    def test_add_opus_without_tags(self):
+        """
+        Add an ogg opus file without tags
+        """
+        self.add_opus(filename='song.opus', apply_tags=False)
+
+    def test_update_opus_with_previously_empty_tags(self):
+        """
+        Update an ogg opus file which previously had no tags.
+        """
+        self.add_opus(filename='song.opus', apply_tags=False)
+        self.update_opus('song.opus',
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            group='Group',
+            conductor='Conductor',
+            composer='Composer')
+
+    def test_update_opus_with_previously_full_tags(self):
+        """
+        Update an ogg opus file which previously had a full set of tags
+        """
+        self.add_opus(filename='song.opus',
+            artist='Artist',
+            album='Album',
+            title='Title',
+            tracknum=1,
+            year=2016,
+            group='Group',
+            conductor='Conductor',
+            composer='Composer')
+        self.update_opus('song.opus',
+            artist='New Artist',
+            album='New Album',
+            title='New Title',
+            tracknum=2,
+            year=2006,
+            group='New Group',
+            conductor='New Conductor',
+            composer='New Composer')
+
     def test_add_m4a_without_tags(self):
         """
         Add an m4a file without tags
@@ -1043,6 +1218,77 @@ class BasicAddTests(ExordiumTests):
         objects are all populated properly
         """
         self.add_ogg(artist='Artist', title='Title', album='Album',
+            group='Group', conductor='Conductor', composer='Composer',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        self.assertEqual(Song.objects.count(), 1)
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Artist.objects.count(), 5)
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Group')
+        self.assertEqual(artist.name, 'Group')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Conductor')
+        self.assertEqual(artist.name, 'Conductor')
+        self.assertEqual(artist.prefix, '')
+
+        artist = Artist.objects.get(name='Composer')
+        self.assertEqual(artist.name, 'Composer')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.group.name, 'Group')
+        self.assertEqual(song.conductor.name, 'Conductor')
+        self.assertEqual(song.composer.name, 'Composer')
+
+    def test_add_opus_simple_tag_check(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_opus(artist='Artist', title='Title', album='Album',
+            year=1970, tracknum=1)
+        self.run_add()
+
+        artist = Artist.objects.get(name='Artist')
+        self.assertEqual(artist.name, 'Artist')
+        self.assertEqual(artist.prefix, '')
+
+        album = Album.objects.get()
+        self.assertEqual(album.name, 'Album')
+        self.assertEqual(album.year, 1970)
+        self.assertEqual(album.artist.name, 'Artist')
+
+        song = Song.objects.get()
+        self.assertEqual(song.title, 'Title')
+        self.assertEqual(song.normtitle, 'title')
+        self.assertEqual(song.year, 1970)
+        self.assertEqual(song.tracknum, 1)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.artist.name, 'Artist')
+
+    def test_add_classical_simple_tag_check_opus(self):
+        """
+        Adds a single fully-tagged track and check that the resulting database
+        objects are all populated properly
+        """
+        self.add_opus(artist='Artist', title='Title', album='Album',
             group='Group', conductor='Conductor', composer='Composer',
             year=1970, tracknum=1)
         self.run_add()
@@ -2636,6 +2882,30 @@ class BasicUpdateTests(ExordiumTests):
 
         # Now make some changes.
         self.update_ogg(filename='song.ogg', title='New Title Æ')
+        self.run_update()
+
+        # Now the real verifications
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'New Title Æ')
+        self.assertEqual(song.normtitle, 'new title ae')
+
+    def test_basic_update_opus(self):
+        """
+        Test a simple track update to the title, on an ogg opus file.  (This
+        is really more testing our opus update function than it is Exordium,
+        at this point.)
+        """
+        self.add_opus(filename='song.opus', artist='Artist', title='Title')
+        self.run_add()
+
+        # Quick verification
+        song = Song.objects.get()
+        self.assertEqual(song.artist.name, 'Artist')
+        self.assertEqual(song.title, 'Title')
+
+        # Now make some changes.
+        self.update_opus(filename='song.opus', title='New Title Æ')
         self.run_update()
 
         # Now the real verifications
