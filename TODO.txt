@@ -7,6 +7,8 @@ bitrot:
   have an "is_streamable" method on the Song class, though,
   rather than just checking for Opus all over the place.
   Something to think about...
+* Upgrade to a newer MariaDB so we can upgrade to a newer
+  Django...
 
 Things which may or may not make that cut:
 
