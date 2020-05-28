@@ -4,6 +4,8 @@ Things to check before releasing:
     * Make sure that docs look good and are current
     * Update doc version in docs/conf.py (only applies to self-hosted
       apocalyptech.com docs)
+    * Also update the end copyright year in docs/conf.py, if that's
+      changed!
     * Finalized Changelog entries (update the release date!)
 
 To build:
