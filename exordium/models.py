@@ -226,6 +226,14 @@ class Album(models.Model):
         """
         return self.song_set.all().order_by('tracknum')
 
+    def get_songs_jplayer_streamable_ordered(self):
+        """
+        Returns all tracks in our album which are capable of being streamed
+        via jPlayer, ordered.  A convenience function for inclusion in
+        templates, basically.
+        """
+        return self.song_set.all().filter(~Q(filetype=Song.OPUS)).order_by('tracknum')
+
     def get_secondary_artists_list(self):
         """
         Returns a list of all artists contained in songs in this

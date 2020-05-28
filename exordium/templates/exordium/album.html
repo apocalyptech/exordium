@@ -50,7 +50,11 @@
     <input type="submit" value="Download as Zipfile ({{ album.get_total_size_str }})" />
 </form>
 {% endif %}
-<button class="albumstreambutton" onClick="jplayerAdd([{% for record in album.get_songs_ordered %}{title:'{% if record.tracknum != 0 %}{{ record.tracknum }}. {% endif %}{{ record.title|addslashes }} ({{ record.album|addslashes }})', artist:'{{ record.artist|addslashes }}', type:'{{ record.filetype }}', url:'{% autoescape off %}{{ record.get_download_url|addslashes }}{% endautoescape %}', poster:'{% if record.album.has_album_art %}{% url 'exordium:albumart' record.album.pk 'album' %}{% else %}{% static 'exordium/no_album_art.png' %}{% endif %}'}{% if not forloop.last %}, {% endif %}{% endfor %}]);">Stream Album (HTML5 pop-up)</button>
+{% if show_html5_stream_button %}
+<button class="albumstreambutton" onClick="jplayerAdd([{% for record in album.get_songs_jplayer_streamable_ordered %}{title:'{% if record.tracknum != 0 %}{{ record.tracknum }}. {% endif %}{{ record.title|addslashes }} ({{ record.album|addslashes }})', artist:'{{ record.artist|addslashes }}', type:'{{ record.filetype }}', url:'{% autoescape off %}{{ record.get_download_url|addslashes }}{% endautoescape %}', poster:'{% if record.album.has_album_art %}{% url 'exordium:albumart' record.album.pk 'album' %}{% else %}{% static 'exordium/no_album_art.png' %}{% endif %}'}{% if not forloop.last %}, {% endif %}{% endfor %}]);">Stream Album (HTML5 pop-up)</button>
+{% else %}
+<button class="albumstreambutton" disabled>Stream Album (HTML5 pop-up - unavailable)</button>
+{% endif %}
 <br />
 <br />
 

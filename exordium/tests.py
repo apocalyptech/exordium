@@ -7136,6 +7136,112 @@ class AlbumModelTests(TestCase):
         al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
         self.assertEqual(al.get_total_size_str(), '0 B')
 
+    def test_get_songs_ordered(self):
+        """
+        Test to make sure that songs come back ordered by track number
+        """
+        ar = Artist.objects.create(name='Artist', normname='artist')
+        al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
+        s1 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 1',
+                tracknum=2,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+        s2 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 2',
+                tracknum=1,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+
+        self.assertEqual(list(al.get_songs_ordered()), [s2, s1])
+
+    def test_get_jquery_streaming_songs_ordered(self):
+        """
+        Test to make sure that streamable songs come back ordered by track number
+        """
+        ar = Artist.objects.create(name='Artist', normname='artist')
+        al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
+        s1 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 1',
+                tracknum=2,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+        s2 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 2',
+                tracknum=1,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+
+        self.assertEqual(list(al.get_songs_jplayer_streamable_ordered()), [s2, s1])
+
+    def test_get_jquery_streaming_songs_ordered_one_missing(self):
+        """
+        Test to make sure that streamable songs come back ordered by track number,
+        when one of the songs isn't actually streamable.
+        """
+        ar = Artist.objects.create(name='Artist', normname='artist')
+        al = Album.objects.create(artist = ar, name = 'Album', normname = 'album')
+        s1 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 1',
+                tracknum=3,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+        s2 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 2',
+                tracknum=2,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                filetype=Song.OPUS,
+                )
+        s3 = Song.objects.create(artist=ar,
+                album=al,
+                title='Title 3',
+                tracknum=1,
+                year=2020,
+                bitrate=128000,
+                mode=Song.CBR,
+                size=123000,
+                length=90,
+                sha256sum='0cf31fc7d968ec16c69758f9b0ebb2355471d5694a151b40e5e4f8641b061092',
+                )
+
+        self.assertEqual(list(al.get_songs_jplayer_streamable_ordered()), [s3, s1])
+
 class AlbumZipfileErrorModelTests(TestCase):
     """
     Tests for our App.AlbumZipfileError exception, since we don't have
@@ -9230,6 +9336,65 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertContains(response, 'playbutton')
         self.assertContains(response, 'Stream this track')
         self.assertContains(response, 'Track cannot be streamed')
+
+    def test_html5_album_stream_button(self):
+        """
+        Test to make sure we have a jPlayer-based album stream button
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'albumstreambutton')
+        self.assertNotContains(response, 'albumstreambutton" disabled')
+        self.assertContains(response, '>Stream Album (HTML5 pop-up)<')
+
+    def test_html5_no_album_stream_button(self):
+        """
+        Test to make sure we do NOT have a jPlayer-based album stream button,
+        when there are no jPlayer-streamable tracks present
+        """
+        self.add_opus(artist='Artist', title='Title 1',
+            album='Album', filename='song1.opus')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 1)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'albumstreambutton" disabled')
+        self.assertContains(response, '>Stream Album (HTML5 pop-up - unavailable)<')
+
+    def test_html5_album_stream_button_mixed(self):
+        """
+        Test to make sure we have a jPlayer-based album stream button when we
+        have a mixed-jPlayer-streamable album present.  Note that this doesn't
+        *really* test this fully, since we're not inspecting the contents of the
+        button's Javascript, but whatever.
+        """
+        self.add_mp3(artist='Artist', title='Title 1',
+            album='Album', filename='song1.mp3')
+        self.add_opus(artist='Artist', title='Title 2',
+            album='Album', filename='song2.opus')
+        self.run_add()
+
+        self.assertEqual(Album.objects.count(), 1)
+        self.assertEqual(Song.objects.count(), 2)
+        album = Album.objects.get()
+
+        response = self.client.get(reverse('exordium:album', args=(album.pk,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'albumstreambutton')
+        self.assertNotContains(response, 'albumstreambutton" disabled')
+        self.assertContains(response, '>Stream Album (HTML5 pop-up)<')
 
 class AlbumDownloadViewTests(ExordiumUserTests):
     """

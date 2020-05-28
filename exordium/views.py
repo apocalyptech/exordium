@@ -296,7 +296,12 @@ class AlbumView(TitleDetailView):
             len_conductors += 1
         if have_empty_composer:
             len_composers += 1
+        context['show_html5_stream_button'] = False
         for song in songs:
+            # Only show an HTML5 streaming button if we have at least one
+            # non-Ogg-Opus track.
+            if song.filetype != Song.OPUS:
+                context['show_html5_stream_button'] = True
             song.set_album_secondary_artist_counts(num_groups=len_groups,
                 num_conductors=len_conductors,
                 num_composers=len_composers)
@@ -325,6 +330,7 @@ class AlbumDownloadView(TitleDetailView):
     def get_context_data(self, **kwargs):
         context = super(AlbumDownloadView, self).get_context_data(**kwargs)
         context['show_download_button'] = False
+        context['show_html5_stream_button'] = any([s.filetype != Song.OPUS for s in Song.objects.filter(album=self.object)])
         (groups, have_empty_group, conductors, have_empty_conductor,
             composers, have_empty_composer) = self.object.get_secondary_artists_tuple()
         if App.support_zipfile():
