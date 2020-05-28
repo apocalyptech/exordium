@@ -163,7 +163,7 @@ that have been made during its development (and in my own music library).
   been very unimportant to me.  It'd probably be good to support them
   anyway, though.
 
-- Exordium only supports mp3, ogg vorbus, ogg opus, and m4a currently,
+- Exordium only supports mp3, ogg vorbis, ogg opus, and m4a currently,
   though other support should be reasonably simple to add in, so long as
   Mutagen supports the format.
 

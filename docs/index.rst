@@ -26,7 +26,7 @@ Introduction
 ------------
 
 Exordium is a read-only web-based music library system for Django.
-Exordium will read mp3, ogg vorbus, ogg opus, and m4a files from the host
+Exordium will read mp3, ogg vorbis, ogg opus, and m4a files from the host
 filesystem and provide an online interface to browse, download (as
 zipfiles or otherwise), and stream.
 
