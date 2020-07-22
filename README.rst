@@ -20,8 +20,8 @@ Exordium a generic solution.
 
 Detailed information about what Exordium expects from your library, and its
 assumptions and limitations, can be found either in the ``docs/`` directory,
-`Exordium's Website <http://apocalyptech.com/exordium>`_, or
-`exordium.readthedocs.io <http://exordium.readthedocs.io/>`_.  It's
+`Exordium's Website <https://apocalyptech.com/exordium>`_, or
+`exordium.readthedocs.io <https://exordium.readthedocs.io/>`_.  It's
 highly recommended to at least glance through these to get a feel for how
 Exordium will function.
 
@@ -64,7 +64,7 @@ PyPI also hosts Python packages for Exordium in both source and
 `Wheel <https://pypi.python.org/pypi/wheel>`_ formats, at 
 https://pypi.python.org/pypi/django-exordium/.  Source and Wheel downloads
 of all released versions can also be found at Exordium's hompeage at
-http://apocalyptech.com/exordium/.
+https://apocalyptech.com/exordium/.
 
 Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_,
 and sourcecode archives of released versions can be found there at

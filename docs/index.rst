@@ -55,7 +55,7 @@ PyPI also hosts Python packages for Exordium in both source and
 `Wheel <https://pypi.python.org/pypi/wheel>`_ formats, at 
 https://pypi.python.org/pypi/django-exordium/.  Source and Wheel downloads
 of all released versions can also be found at Exordium's hompeage at
-http://apocalyptech.com/exordium/.
+https://apocalyptech.com/exordium/.
 
 Exordium sourcecode is hosted at `GitHub <https://github.com/apocalyptech/exordium/>`_,
 and sourcecode archives of released versions can be found there at
@@ -64,8 +64,8 @@ https://github.com/apocalyptech/exordium/releases
 Documentation is included in the project's ``docs/`` directory, but
 is also uploaded to:
 
-- http://apocalyptech.com/exordium/
-- http://exordium.readthedocs.io/
+- https://apocalyptech.com/exordium/
+- https://exordium.readthedocs.io/
 
 Detailed Documentation
 ----------------------
