@@ -1,3 +1,3 @@
 default_app_config = 'exordium.apps.ExordiumConfig'
 
-__version__ = '1.3.4'
+__version__ = '1.3.5b1'
