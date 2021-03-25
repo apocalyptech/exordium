@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Exordium'
-copyright = '2016-2020, CJ Kucera'
+copyright = '2016-2021, CJ Kucera'
 author = 'CJ Kucera'
 
 # The version info for the project you're documenting, acts as replacement for

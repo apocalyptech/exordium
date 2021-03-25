@@ -1,9 +1,12 @@
-1.3.4 (UNRELEASED)
+1.3.4 (2021-03-25)
 ------------------
 
 **Bugfixes/Tweaks**
 
-- Nothing Yet
+- Expanded the internal "normalization" character set to handle a bunch
+  more Greek characters specifically, and probably a few others as well.
+  This is used for normalizing filenames in zip downloads, and normalizing
+  search strings.
 
 1.3.3 (2020-05-28)
 ------------------

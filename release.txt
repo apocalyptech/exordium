@@ -6,6 +6,7 @@ Things to check before releasing:
       apocalyptech.com docs)
     * Also update the end copyright year in docs/conf.py, if that's
       changed!
+      * Also in LICENSE.txt
     * Finalized Changelog entries (update the release date!)
 
 To build:

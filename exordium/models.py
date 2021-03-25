@@ -1270,11 +1270,12 @@ class App(object):
     prefixre = re.compile('^((the)\s+)?(.+)$', re.IGNORECASE)
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
-    norm_translation = str.maketrans('äáàâãåëéèêẽïíìîĩöóòôõøüúùûũůÿýỳŷỹðçřğş“”‘’', 'aaaaaaeeeeeiiiiioooooouuuuuuyyyyydcrgs""\'\'')
+    norm_translation = str.maketrans(
+            'äáàâãåάαëéèêẽηήεέïíìîĩiίιöóòôõøοόώωüúùûũůύÿýỳŷỹβçðδğφğγřκλμνπřρşσς$τξχυζ“”‘’',
+            'aaaaaaaaeeeeeeeeeiiiiiiiioooooooooouuuuuuuyyyyybcddgfggrklmnprrsssstxxyz""\'\'')
     norm_translation_filename = str.maketrans(
-        'äÄáÁàÀâÂãÃåÅëËéÉèÈêÊẽẼïÏíÍìÌîÎĩĨİöÖóÓòÒôÔõÕøØüÜúÚùÙûÛũŨůŮÿŸýÝỳỲŷŶỹỸðÐçÇřŘğĞşŞ',
-        'aAaAaAaAaAaAeEeEeEeEeEiIiIiIiIiIIoOoOoOoOoOoOuuuUuUuUuUuUyYyYyYyYyYdDcCrRgGsS'
-    )
+            'äÄáÁàÀâÂãÃåÅάΆαΑëËéÉèÈêÊẽẼηΗήΉεΕέΈïÏíÍìÌîÎĩĨiİίΊιΙöÖóÓòÒôÔõÕøØοΟόΌώΏωΩüÜúÚùÙûÛũŨůŮύΎÿŸýÝỳỲŷŶỹỸβΒçÇðÐδΔğφΦğĞγΓřκΚλΛμΜνΝπΠřŘρΡşŞσΣς$τΤξΞχΧυΥζΖ',
+            'aAaAaAaAaAaAaAaAeEeEeEeEeEeEeEeEeEiIiIiIiIiIiIiIiIoOoOoOoOoOoOoOoOoOoOuuuUuUuUuUuUuUyYyYyYyYyYbBcCdDdDgfFgGgGrkKlLmMnNpPrRrRsSsSsstTxXxXyYzZ')
 
     cover_extensions = ['.png', '.jpg', '.gif']
     image_format_to_mime = {
@@ -1356,7 +1357,8 @@ class App(object):
 
         return name.replace('İ', 'I').lower().translate(App.norm_translation).replace(
             'æ', 'ae').replace('ß', 'ss').replace('þ', 'th').replace(
-            'œ', 'oe').replace('&', 'and')
+            'œ', 'oe').replace('&', 'and').replace('θ', 'th').replace(
+            'ψ', 'ps')
 
         #lower = name.lower()
         #lower = lower.translate(App.norm_translation).replace(
@@ -1378,7 +1380,9 @@ class App(object):
             'æ', 'ae').replace('Æ', 'Ae').replace(
             'þ', 'th').replace('Þ', 'Th').replace(
             'œ', 'oe').replace('Œ', 'Oe').replace(
-            '&', 'and').replace('ß', 'ss')
+            '&', 'and').replace('ß', 'ss').replace(
+            'Θ', 'Th').replace('θ', 'th').replace(
+            'Ψ', 'Ps').replace('ψ', 'ps')
         name = re.sub('[ \\\/=<>]', '_', name)
         name = re.sub('[\'"\[\]\(\)\?\%\$\!\.\+,:;#]', '', name)
         return re.sub('[^a-zA-Z0-9_-]', '', name)
