@@ -15,6 +15,11 @@ bitrot:
   works properly in browsers which deny mixed SSL-and-non-SSL
   content) but http-based URLs for .m3u (since my https vhost
   requires auth, which would cause problems for playback apps).
+* I think I'd like to include "slug"-like text in album URLs.
+  Would put 'em after the ID, and they'd be optional (and
+  completely ignored by the album view).  Would make sharing
+  links a bit friendlier, though.  Make sure to include a
+  maximum length, if I do it...
 
 Things which may or may not make that cut:
 
