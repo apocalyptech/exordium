@@ -9,6 +9,12 @@ bitrot:
   Something to think about...
 * Upgrade to a newer MariaDB so we can upgrade to a newer
   Django...
+* Allow specifying a different "base" URL for media for .m3u
+  streams versus HTML5 streams -- would be nice in my own case
+  to be able to provide https-based URLs for HTML5 (so jPlayer
+  works properly in browsers which deny mixed SSL-and-non-SSL
+  content) but http-based URLs for .m3u (since my https vhost
+  requires auth, which would cause problems for playback apps).
 
 Things which may or may not make that cut:
 
