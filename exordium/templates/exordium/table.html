@@ -40,7 +40,7 @@
     {% endif %}
     {% block pagination.cardinality %}
         <li class="cardinality">
-            {% if total != count %}{% blocktrans %}{{ count }} of {{ total }}{% endblocktrans %}{% else %}{{ total }}{% endif %} {% if total == 1 %}{{ table.data.verbose_name }}{% else %}{{ table.data.verbose_name_plural }}{% endif %}
+            {% if table.paginator.count != table.page|length %}{% blocktranslate with total=table.paginator.count count=table.page|length %}{{ count }} of {{ total }}{% endblocktranslate %}{% else %}{{ table.paginator.count }}{% endif %} {% if table.paginator.count == 1 %}{{ table.data.verbose_name }}{% else %}{{ table.data.verbose_name_plural }}{% endif %}
         </li>
     {% endblock pagination.cardinality %}
 </ul>

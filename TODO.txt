@@ -20,6 +20,11 @@ bitrot:
   completely ignored by the album view).  Would make sharing
   links a bit friendlier, though.  Make sure to include a
   maximum length, if I do it...
+* Direct links to pages with django-tables2 (instead of just
+  next/prev) -- the v2.4.1 that I'm using now while testing el8
+  hosting has a nice solution for that built-in.  Will probably
+  keep my own `X of Y` modifications in place, but pull those
+  in.
 
 Things which may or may not make that cut:
 
@@ -30,8 +35,6 @@ Things which may or may not make that cut:
   on the artist view page.
 * Might be nice to have a mobile-optimized CSS
 * Split tests into multiple files?  That file is huge.
-* Direct links to pages with django-tables2 (instead of just
-  next/prev)
 * Ability to specify subdirectories when doing add/update
   actions, to only process a subset of the library.
 * http://reinout.vanrees.org/weblog/2014/05/19/context.html
