@@ -7,7 +7,21 @@ from django.db.models import Q
 import django_tables2 as tables
 from .models import Artist, Album, Song
 
-class ArtistTable(tables.Table):
+class ExordiumTable(tables.Table):
+    """
+    Wrapper for our tables which ensures that the data columns have a CSS class defined
+    which equals the column name.  This was removed in django-tables2 v2.0.0, and this
+    is the suggested replacement for it.
+
+    https://github.com/jieter/django-tables2/blob/master/CHANGELOG.md#breaking-changes-200
+    """
+
+    def get_column_class_names(self, classes_set, bound_column):
+        classes_set = super().get_column_class_names(classes_set, bound_column)
+        classes_set.add(bound_column.name)
+        return classes_set
+
+class ArtistTable(ExordiumTable):
 
     name = tables.LinkColumn('exordium:artist', args=[tables.A('normname')])
     albums = tables.Column(
@@ -54,7 +68,7 @@ class ArtistTable(tables.Table):
         self.view = kwargs.pop('view', None)
         super(ArtistTable, self).__init__(*args, **kwargs)
 
-class AlbumTable(tables.Table):
+class AlbumTable(ExordiumTable):
 
     #artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
     artist = tables.TemplateColumn(
@@ -126,7 +140,7 @@ class AlbumTable(tables.Table):
         attrs = {'class': 'paleblue', 'id': 'albumtable'}
         fields = ['img', 'artist', 'name', 'tracks', 'time', 'year', 'time_added']
 
-class SongTable(tables.Table):
+class SongTable(ExordiumTable):
 
     #artist = tables.LinkColumn('exordium:artist', args=[tables.A('artist.pk')])
     artist = tables.TemplateColumn(
