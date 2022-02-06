@@ -1,7 +1,10 @@
-1.3.5 (unreleased)
+1.4.0 (unreleased)
 ------------------
 
-- *Nothing yet...*
+**Bugfixes/Tweaks**
+
+- Updated for Django 4.x compat, along with more recent versions of our
+  other dependencies.
 
 1.3.4 (2021-03-25)
 ------------------

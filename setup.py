@@ -23,11 +23,11 @@ setup(
     author='CJ Kucera',
     author_email='pez@apocalyptech.com',
     install_requires=[
-        'Django >= 1.11',
-        'mutagen >= 1.39',
-        'Pillow >= 4.3.0',
-        'django-tables2 >= 1.17.1, < 2',
-        'django-dynamic-preferences >= 1.5',
+        'Django ~= 4.0',
+        'mutagen ~= 1.45',
+        'Pillow ~= 9.0',
+        'django-tables2 ~= 2.4',
+        'django-dynamic-preferences ~= 1.11',
     ],
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
