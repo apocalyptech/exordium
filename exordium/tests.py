@@ -6,7 +6,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from django.contrib.auth.models import User
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 
 from dynamic_preferences.registries import global_preferences_registry
 

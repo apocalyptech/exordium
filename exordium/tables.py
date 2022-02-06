@@ -2,7 +2,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4:
 
 import datetime
-from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.templatetags.static import static
 from django.db.models import Q
 import django_tables2 as tables
 from .models import Artist, Album, Song
