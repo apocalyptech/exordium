@@ -38,8 +38,8 @@ future.
 Requirements
 ------------
 
-Exordium requires at least Python 3.4 *(tested in 3.4 through 3.9)*,
-and Django 4.0.  It requires the following additional third-party modules:
+Exordium requires at least Python 3.8 *(tested on 3.9)*, and Django 4.0.
+It requires the following additional third-party modules:
 
 - mutagen (built on 1.45)
 - Pillow (built on 9.0)
