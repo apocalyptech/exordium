@@ -18,10 +18,18 @@ class LibraryPath(StringPreference):
 @global_preferences_registry.register
 class LibraryUrl(StringPreference):
     section = exordium
-    name = 'media_url'
+    name = 'media_url_html5'
     default = 'http://localhost/media'
-    verbose_name = 'Exordium Media URL'
-    help_text = 'What is a direct URL to the media directory?'
+    verbose_name = 'Exordium Media URL for HTML5'
+    help_text = 'What is a direct URL to the media directory, for HTML5 streaming?'
+
+@global_preferences_registry.register
+class LibraryUrl(StringPreference):
+    section = exordium
+    name = 'media_url_m3u'
+    default = 'http://localhost/media'
+    verbose_name = 'Exordium Media URL for m3u'
+    help_text = 'What is a direct URL to the media directory, for m3u playlists?'
 
 @global_preferences_registry.register
 class ZipfileCreationPath(StringPreference):

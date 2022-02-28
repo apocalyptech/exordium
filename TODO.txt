@@ -1,6 +1,10 @@
 Things I want to get done before inevitably letting the project
 bitrot:
 
+* CentOS docs need updating to Rocky/Alma/whatever
+* Would be nice to have unit tests for our media_url preference
+  split data migration.  Perhaps: https://github.com/wemake-services/django-test-migrations
+  * Relatedly, should I code in a backwards migration for that?
 * When we added Opus support, we did various checks to make
   sure that we don't try to stream Opus files w/ the HTML5
   jPlayer, since that doesn't support Opus.  We should probably

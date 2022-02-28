@@ -29,13 +29,23 @@ Exordium Library Base Path
     best if the user running Django does not have write access into
     this directory, anyway.
 
-Exordium Media URL
+Exordium Media URL for HTML5
     This is the URL which provides direct web access to the files
-    contained in the library base path, above.  This will most
-    likely be a static directory configured in Apache or whatever
-    other frontend web server is in use.  Technically this option
-    does not have to be specified for Exordium to work, but track
-    downloading and music streaming won't work unless it is.
+    contained in the library base path, above, and is used for the
+    HTML5 streaming player.  This will most likely be a static
+    directory configured in Apache or whatever other frontend web
+    server is in use.  Technically this option does not have to be
+    specified for Exordium to work, but music streaming won't work
+    unless it is.  Note that if your base URL for Exordium is https,
+    this will have to be https as well, to avoid browser errors.
+
+Exordium Media URL for m3u
+    This is the URL which provides direct web access to the files
+    contained in the library base path, above, and is used for the
+    m3u playlists and direct song downloads.  Technically this option
+    does not have to be specified for Exordium to work, but m3u
+    playlists and direct song downloads won't work unless it is.
+    This URL can be http even if the main site is https.
 
 Exordium Zip File Generation Path
     For full-album downloads, Exordium will create a zipfile on
@@ -50,7 +60,9 @@ Exordium Zip File Retrieval URL
     Similar to "Exordium Media URL" above, this is the URL to the
     zipfile generation path, typically configured via Apache or
     whatever the frontend webserver is.  Without this option,
-    the button for album zipfile downloads will be hidden.
+    the button for album zipfile downloads will be hidden.  Note
+    that if your base URL for Exordium is https, this will have to
+    be https as well, to avoid browser errors.
 
 Library Upkeep
 --------------

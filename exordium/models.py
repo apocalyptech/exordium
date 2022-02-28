@@ -948,13 +948,21 @@ class Song(models.Model):
         # Now return the artist and album we got from the new tags.
         return (artist_full, group, conductor, composer, album, self)
 
-    def get_download_url(self):
+    def get_download_url_html5(self):
         """
         Returns a URL direct to this track for downloading, based on
-        our prefs.
+        the HTML5-streaming preference.
         """
         App.ensure_prefs()
-        return '%s/%s' % (App.prefs['exordium__media_url'], self.filename)
+        return '%s/%s' % (App.prefs['exordium__media_url_html5'], self.filename)
+
+    def get_download_url_m3u(self):
+        """
+        Returns a URL direct to this track for downloading, based on
+        the m3u-playlist preference.
+        """
+        App.ensure_prefs()
+        return '%s/%s' % (App.prefs['exordium__media_url_m3u'], self.filename)
 
     def set_album_secondary_artist_counts(self, num_groups=0, num_conductors=0, num_composers=0):
         """

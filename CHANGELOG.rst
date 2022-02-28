@@ -1,6 +1,14 @@
 1.4.0 (unreleased)
 ------------------
 
+**New Features**
+
+- Split "Exordium Media URL" preference into two: one for HTML5 streaming,
+  and one for m3u playlists and direct track downloads.
+
+  - Migration will automatically carry over the previous "Media URL" value
+    to both new preferences.
+
 **Bugfixes/Tweaks**
 
 - Updated for Django 4.x compat, along with more recent versions of our

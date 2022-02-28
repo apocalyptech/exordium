@@ -61,7 +61,8 @@ class ExordiumTests(TestCase):
         self.library_path = tempfile.mkdtemp()
         self.prefs = global_preferences_registry.manager()
         self.prefs['exordium__base_path'] = self.library_path
-        self.prefs['exordium__media_url'] = 'http://testserver-media/music'
+        self.prefs['exordium__media_url_html5'] = 'http://testserver-media/html5music'
+        self.prefs['exordium__media_url_m3u'] = 'http://testserver-media/m3umusic'
 
         # We have one test which alters the following value, which
         # will stay changed between tests unless we restore it.
@@ -8330,7 +8331,8 @@ class ArtistViewTests(ExordiumTests):
         self.assertContains(response, 'Songs by %s' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
-        self.assertContains(response, song.get_download_url())
+        self.assertContains(response, song.get_download_url_html5())
+        self.assertContains(response, song.get_download_url_m3u())
         self.assertContains(response, '1 album')
         self.assertContains(response, '1 song')
 
@@ -8369,7 +8371,9 @@ class ArtistViewTests(ExordiumTests):
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:albumart', args=(album.pk, 'list',)))
-        self.assertContains(response, song.get_download_url())
+        # These will show up once for HTML5, and once for direct download
+        self.assertContains(response, song.get_download_url_html5())
+        self.assertContains(response, song.get_download_url_m3u())
         self.assertNotContains(response, 'sort=tracknum')
         self.assertContains(response, 'song-sort=album')
 
@@ -8422,10 +8426,12 @@ class ArtistViewTests(ExordiumTests):
         self.assertContains(response, reverse('exordium:artist', args=(artist_1.normname,)))
         # This check is a bit silly since it's already shown up above
         self.assertContains(response, reverse('exordium:album', args=(album_1.pk,)))
-        self.assertContains(response, song_1.get_download_url())
+        self.assertContains(response, song_1.get_download_url_html5())
+        self.assertContains(response, song_1.get_download_url_m3u())
         for song in [song_2, song_3, song_4]:
             self.assertNotContains(response, str(song))
-            self.assertNotContains(response, song.get_download_url())
+            self.assertNotContains(response, song.get_download_url_html5())
+            self.assertNotContains(response, song.get_download_url_m3u())
 
         # Shouldn't see any links to our other two artists
         for artist in [artist_2, artist_3]:
@@ -8482,10 +8488,12 @@ class ArtistViewTests(ExordiumTests):
             self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
         for song in Song.objects.filter(artist=artist):
             self.assertContains(response, str(song.title))
-            self.assertContains(response, song.get_download_url())
+            self.assertContains(response, song.get_download_url_html5())
+            self.assertContains(response, song.get_download_url_m3u())
         for song in Song.objects.exclude(artist=artist):
             self.assertNotContains(response, str(song.title))
-            self.assertNotContains(response, song.get_download_url())
+            self.assertNotContains(response, song.get_download_url_html5())
+            self.assertNotContains(response, song.get_download_url_m3u())
 
     def test_classical_as_conductor(self):
         """
@@ -8524,9 +8532,11 @@ class ArtistViewTests(ExordiumTests):
             self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
 
         self.assertNotContains(response, str(song_1))
-        self.assertNotContains(response, song_1.get_download_url())
+        self.assertNotContains(response, song_1.get_download_url_html5())
+        self.assertNotContains(response, song_1.get_download_url_m3u())
         self.assertContains(response, str(song_2))
-        self.assertContains(response, song_2.get_download_url())
+        self.assertContains(response, song_2.get_download_url_html5())
+        self.assertContains(response, song_2.get_download_url_m3u())
 
     def test_classical_as_conductor_various(self):
         """
@@ -8569,9 +8579,11 @@ class ArtistViewTests(ExordiumTests):
             self.assertNotContains(response, reverse('exordium:artist', args=(artist.normname,)))
 
         self.assertNotContains(response, str(song_1))
-        self.assertNotContains(response, song_1.get_download_url())
+        self.assertNotContains(response, song_1.get_download_url_html5())
+        self.assertNotContains(response, song_1.get_download_url_m3u())
         self.assertContains(response, str(song_2))
-        self.assertContains(response, song_2.get_download_url())
+        self.assertContains(response, song_2.get_download_url_html5())
+        self.assertContains(response, song_2.get_download_url_m3u())
 
     def test_pagination(self):
         """
@@ -9250,10 +9262,14 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertEqual(len(response.context['songs'].data), 120)
         for num in range(100):
             self.assertContains(response, '%s<' % (songs[num]))
-            self.assertContains(response, '"%s"' % (songs[num].get_download_url()))
+            self.assertContains(response, "'%s'" % (songs[num].get_download_url_html5()))
+            self.assertContains(response, '"%s"' % (songs[num].get_download_url_m3u()))
         for num in range(100, 120):
             self.assertNotContains(response, '%s<' % (songs[num]))
-            self.assertNotContains(response, '"%s"' % (songs[num].get_download_url()))
+            # Note that our album-streaming button *will* have all html5 results in there,
+            # even stuff from future pages
+            self.assertContains(response, "'%s'" % (songs[num].get_download_url_html5()))
+            self.assertNotContains(response, '"%s"' % (songs[num].get_download_url_m3u()))
 
         # test page 2
         response = self.client.get(reverse('exordium:album', args=(album.pk,)), {'page': 2})
@@ -9263,10 +9279,13 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertEqual(len(response.context['songs'].data), 120)
         for num in range(100):
             self.assertNotContains(response, '%s<' % (songs[num]))
-            self.assertNotContains(response, '"%s"' % (songs[num].get_download_url()))
+            # Likewise -- the album-streaming button will have everything
+            self.assertContains(response, "'%s'" % (songs[num].get_download_url_html5()))
+            self.assertNotContains(response, '"%s"' % (songs[num].get_download_url_m3u()))
         for num in range(100, 120):
             self.assertContains(response, '%s<' % (songs[num]))
-            self.assertContains(response, '"%s"' % (songs[num].get_download_url()))
+            self.assertContains(response, "'%s'" % (songs[num].get_download_url_html5()))
+            self.assertContains(response, '"%s"' % (songs[num].get_download_url_m3u()))
 
     def test_play_button_single(self):
         """
@@ -9822,7 +9841,7 @@ class AlbumM3UDownloadViewTests(ExordiumTests):
         self.assertContains(response, str(song.artist))
         self.assertContains(response, str(song.title))
         self.assertContains(response, '(%s)' % (str(song.album)))
-        self.assertContains(response, song.get_download_url())
+        self.assertContains(response, song.get_download_url_m3u())
 
     def test_three_track_album(self):
         """
@@ -9851,7 +9870,7 @@ class AlbumM3UDownloadViewTests(ExordiumTests):
         for song in Song.objects.all():
             self.assertContains(response, str(song.artist))
             self.assertContains(response, str(song.title))
-            self.assertContains(response, song.get_download_url())
+            self.assertContains(response, song.get_download_url_m3u())
 
 class SearchViewTests(ExordiumTests):
     """
@@ -10549,7 +10568,8 @@ class LibraryViewTests(ExordiumUserTests):
         # We should show our library config, and not have zipfile info
         App.ensure_prefs()
         self.assertContains(response, App.prefs['exordium__base_path'])
-        self.assertContains(response, App.prefs['exordium__media_url'])
+        self.assertContains(response, App.prefs['exordium__media_url_html5'])
+        self.assertContains(response, App.prefs['exordium__media_url_m3u'])
         self.assertNotContains(response, 'Zipfile Support:</strong> Yes')
         self.assertContains(response, 'Zipfile Support:</strong> No')
 

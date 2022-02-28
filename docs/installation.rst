@@ -60,20 +60,30 @@ Once Django is installed and running:
 
    - **Exordium Library Base Path**: This is what defines where your music
      library can be found on disk.
-   - **Exordium Media URL**: This is the base URL which provides direct
-     access to the files in your library.  Omit the trailing slash, though
-     things will probably work fine even if it's in there.  Without this
-     set properly, song download links will be broken and the streaming
-     player will not work properly.
+   - **Exordium Media URL for HTML5**: This is the base URL which provides
+     direct access to the files in your library, used by the HTML streaming
+     player.  Omit the trailing slash, though things will probably work fine
+     even if it's in there.  Without this set properly, the streaming
+     player will not work properly.  Note that if your base URL for Exordium
+     is https, this will have to be https as well, to avoid browser errors.
+   - **Exordium Media URL for m3u**: This is the base URL which provides
+     direct access to the files in your library, used by the m3u Playlist
+     functionality, and also the direct song download links when enumerating
+     tracks.  This can be the same as the HTML5 URL.  Omit the slash, though
+     things will probably work fine even if it's in there.  Without this set
+     properly, m3u playlists and direct track downloads will not work
+     properly.  This URL can be http even if the main site is https.
    - **Exordium Zip File Generation Path**: Path on the filesystem to store
      zipfile album downloads.  This is the one location in which the user
      running Django needs write access.
    - **Exordium Zip File Retrieval URL**: This is the base URL providing
-     web access to that zipfile directory.
+     web access to that zipfile directory.  Note that if your base URL for
+     Exordium is https, this will have to be https as well, to avoid
+     browser errors.
 
    Without the last two options, Exordium will still function fine, but the
    album-download button will not be rendered.  Exordium will also function
-   without the "*Exordium Media URL*" option being set properly, though
+   without the "*Exordium Media URL*" options being set properly, though
    with the caveats mentioned above.
 
 10. If Zipfile downloads are configured, a process should be put into place

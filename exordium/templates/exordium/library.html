@@ -3,7 +3,8 @@
 
 {% block body %}
 <p><strong>Base Path:</strong> {{ base_path }}<br />
-<strong>Media URL Prefix:</strong> {{ media_url }}<br />
+<strong>Media URL Prefix (for HTML5 streaminmg):</strong> {{ media_url_html5 }}<br />
+<strong>Media URL Prefix (for m3u playlists):</strong> {{ media_url_m3u }}<br />
 {% if support_zipfile %}
 <strong>Zipfile Support:</strong> Yes<br />
 <strong>Zipfile Path:</strong> {{ zipfile_path }}<br />

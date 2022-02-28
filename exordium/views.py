@@ -402,7 +402,8 @@ class LibraryView(TitleTemplateView):
         context = super(LibraryView, self).get_context_data(**kwargs)
         App.ensure_prefs()
         context['base_path'] = App.prefs['exordium__base_path']
-        context['media_url'] = App.prefs['exordium__media_url']
+        context['media_url_html5'] = App.prefs['exordium__media_url_html5']
+        context['media_url_m3u'] = App.prefs['exordium__media_url_m3u']
         context['support_zipfile'] = App.support_zipfile()
         context['zipfile_url'] = App.prefs['exordium__zipfile_url']
         context['zipfile_path'] = App.prefs['exordium__zipfile_path']

@@ -1,5 +1,5 @@
 {% autoescape off %}#EXTM3U
 {% for song in album.get_songs_ordered %}#EXTINF:{{ song.length }},{{ song.artist }} / {{ song.title }} ({{ song.album }})
-{{ song.get_download_url }}
+{{ song.get_download_url_m3u }}
 {% endfor %}{% endautoescape %}
 
