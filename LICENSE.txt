@@ -10,7 +10,7 @@ under the MIT license (see LICENSE-jQuery.txt)
 Exordium License:
 -------------------------------------------------------------------------------
 
-Copyright (c) 2016-2021, Christopher J. Kucera
+Copyright (c) 2016-2022, Christopher J. Kucera
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
