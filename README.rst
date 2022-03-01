@@ -49,6 +49,9 @@ It requires the following additional third-party modules:
   - six (built on 1.16.0)
   - persisting-theory (built on 0.2.1)
 
+One unit test module additionally requires django-test-migrations (tested
+with 1.2.0), but that's not required to run it.
+
 Getting Exordium
 ----------------
 

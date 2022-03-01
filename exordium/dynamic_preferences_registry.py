@@ -16,7 +16,7 @@ class LibraryPath(StringPreference):
     help_text = 'Where on the filesystem can music files be found?'
 
 @global_preferences_registry.register
-class LibraryUrl(StringPreference):
+class LibraryUrlHTML5(StringPreference):
     section = exordium
     name = 'media_url_html5'
     default = 'http://localhost/media'
@@ -24,7 +24,7 @@ class LibraryUrl(StringPreference):
     help_text = 'What is a direct URL to the media directory, for HTML5 streaming?'
 
 @global_preferences_registry.register
-class LibraryUrl(StringPreference):
+class LibraryUrlM3U(StringPreference):
     section = exordium
     name = 'media_url_m3u'
     default = 'http://localhost/media'
