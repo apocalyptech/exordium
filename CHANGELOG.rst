@@ -13,6 +13,7 @@
 
 - Updated for Django 4.x compat, along with more recent versions of our
   other dependencies.
+- Split unit tests into multiple files
 
 1.3.4 (2021-03-25)
 ------------------
