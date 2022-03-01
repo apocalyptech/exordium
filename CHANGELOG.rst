@@ -28,7 +28,7 @@
 1.3.3 (2020-05-28)
 ------------------
 
-**Bugfixes/Tweaks**
+**New Features**
 
 - Added support for Ogg Opus files (``.opus``)
 
