@@ -8,7 +8,7 @@ import unittest
 # specify a different set of preparation commands per test, so we have
 # to use a separate class for each test
 
-class TestMediaURLPrefSplit_Upgrade(MigratorTestCase):
+class TestMediaURLPrefSplit_Upgrade(MigratorTestCase):  # pragma: no cover
 
     migrate_from = ('exordium', '0003_add_opus_support')
     migrate_to = ('exordium', '0004_media_url_split')
@@ -42,7 +42,7 @@ class TestMediaURLPrefSplit_Upgrade(MigratorTestCase):
         self.assertEqual(html5.raw_value, 'http://original.url')
         self.assertEqual(m3u.raw_value, 'http://original.url')
 
-class TestMediaURLPrefSplit_AlreadyVisited(MigratorTestCase):
+class TestMediaURLPrefSplit_AlreadyVisited(MigratorTestCase):  # pragma: no cover
 
     migrate_from = ('exordium', '0003_add_opus_support')
     migrate_to = ('exordium', '0004_media_url_split')
@@ -88,7 +88,7 @@ class TestMediaURLPrefSplit_AlreadyVisited(MigratorTestCase):
         self.assertEqual(html5.raw_value, 'http://html5.url')
         self.assertEqual(m3u.raw_value, 'http://m3u.url')
 
-class TestMediaURLPrefSplit_EmptyPrefs(MigratorTestCase):
+class TestMediaURLPrefSplit_EmptyPrefs(MigratorTestCase):  # pragma: no cover
 
     migrate_from = ('exordium', '0003_add_opus_support')
     migrate_to = ('exordium', '0004_media_url_split')

@@ -2,7 +2,7 @@
 
 from django.db import migrations
 
-def do_media_url_split(apps, schema_editor):
+def do_media_url_split(apps, schema_editor):  # pragma: no cover
     GlobalPreferenceModel = apps.get_model('dynamic_preferences', 'GlobalPreferenceModel')
 
     # Grab the existing prefs from the DB
