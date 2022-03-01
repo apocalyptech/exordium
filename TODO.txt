@@ -38,7 +38,6 @@ Things which may or may not make that cut:
   only really an issue on Songs, maybe just use 500 like we do
   on the artist view page.
 * Might be nice to have a mobile-optimized CSS
-* Split tests into multiple files?  That file is huge.
 * Ability to specify subdirectories when doing add/update
   actions, to only process a subset of the library.
 * http://reinout.vanrees.org/weblog/2014/05/19/context.html
