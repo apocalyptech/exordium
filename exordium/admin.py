@@ -15,7 +15,7 @@ class SongInline(admin.TabularInline):
 
     # Purposefully not testing this 'cause I'm not sure how,
     # and the admin functionality is secondary at best
-    def has_add_permission(self, request):  # pragma: no cover
+    def has_add_permission(self, request, obj):  # pragma: no cover
         return False
 
 class AlbumInline(admin.TabularInline):
@@ -30,7 +30,7 @@ class AlbumInline(admin.TabularInline):
 
     # Purposefully not testing this 'cause I'm not sure how,
     # and the admin functionality is secondary at best
-    def has_add_permission(self, request):  # pragma: no cover
+    def has_add_permission(self, request, obj):  # pragma: no cover
         return False
 
 class AlbumArtInline(admin.TabularInline):
@@ -45,7 +45,7 @@ class AlbumArtInline(admin.TabularInline):
 
     # Purposefully not testing this 'cause I'm not sure how,
     # and the admin functionality is secondary at best
-    def has_add_permission(self, request):  # pragma: no cover
+    def has_add_permission(self, request, obj):  # pragma: no cover
         return False
 
 class ArtistAdmin(admin.ModelAdmin):
