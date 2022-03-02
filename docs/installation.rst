@@ -34,12 +34,12 @@ Once Django is installed and running:
 3. Include the exordium URLconf in your project ``urls.py`` like this::
 
      path('exordium/', include('exordium.urls')),
-
-4. Run ``python manage.py migrate exordium`` to create the Exordium models.
    
-5. Run ``python manage.py migrate dynamic_preferences`` to create the
+4. Run ``python manage.py migrate dynamic_preferences`` to create the
    Dynamic Preferences models, if this wasn't already configured on your
    Django install.
+
+5. Run ``python manage.py migrate exordium`` to create the Exordium models.
 
 6. Run ``python manage.py loaddata --app exordium initial_data`` to load
    some initial data into the database.  *(This is not actually strictly
