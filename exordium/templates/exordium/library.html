@@ -23,12 +23,12 @@
     <blockquote class="update_form">
         <p>
         <strong>Update Type:</strong><br />
-        <input type="radio" name="type" value="add" checked /> Just Add New Music<br />
-        <input type="radio" name="type" value="update" /> Full Update (Add/Update/Clean)
+        <input type="radio" name="type" value="add" id="add_button" checked /> <label for="add_button">Just Add New Music</label><br />
+        <input type="radio" name="type" value="update" id="update_button" /> <label for="update_button">Full Update (Add/Update/Clean)</label>
         </p>
         <p>
         <strong>Options:</strong><br />
-        <input type="checkbox" name="debug" value="yes" /> Include debug output
+        <input type="checkbox" name="debug" value="yes" id="debug_button" /> <label for="debug_button">Include debug output</label>
         </p>
         <input type="submit" value="Start Process" />
     </blockquote>
