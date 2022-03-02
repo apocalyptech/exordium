@@ -92,7 +92,7 @@ running.
 
 3. Include the exordium URLconf in your project ``urls.py`` like this::
 
-     url(r'^exordium/', include('exordium.urls')),
+     path('exordium/', include('exordium.urls')),
 
 4. Run ``python manage.py migrate exordium`` to create the Exordium models.
    

@@ -235,12 +235,13 @@ One more thing I've done which required some Googling to figure out is that I wa
 Django's base project URL to redirect to Exordium, since Exordium is currently my
 only Django app.  My project's ``urls.py`` looks like this, now, to support that::
 
-    from django.conf.urls import include, url
     from django.contrib import admin
+    from django.urls import path, re_path, include
     from django.views.generic.base import RedirectView
 
     urlpatterns = [
-        url(r'^/?$', RedirectView.as_view(pattern_name='exordium:index')),
-        url(r'^exordium/', include('exordium.urls')),
-        url(r'^admin/', admin.site.urls),
+        re_path(r'^$', RedirectView.as_view(pattern_name='exordium:index')),
+        path('admin/', admin.site.urls),
+        path('exordium/', include('exordium.urls')),
     ]
+
