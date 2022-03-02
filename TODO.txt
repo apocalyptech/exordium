@@ -8,14 +8,6 @@ bitrot:
   have an "is_streamable" method on the Song class, though,
   rather than just checking for Opus all over the place.
   Something to think about...
-* Upgrade to a newer MariaDB so we can upgrade to a newer
-  Django...
-* Allow specifying a different "base" URL for media for .m3u
-  streams versus HTML5 streams -- would be nice in my own case
-  to be able to provide https-based URLs for HTML5 (so jPlayer
-  works properly in browsers which deny mixed SSL-and-non-SSL
-  content) but http-based URLs for .m3u (since my https vhost
-  requires auth, which would cause problems for playback apps).
 * I think I'd like to include "slug"-like text in album URLs.
   Would put 'em after the ID, and they'd be optional (and
   completely ignored by the album view).  Would make sharing
