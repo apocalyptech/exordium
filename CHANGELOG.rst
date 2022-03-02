@@ -16,6 +16,8 @@
 - Split unit tests into multiple files
 - Added HTML <label> entries for radio/checkbox text on Library Upkeep page,
   so the labels themselves are clickable instead of just the buttons.
+- Link directly to Exordium preferences in Global Preferences, rather than
+  just to the main Global Preferences screen.
 
 1.3.4 (2021-03-25)
 ------------------

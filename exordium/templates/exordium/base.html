@@ -66,7 +66,7 @@ function jplayerOpen() {
 <div class="adminlinks">
 {% if request.user.is_staff %}
     <p>Administrative Links</p>
-    <p><a href="{% url 'admin:dynamic_preferences_globalpreferencemodel_changelist' %}">Library Configuration</a></p>
+    <p><a href="{% url 'admin:dynamic_preferences_globalpreferencemodel_changelist' %}?section=exordium">Library Configuration</a></p>
     <p><a href="{% url 'exordium:library' %}">Library Upkeep</a></p>
     <p><a href="{% url 'admin:index' %}">Django Admin</a></p>
 {% else %}
