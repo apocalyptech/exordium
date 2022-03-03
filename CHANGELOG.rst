@@ -14,6 +14,9 @@
     its own COOP headers.  Or:
   - Configure your webserver to add ``Cross-Origin-Opener-Policy: same-origin``
     to static file delivery.
+  - If your static content isn't served from the same protocol/hostname/port
+    as Django itself, you will likely have to set either Django or your
+    static files' value to ``unsafe-none`` instead.
 
 - The "Exordium Media URL" preference has been split into two separate
   preferences: one for HTML5 streaming, and one for m3u playlists and

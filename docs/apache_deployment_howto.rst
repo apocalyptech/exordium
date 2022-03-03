@@ -236,6 +236,14 @@ COOP Header
     implying that ``<Location>`` isn't a valid place to put the ``Header``
     directive, it seems to work just fine for me.
 
+Cross Origin Opener Policy Headers
+----------------------------------
+
+One further note about the COOP headers: if your static content isn't served
+from the same protocol/hostname/port as Django itself, you will likely have to
+set either Django or your static files' value to ``unsafe-none``, instead.  I'm
+not sure which exactly would be required, in that case.
+
 Apache Configuration: mp3/zipfile access
 ----------------------------------------
 

@@ -45,6 +45,10 @@ Once Django is installed and running:
 
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
+   If your static content isn't served from the same protocol/hostname/port
+   as Django itself, you will likely have to set either Django or your
+   static files' value to ``unsafe-none`` instead.
+
 4. Include the exordium URLconf in your project ``urls.py`` like this::
 
      path('exordium/', include('exordium.urls')),
