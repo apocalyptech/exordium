@@ -169,7 +169,7 @@ in order to be executed via WSGI.  If you don't set that properly, you'll
 end up getting some reasonably crazy errors in your logs.
 
 Setting this is pretty easy.  I decided to just set that context for the entire
-``lib/python3.9`` dir, rather than trying to cherry pick:
+``lib/python3.9`` dir, rather than trying to cherry pick::
 
     # semanage fcontext -a -t httpd_sys_script_exec_t '/var/www/django/virtenv/lib/python[0-9\.]+(/.*)?'
     # restorecon -rv /var/www/django/virtenv/lib
