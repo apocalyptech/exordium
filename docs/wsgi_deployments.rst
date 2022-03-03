@@ -6,7 +6,7 @@ Apache/WSGI Deployment Issues
 Locale Issues
 -------------
 
-If deploying via Apache/WSGI, there's a serious problem
+If deploying via Apache/WSGI, in EL7 (CentOS 7, RHEL7) there's a serious problem
 which can occur if any non-ASCII characters are found in your filenames.
 Basically, by default the WSGI process will be launched with a ``$LANG`` of
 ``C``, making ascii the default encoding for various things, including the
@@ -35,6 +35,11 @@ your system's filenames - that's another thing I have yet to investigate.
 
 You can read a bit more on this problem here, FWIW:
 http://blog.dscpl.com.au/2014/09/setting-lang-and-lcall-when-using.html
+
+It's worth noting that this problem was discovered on CentOS 7.  When
+deploying on Rocky 8, I'd kept those ``lang`` and ``locale`` lines in
+my WSGI config without really doublechecking that this was still necessary,
+so it's possible that this might not be actually needed anymore.
 
 Process Count
 -------------

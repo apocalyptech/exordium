@@ -1,7 +1,7 @@
 .. Notes on Apache deployments
 
-CentOS 7 Apache/WSGI Deployment HOWTO
-=====================================
+Rocky/Alma/RHEL/OEL/Centos-Stream 8 Apache/WSGI Deployment HOWTO
+================================================================
 
 Exordium is my first application written in Django, and served as
 my introduction to Django in general.  This page is more for my own
@@ -12,7 +12,7 @@ with Django.
 Requirements
 ------------
 
-I have a CentOS 7 server which runs Apache and MySQL (well, MariaDB)
+I have a Rocky 8 server which runs Apache and MariaDB
 which serves a variety of web-based applications (mostly PHP-based),
 primarily for my own personal use.  Apache is already set up to handle user
 authentication itself, via Apache's native ``Auth*`` configuration
@@ -40,19 +40,24 @@ in Django.
 System Preparation
 ------------------
 
-The default Python provided by CentOS is still 2.7, and I'd wanted to use
-Python 3 for this project.  I used the `IUS Repository <https://ius.io/GettingStarted/>`_
-to give me the version I wanted, and used ``python36u``.  The
-full list of packages I installed, after activating IUS, was:
+EL8 systems offer a variety of Python versions supported out-of-the-box
+using `Modules <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/installing_managing_and_removing_user-space_components/introduction-to-modules_using-appstream>`.
+At time of writing, EL8 systems provide 2.7, 3.6, 3.8, and 3.9.  Those
+versions each have their own `support life cycle <https://access.redhat.com/support/policy/updates/rhel8-app-streams-life-cycle>`
+which is good to be aware of.  I wanted to be on the latest Django (4.0,
+at time of writing), which supports 3.8 at a minium, so choosing 3.9
+was the obvious choice.
 
-- python36u
-- python36u-pip
-- python36u-mod_wsgi
-- python36u-devel
-- mariadb-devel
+The packages that I've got installed are:
 
-The last two packages were required at one point for building the mysql client
-library that Python used - it's possible that those aren't required anymore.
+- python39
+- python39-pip
+- python39-mod_wsgi
+- python39-devel
+- mariadb-connector-c-devel
+
+The last two packages are, I believe, required for pip to build mysql client
+library that I'm using.
 
 Virtenv Creation / Django Installation
 --------------------------------------
@@ -63,12 +68,12 @@ Django code, and Exordium dependencies.  I chose to put that under a
 Apache web root).  My initial steps for this were just::
 
     $ cd /var/www/django
-    $ python3.6 -m venv virtenv
+    $ python3.9 -m venv virtenv
     $ source virtenv/bin/activate
     (virtenv) $ pip install django
     (virtenv) $ pip install mysqlclient
 
-That last step, I believe, is what required the ``python36u-devel`` and ``mariadb-devel``
+That last step, I believe, is what required the ``python39-devel`` and ``mariadb-connector-c-devel``
 packages above, since it probably does some actual compilation.
 
 I decided to name my Django project "hex", and created it like so::
@@ -88,6 +93,13 @@ Here are the relevant values in ``settings.py`` which I'd changed/modified
 (I'd also updated ``TIME_ZONE``, ``DEBUG``, etc, but that's irrelevant)::
 
     ALLOWED_HOSTS = ['servername']
+
+    MIDDLEWARE = [
+        ...
+        # This line must be *underneath* AuthenticationMiddleware
+        'django.contrib.auth.middleware.RemoteUserMiddleware',
+        ...
+    ]
 
     AUTHENTICATION_BACKENDS = [
         'django.contrib.auth.backends.RemoteUserBackend',
@@ -114,9 +126,15 @@ ALLOWED_HOSTS
     I believe I had to set this, rather than leave it blank, to get Django
     to respond properly via Apache, though I don't actually recall.
 
+MIDDLEWARE
+    Adding in the ``RemoteUserMiddleware`` line is necessary for me to
+    make use of Apache's already-configured authentication mechanisms.
+    As noted above, it must be underneath the ``AuthenticationMiddleware``
+    line which is already present.
+
 AUTHENTICATION_BACKENDS
-    This is the section which lets Django use Apache's already-configured
-    authentication mechanisms which other apps are using as well.
+    This is the second component of using Apache's already-configured
+    auth mechanisms.
 
 DATABASES
     Simple MySQL configuration.  The ``OPTIONS`` line lets you avoid some
@@ -143,6 +161,19 @@ At this point, Django functionality can be tested with their test server::
 
     (virtenv) $ python manage.py runserver 0.0.0.0:8080
 
+selinux
+-------
+
+Shared objects inside Django's virtual env need to be of type ``httpd_sys_script_exec_t``
+in order to be executed via WSGI.  If you don't set that properly, you'll
+end up getting some reasonably crazy errors in your logs.
+
+Setting this is pretty easy.  I decided to just set that context for the entire
+``lib/python3.9`` dir, rather than trying to cherry pick:
+
+    # semanage fcontext -a -t httpd_sys_script_exec_t '/var/www/django/virtenv/lib/python[0-9\.]+(/.*)?'
+    # restorecon -rv /var/www/django/virtenv/lib
+
 WSGI Configuration in Apache
 ----------------------------
 
@@ -150,7 +181,7 @@ Next up was configuring WSGI/Django inside Apache, so it's accessible via
 my existing SSL vhost.  The full config section that I used in the relevant
 virtual host, including Django static file configuration, was::
 
-    WSGIDaemonProcess servername socket-timeout=480 processes=1 threads=15 display-name=django python-path=/var/www/django/hex:/var/www/django/virtenv/lib/python3.6/site-packages lang='en_US.UTF-8' locale='en_US.UTF-8'
+    WSGIDaemonProcess servername socket-timeout=480 processes=1 threads=15 display-name=django python-path=/var/www/django/hex:/var/www/django/virtenv/lib/python3.9/site-packages lang='en_US.UTF-8' locale='en_US.UTF-8'
     WSGIProcessGroup servername
     WSGIScriptAlias /hex /var/www/django/hex/hex/wsgi.py
 
@@ -218,7 +249,8 @@ A vhost similar to the following would do the trick::
 With that configuration, you'd end up setting the following in Django's settings:
 
 - **Exordium Library Base Path:** ``/var/audio``
-- **Exordium Media URL:** ``http://servername/music``
+- **Exordium Media URL (for HTML5):** ``http://servername/music``
+- **Exordium Media URL (for m3u):** ``http://servername/music``
 - **Exordium Zip File Generation Path:** ``/var/www/django/zipfiles``
 - **Exordium Zip File Retrieval URL:** ``http://servername/zipfiles``
 
