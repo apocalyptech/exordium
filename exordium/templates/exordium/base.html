@@ -8,12 +8,21 @@
 <link rel="stylesheet" type="text/css" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
 <script type="text/javascript">
 //<!CDATA[
+var openAttempts = 0;
+var maxOpenAttempts = 3;
 var jplayerWindow = null;
 function jplayerAdd(tracks) {
     if (jplayerWindow == null || jplayerWindow.closed) {
-        jplayerOpen();
-        setTimeout(function(){jplayerAdd(tracks);}, 1500);
+        if (openAttempts < maxOpenAttempts) {
+            openAttempts++;
+            jplayerOpen();
+            setTimeout(function(){jplayerAdd(tracks);}, 1500);
+        } else {
+            console.log('Could not open JPlayer after ' + maxOpenAttempts + ' attempts, aborting!');
+            openAttempts = 0;
+        }
     } else {
+        openAttempts = 0;
         jplayerWindow.focus();
         for (var i=0; i < tracks.length; i++) {
             track = tracks[i];
@@ -32,7 +41,7 @@ function jplayerAdd(tracks) {
     }
 }
 function jplayerOpen() {
-    jplayerWindow = window.open('{% static 'exordium/jplayer/popup.html' %}?v2', 'exordiumJPlayer', 'width=650,height=700');
+    jplayerWindow = window.open('{% static 'exordium/jplayer/popup.html' %}?v3', 'exordiumJPlayer', 'width=650,height=700');
 }
 //]]>
 </script>

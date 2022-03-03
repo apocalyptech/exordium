@@ -143,6 +143,11 @@ DATABASES
 STATIC_URL and STATIC_ROOT
     Static file configuration for Django.
 
+You could, also, set ``SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'``
+in here, to ensure that the JPlayer streaming popup works properly, but
+I prefer to make sure that my static file delivery sets its headers
+properly instead.
+
 Once these have been set up, and the necessary database created in MySQL,
 Django's basic database models can be created, and we can make sure that
 Django recognizes an administrative user.  Apache is handling authentication
@@ -186,9 +191,10 @@ virtual host, including Django static file configuration, was::
     WSGIScriptAlias /hex /var/www/django/hex/hex/wsgi.py
 
     Alias /hex/static /var/www/django/hex/static
-    <Directory /var/www/django/hex/static>
+    <Location /hex/static>
         Require all granted
-    </Directory>
+        Header set Cross-Origin-Opener-Policy same-origin
+    </Location>
 
 A few notes on some of those options:
 
@@ -219,6 +225,16 @@ lang and locale
     characters in their filenames.  See :doc:`wsgi_deployments` for a bit more
     information, but regardless: just set these to appropriate values for your
     system.
+
+COOP Header
+    The ``Header`` line in the static file delivery stanza is what I use to
+    ensure that the JPlayer streaming popup works properly.  You'll either
+    have to do something like this (or even set the header more globally
+    on your site), or edit ``settings.py`` to use a different Django default
+    COOP header (as described above).  Note that despite the
+    `Apache documentation <https://httpd.apache.org/docs/current/mod/mod_headers.html#header>`_
+    implying that ``<Location>`` isn't a valid place to put the ``Header``
+    directive, it seems to work just fine for me.
 
 Apache Configuration: mp3/zipfile access
 ----------------------------------------

@@ -90,31 +90,45 @@ running.
          'dynamic_preferences.users.apps.UserPreferencesConfig',
      ]
 
-3. Include the exordium URLconf in your project ``urls.py`` like this::
+3. *(Optional)* For JPlayer streaming to work properly on a "live"
+   install, the `Cross-Origin-Opener-Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy>`_
+   HTTP header has to be set properly.  (This will generally not
+   be an issue when running Django in "test" mode via ``runserver``.)
+   Django defaults to using ``same-origin``, but unless your static
+   content delivery also uses the same header, launching the streaming
+   window will fail.  You can set the header to ``same-origin-allow-popups``
+   inside ``settings.py`` to make this work, or ensure that your static
+   files set the proper header.  (Making sure static files use
+   ``Cross-Origin-Opener-Policy: same-origin`` just like Django will
+   do the trick.)  Setting the Django default can be done with::
+
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
+4. Include the exordium URLconf in your project ``urls.py`` like this::
 
      path('exordium/', include('exordium.urls')),
    
-4. Run ``python manage.py migrate dynamic_preferences`` to create the
+5. Run ``python manage.py migrate dynamic_preferences`` to create the
    Dynamic Preferences models, if this wasn't already configured on your
    Django install.
 
-5. Run ``python manage.py migrate exordium`` to create the Exordium models.
+6. Run ``python manage.py migrate exordium`` to create the Exordium models.
 
-6. Run ``python manage.py loaddata --app exordium initial_data`` to load
+7. Run ``python manage.py loaddata --app exordium initial_data`` to load
    some initial data into the database.  *(This is not actually strictly
    speaking necessary - the app will create the necessary data
    automatically if it's not found.)*
 
-7. If running this from a "real" webserver, ensure that it's configured
+8. If running this from a "real" webserver, ensure that it's configured
    to serve Django static files. Then run ``python manage.py collectstatic``
    to get Exordium's static files in place.
 
-8. Either start the development server with ``python manage.py runserver``
+9. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Also ensure that you have a webserver
    configured to allow access directly to your music library files, and 
    optionally to the zipfile downloads Exordium will create.
    
-9. Visit the administrative area in *Dynamic Preferences > Global preferences*
+10. Visit the administrative area in *Dynamic Preferences > Global preferences*
    and set the values for the following:
 
    - **Exordium Library Base Path**: This is what defines where your music
@@ -145,11 +159,11 @@ running.
    without the "*Exordium Media URL*" options being set properly, though
    with the caveats mentioned above.
 
-10. If Zipfile downloads are configured, a process should be put into place
+11. If Zipfile downloads are configured, a process should be put into place
     to delete the zipfiles after a period of time.  I personally use a cronjob
     to do this::
 
       0 2 * * * /usr/bin/find /var/audio/exordiumzips -type f -name "*.zip" -mtime +2 -print -exec unzip -v {} \; -exec rm {} \;
 
-11. Visit the **Library Upkeep** link from the Exordium main page and click on
+12. Visit the **Library Upkeep** link from the Exordium main page and click on
     "Start Process" to begin the initial import into Exordium!
