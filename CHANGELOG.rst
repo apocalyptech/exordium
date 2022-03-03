@@ -1,13 +1,32 @@
 1.4.0 (unreleased)
 ------------------
 
-**New Features**
+**Configuration Updates Needed**
 
-- Split "Exordium Media URL" preference into two: one for HTML5 streaming,
-  and one for m3u playlists and direct track downloads.
+- To continue using jPlayer HTML5 streaming properly on prod installations
+  where static content is served via an external webserver, some configuration
+  related to `Cross Origin Opener Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy>`_
+  needs to be tweaked, either in your Django site's ``settings.py``, or
+  in the webserver config.  So, one of the following must be done:
 
-  - Migration will automatically carry over the previous "Media URL" value
-    to both new preferences.
+  - Set ``SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'``
+    in ``settings.py``, so that the jPlayer popup doesn't need to supply
+    its own COOP headers.  Or:
+  - Configure your webserver to add ``Cross-Origin-Opener-Policy: same-origin``
+    to static file delivery.
+
+- The "Exordium Media URL" preference has been split into two separate
+  preferences: one for HTML5 streaming, and one for m3u playlists and
+  direct track downloads.
+
+  - If migrations are run prior to accessing the updated site (which
+    is always a good idea anyway), the previous "Media URL" value will
+    be copied over to both new preferences, which should allow the
+    install to continue to work without problems.
+  - If Exordium is visited *prior* to running migrations, the two new
+    prefs will instead inherit their defaults, as if Django was installed
+    for the first time, so they would have to be manually set via the
+    web UI in that case.
 
 **Bugfixes/Tweaks**
 
