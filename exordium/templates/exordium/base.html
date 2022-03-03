@@ -18,7 +18,7 @@ function jplayerAdd(tracks) {
             jplayerOpen();
             setTimeout(function(){jplayerAdd(tracks);}, 1500);
         } else {
-            console.log('Could not open JPlayer after ' + maxOpenAttempts + ' attempts, aborting!');
+            console.log('Could not open jPlayer after ' + maxOpenAttempts + ' attempts, aborting!');
             openAttempts = 0;
         }
     } else {

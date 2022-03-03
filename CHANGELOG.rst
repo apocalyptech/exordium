@@ -41,7 +41,7 @@
 - Link directly to Exordium preferences in Global Preferences, rather than
   just to the main Global Preferences screen.
 - Fixed some edge cases with library updates
-- Prevent JPlayer popup from opening too many popups when
+- Prevent jPlayer popup from opening too many popups when
   `Cross Origin Opener Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy>`_
   problems are encountered.
 

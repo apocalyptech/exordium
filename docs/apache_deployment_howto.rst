@@ -144,7 +144,7 @@ STATIC_URL and STATIC_ROOT
     Static file configuration for Django.
 
 You could, also, set ``SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'``
-in here, to ensure that the JPlayer streaming popup works properly, but
+in here, to ensure that the jPlayer streaming popup works properly, but
 I prefer to make sure that my static file delivery sets its headers
 properly instead.
 
@@ -228,7 +228,7 @@ lang and locale
 
 COOP Header
     The ``Header`` line in the static file delivery stanza is what I use to
-    ensure that the JPlayer streaming popup works properly.  You'll either
+    ensure that the jPlayer streaming popup works properly.  You'll either
     have to do something like this (or even set the header more globally
     on your site), or edit ``settings.py`` to use a different Django default
     COOP header (as described above).  Note that despite the

@@ -90,7 +90,7 @@ running.
          'dynamic_preferences.users.apps.UserPreferencesConfig',
      ]
 
-3. *(Optional)* For JPlayer streaming to work properly on a "live"
+3. *(Optional)* For jPlayer streaming to work properly on a "live"
    install, the `Cross-Origin-Opener-Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy>`_
    HTTP header has to be set properly.  (This will generally not
    be an issue when running Django in "test" mode via ``runserver``.)
