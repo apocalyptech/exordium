@@ -616,6 +616,17 @@ class ExordiumTests(TestCase):
 
         self.assertEqual(os.path.exists(full_filename), False)
 
+    def rename_file(self, filename, new_filename):
+        """
+        Renames the given file in our fake library to a new filename (in
+        the same directory)
+        """
+        full_filename = self.check_library_filename(filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+        full_new_filename = self.check_library_filename(new_filename)
+        shutil.move(full_filename, full_new_filename)
+        self.assertEqual(os.path.exists(full_new_filename), True)
+
     def move_file(self, filename, destination):
         """
         Moves the given file in our fake library to a different destination

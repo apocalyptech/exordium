@@ -18,6 +18,7 @@
   so the labels themselves are clickable instead of just the buttons.
 - Link directly to Exordium preferences in Global Preferences, rather than
   just to the main Global Preferences screen.
+- Fixed some edge cases with library updates
 
 1.3.4 (2021-03-25)
 ------------------

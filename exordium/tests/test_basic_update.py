@@ -265,6 +265,126 @@ class BasicUpdateTests(ExordiumTests):
         self.assertEqual(album.pk, album_pk)
         self.assertEqual(album.year, 2006)
 
+    def test_basic_moved_file_year_update(self):
+        """
+        Test a track update where a file's Year gets updated, but
+        also the file has been renamed.  The album year should
+        still get updated.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006)
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.year, 2006)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.year, 2006)
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', year=2016)
+        self.rename_file('song.mp3', 'song2.mp3')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.year, 2016)
+        self.assertNotEqual(song.pk, song_pk)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.year, 2016)
+
+    def test_basic_moved_file_year_update_two_files(self):
+        """
+        Test a track update where a file's Year gets updated, but
+        also one file has been renamed.  The album year should
+        still get updated.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006)
+        self.add_mp3(filename='song2.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006)
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 2)
+        song = Song.objects.get(filename='song.mp3')
+        song_pk = song.pk
+        self.assertEqual(song.year, 2006)
+        song = Song.objects.get(filename='song2.mp3')
+        song2_pk = song.pk
+        self.assertEqual(song.year, 2006)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.year, 2006)
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', year=2016)
+        self.update_mp3(filename='song2.mp3', year=2016)
+        self.rename_file('song2.mp3', 'song3.mp3')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 2)
+        song = Song.objects.get(filename='song.mp3')
+        self.assertEqual(song.year, 2016)
+        self.assertEqual(song.pk, song_pk)
+        song = Song.objects.get(filename='song3.mp3')
+        self.assertEqual(song.year, 2016)
+        self.assertNotEqual(song.pk, song2_pk)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertEqual(album.pk, album_pk)
+        self.assertEqual(album.year, 2016)
+
+    def test_basic_moved_file_albumname_update(self):
+        """
+        Test a track update where a file's album name gets updated,
+        but also the file has been renamed.  The album name should
+        still get updated.
+        """
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006)
+        self.run_add()
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.album.name, 'Album')
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        album_pk = album.pk
+        self.assertEqual(album.name, 'Album')
+
+        # Now make some changes
+        self.update_mp3(filename='song.mp3', album='New Album')
+        self.rename_file('song.mp3', 'song2.mp3')
+        self.run_update()
+
+        # Now the real verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.album.name, 'New Album')
+        self.assertNotEqual(song.pk, song_pk)
+
+        self.assertEqual(Album.objects.count(), 1)
+        album = Album.objects.get()
+        self.assertNotEqual(album.pk, album_pk)
+        self.assertEqual(album.name, 'New Album')
+
     def test_basic_group_update(self):
         """
         Test a simple track update in which the group name changes

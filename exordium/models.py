@@ -1951,6 +1951,7 @@ class App(object):
             album_artist = {}
             album_tracks = {}
             album_denorm = {}
+            album_year = {}
             miscellaneous_albums = {}
             live_albums = {}
             for filename in files:
@@ -1985,6 +1986,10 @@ class App(object):
                     album_artist[norm_album] = (artist, norm_artist)
                     album_tracks[norm_album] = []
                     album_denorm[norm_album] = album
+                    # Obviously this Year field is gonna get updatd with every song, and if there's
+                    # a mismatch between songs, it'll settle on the last one seen.  Whatever; I'm
+                    # happy with some potential ambiguity there.
+                    album_year[norm_album] = song_obj.year
                     miscellaneous_albums[norm_album] = miscellaneous
                     live_albums[norm_album] = live
                 album_tracks[norm_album].append(song_obj)
@@ -2007,6 +2012,7 @@ class App(object):
             for norm_album in sorted(album_artist.keys()):
                 album = album_denorm[norm_album]
                 (artist, norm_artist) = album_artist[norm_album]
+                year = album_year[norm_album]
                 tracks = album_tracks[norm_album]
                 miscellaneous = miscellaneous_albums[norm_album]
                 live = live_albums[norm_album]
@@ -2067,17 +2073,25 @@ class App(object):
                     except Album.DoesNotExist:
                         album_obj = Album(name=album,
                             artist=artist_obj,
-                            year=tracks[0].year,
+                            year=year,
                             miscellaneous=miscellaneous,
                             live=live)
                         album_obj.save()
                         yield (App.STATUS_INFO, 'Created new album "%s / %s"' % (album_obj.artist, album_obj))
                     updated_albums[album_obj.pk] = True
 
+                # Also associate tracks with the album
                 for track in tracks:
                     if track.album != album_obj:
                         track.album = album_obj
                         yield (App.STATUS_INFO, 'Updated album to "%s / %s" for: %s' % (album_obj.artist, album_obj, track.filename))
+
+                # Also, check the album's `year` field and sync that, if need be.
+                # This can only happen in a few cases which get decided a ways up, but
+                # I don't feel like trying to logic that out.
+                if album_obj.year != year:
+                    album_obj.year = year
+                    album_obj.save()
 
         # Now that we theoretically have song-change albums sorted, loop through
         # again and save out all the song changes.
