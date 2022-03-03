@@ -41,9 +41,9 @@ System Preparation
 ------------------
 
 EL8 systems offer a variety of Python versions supported out-of-the-box
-using `Modules <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/installing_managing_and_removing_user-space_components/introduction-to-modules_using-appstream>`.
+using `Modules <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/installing_managing_and_removing_user-space_components/introduction-to-modules_using-appstream>`_.
 At time of writing, EL8 systems provide 2.7, 3.6, 3.8, and 3.9.  Those
-versions each have their own `support life cycle <https://access.redhat.com/support/policy/updates/rhel8-app-streams-life-cycle>`
+versions each have their own `support life cycle <https://access.redhat.com/support/policy/updates/rhel8-app-streams-life-cycle>`_
 which is good to be aware of.  I wanted to be on the latest Django (4.0,
 at time of writing), which supports 3.8 at a minium, so choosing 3.9
 was the obvious choice.
