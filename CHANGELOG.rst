@@ -44,6 +44,8 @@
 - Prevent jPlayer popup from opening too many popups when
   `Cross Origin Opener Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy>`_
   problems are encountered.
+- Added License text to the generated docs.  Not sure why I never included
+  those originally!
 
 1.3.4 (2021-03-25)
 ------------------

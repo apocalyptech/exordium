@@ -18,6 +18,7 @@
    apache_deployment_howto
    changelog
    todo
+   license
 
 Exordium Music Library
 ======================
@@ -90,6 +91,9 @@ how Django is deployed for my own use.
 
 :doc:`changelog` and :doc:`todo` contain some information about version
 history and future plans.
+
+:doc:`license` contains information about Exordium's license (3-Clause BSD)
+and of a couple of its components (MIT).
 
 Other Information
 -----------------
