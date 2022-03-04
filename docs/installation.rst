@@ -66,7 +66,11 @@ Once Django is installed and running:
 
 8. If running this from a "real" webserver, ensure that it's configured
    to serve Django static files. Then run ``python manage.py collectstatic``
-   to get Exordium's static files in place.
+   to get Exordium's static files in place.  If you didn't want to set
+   ``same-origin-allow-popups`` for Django's COOP header, make sure that
+   your server sends a ``Cross-Origin-Opener-Policy: same-origin`` header
+   along with these static files, or possibly ``unsafe-none`` if the
+   static files protocol/hostname/port doesn't match Django's.
 
 9. Either start the development server with ``python manage.py runserver``
    or bring up your existing server.  Also ensure that you have a webserver
