@@ -18,7 +18,7 @@ Library Configuration
 **Library Configuration** links to a Django administrative backend
 page provided by ``django-dynamic-preferences``, which provides
 access to the only real configuration options available in Exordium.
-There are four variables which can be configured:
+There are five variables which can be configured:
 
 Exordium Library Base Path
     This is the directory on the server where Exordium can find all

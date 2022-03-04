@@ -190,6 +190,12 @@ virtual host, including Django static file configuration, was::
     WSGIProcessGroup servername
     WSGIScriptAlias /hex /var/www/django/hex/hex/wsgi.py
 
+    Alias /music /var/audio
+    <Location /music>
+        Require all granted
+        Options -Indexes
+    </Location>
+
     Alias /hex/static /var/www/django/hex/static
     <Location /hex/static>
         Require all granted
@@ -273,7 +279,7 @@ A vhost similar to the following would do the trick::
 With that configuration, you'd end up setting the following in Django's settings:
 
 - **Exordium Library Base Path:** ``/var/audio``
-- **Exordium Media URL (for HTML5):** ``http://servername/music``
+- **Exordium Media URL (for HTML5):** ``https://servername/music``
 - **Exordium Media URL (for m3u):** ``http://servername/music``
 - **Exordium Zip File Generation Path:** ``/var/www/django/zipfiles``
 - **Exordium Zip File Retrieval URL:** ``http://servername/zipfiles``
