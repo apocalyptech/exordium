@@ -1,5 +1,8 @@
 Things to check before releasing:
 
+    * Doublecheck that the `latest` builds at readthedocs are building
+      properly.  If they're failing and you tag+release, you'll have
+      to do a stupid version bump to get a versioned doc out there.
     * version in exordium/__init__.py
     * Make sure that docs look good and are current
     * Update doc version in docs/conf.py (only applies to self-hosted

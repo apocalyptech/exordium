@@ -1,0 +1,7 @@
+# We don't really need anything special -- I believe these
+# are already installed by default in readthedocs's build
+# pipeline.
+
+sphinx
+sphinx-rtd-theme
+
