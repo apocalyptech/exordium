@@ -1,7 +1,10 @@
-1.4.1 (unreleased)
+1.4.1 (2022-03-04)
 ------------------
 
-*(nothing yet)*
+**Bugfixes/Tweaks**
+
+- Added some custom config for readthedocs.org so that our RTD docs
+  get generated on that end again.
 
 1.4.0 (2022-03-03)
 ------------------
