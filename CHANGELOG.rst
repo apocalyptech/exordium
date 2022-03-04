@@ -1,4 +1,4 @@
-1.4.0 (unreleased)
+1.4.0 (2022-03-03)
 ------------------
 
 **Configuration Updates Needed**
