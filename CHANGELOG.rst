@@ -1,7 +1,12 @@
 1.4.2 (unreleased)
 ------------------
 
-*(nothing yet)*
+**Bugfixes/Tweaks**
+
+- Fixed some more edge cases with file updates (specifically cases
+  where all files in an album get updated, but a subset are also
+  renamed -- only the renamed files were actually getting updated
+  in the database properly).
 
 1.4.1 (2022-03-04)
 ------------------

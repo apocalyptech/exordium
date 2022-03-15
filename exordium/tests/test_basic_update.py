@@ -1,3 +1,4 @@
+import os
 from .base import ExordiumTests
 
 from exordium.models import Artist, Album, Song, App, AlbumArt
@@ -384,6 +385,131 @@ class BasicUpdateTests(ExordiumTests):
         album = Album.objects.get()
         self.assertNotEqual(album.pk, album_pk)
         self.assertEqual(album.name, 'New Album')
+
+    def test_basic_update_to_vbr_single(self):
+        """
+        Testing update when a song changes from CBR to VBR
+        """
+        full_filename = self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, basefile='silence-cbr.mp3')
+        self.run_add()
+        starting_mtime = int(os.stat(full_filename).st_mtime)
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        song_pk = song.pk
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.mode, Song.CBR)
+
+        # Overwrite with VBR version
+        self.add_mp3(filename='song.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, basefile='silence-vbr.mp3')
+        self.bump_mtime(starting_mtime, filename='song.mp3')
+        self.run_update()
+
+        # Our checks
+        self.assertEqual(Song.objects.count(), 1)
+        song = Song.objects.get()
+        self.assertEqual(song.pk, song_pk)
+        self.assertEqual(song.album.name, 'Album')
+        self.assertEqual(song.mode, Song.VBR)
+
+    def test_basic_update_to_vbr_two(self):
+        """
+        Testing update when two songs change from CBR to VBR in an
+        album.
+        """
+        full_filename1 = self.add_mp3(filename='song1.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=1, basefile='silence-cbr.mp3')
+        full_filename2 = self.add_mp3(filename='song2.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=2, basefile='silence-cbr.mp3')
+        self.run_add()
+        starting_mtime1 = int(os.stat(full_filename1).st_mtime)
+        starting_mtime2 = int(os.stat(full_filename2).st_mtime)
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 2)
+        song1 = Song.objects.get(filename='song1.mp3')
+        song1_pk = song1.pk
+        self.assertEqual(song1.album.name, 'Album')
+        self.assertEqual(song1.mode, Song.CBR)
+        song2 = Song.objects.get(filename='song2.mp3')
+        song2_pk = song2.pk
+        self.assertEqual(song2.album.name, 'Album')
+        self.assertEqual(song2.mode, Song.CBR)
+
+        # Overwrite with VBR version
+        self.add_mp3(filename='song1.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=1, basefile='silence-vbr.mp3')
+        self.add_mp3(filename='song2.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=2, basefile='silence-vbr.mp3')
+        self.bump_mtime(starting_mtime1, filename='song1.mp3')
+        self.bump_mtime(starting_mtime2, filename='song2.mp3')
+        self.run_update()
+
+        # Our checks
+        self.assertEqual(Song.objects.count(), 2)
+        song1 = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song1.pk, song1_pk)
+        self.assertEqual(song1.album.name, 'Album')
+        self.assertEqual(song1.mode, Song.VBR)
+        song2 = Song.objects.get(filename='song2.mp3')
+        self.assertEqual(song2.pk, song2_pk)
+        self.assertEqual(song2.album.name, 'Album')
+        self.assertEqual(song2.mode, Song.VBR)
+
+    def test_basic_update_to_vbr_two_with_one_rename(self):
+        """
+        Testing update when two songs change from CBR to VBR in an
+        album, and also one gets renamed.
+        """
+        # As of test writing, this is causing a problem: *only* the Song
+        # record for the renamed file has its record updated -- other
+        # Songs in the album seem to not be updated.
+        full_filename1 = self.add_mp3(filename='song1.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=1, basefile='silence-cbr.mp3')
+        full_filename2 = self.add_mp3(filename='song2a.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=2, basefile='silence-cbr.mp3')
+        self.run_add()
+        starting_mtime1 = int(os.stat(full_filename1).st_mtime)
+        starting_mtime2 = int(os.stat(full_filename2).st_mtime)
+
+        # Quick verification
+        self.assertEqual(Song.objects.count(), 2)
+        song1 = Song.objects.get(filename='song1.mp3')
+        song1_pk = song1.pk
+        self.assertEqual(song1.album.name, 'Album')
+        self.assertEqual(song1.mode, Song.CBR)
+        song2 = Song.objects.get(filename='song2a.mp3')
+        song2_pk = song2.pk
+        self.assertEqual(song2.album.name, 'Album')
+        self.assertEqual(song2.mode, Song.CBR)
+
+        # Overwrite with VBR version
+        self.add_mp3(filename='song1.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=1, basefile='silence-vbr.mp3')
+        self.delete_file('song2a.mp3')
+        self.add_mp3(filename='song2b.mp3', artist='Artist', title='Title',
+            album = 'Album', year=2006, tracknum=2, basefile='silence-vbr.mp3')
+        self.bump_mtime(starting_mtime1, filename='song1.mp3')
+        self.bump_mtime(starting_mtime2, filename='song2b.mp3')
+        self.run_update()
+
+        # Our checks
+        self.assertEqual(Song.objects.count(), 2)
+
+        # Checking song2 first, 'cause I'm working on a bug where song1 is the
+        # one that fails, here.
+        song2 = Song.objects.get(filename='song2b.mp3')
+        self.assertNotEqual(song2.pk, song2_pk)
+        self.assertEqual(song2.album.name, 'Album')
+        self.assertEqual(song2.mode, Song.VBR)
+
+        song1 = Song.objects.get(filename='song1.mp3')
+        self.assertEqual(song1.pk, song1_pk)
+        self.assertEqual(song1.album.name, 'Album')
+        self.assertEqual(song1.mode, Song.VBR)
 
     def test_basic_group_update(self):
         """

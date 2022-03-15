@@ -1788,7 +1788,7 @@ class App(object):
 
         yield (App.STATUS_INFO, 'Starting process...')
 
-        to_update = []
+        to_update = {}
         to_delete = {}
 
         # Just get this out of the way up here.
@@ -1801,7 +1801,7 @@ class App(object):
         # to database Song objects, used below to find out which new files have been
         # added.
         #
-        # Also populates the ``to_update`` list with files whose mtimes have changed, and
+        # Also populates the ``to_update`` dict with files whose mtimes have changed, and
         # the ``to_delete`` dict which at this point is technically only *possible*
         # deletions - our ``digest_dict`` structure will be used to determine below if
         # that deleted file has merely moved
@@ -1812,7 +1812,7 @@ class App(object):
             if song.exists_on_disk():
                 db_paths[song.filename] = song
                 if song.changed_on_disk():
-                    to_update.append(song)
+                    to_update[song.filename] = song
                     yield (App.STATUS_DEBUG, 'Updated file: %s' % (song.filename))
             else:
                 # Just store some data for now
@@ -1867,7 +1867,7 @@ class App(object):
         # Updates next, pull in the new data
         to_update_helpers = {}
         possible_artist_updates = {}
-        for song in to_update:
+        for song in to_update.values():
 
             retlines = []
             song_info = song.update_from_disk(retlines)
@@ -1964,10 +1964,13 @@ class App(object):
                             helper.song_obj)
                 else:
                     try:
-                        song = Song.objects.get(filename=filename)
-                        # This is fudging a bit; these songs would only need a save() later
-                        # if they actually change, but whatever.
-                        to_update.append(song)
+                        if filename in to_update:
+                            song = to_update[filename]
+                        else:
+                            song = Song.objects.get(filename=filename)
+                            # This is fudging a bit; these songs would only need a save() later
+                            # if they actually change, but whatever.
+                            to_update[filename] = song
                         album_tuple = (song.album.miscellaneous, song.album.live,
                                 song.album.name, song.album.normname,
                             song.artist.name, song.artist.normname,
@@ -2095,7 +2098,7 @@ class App(object):
 
         # Now that we theoretically have song-change albums sorted, loop through
         # again and save out all the song changes.
-        for song in to_update:
+        for song in to_update.values():
             song.save()
             yield (App.STATUS_DEBUG, 'Processed file changes for: %s' % (song.filename))
 

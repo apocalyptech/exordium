@@ -121,13 +121,15 @@ class ExordiumTests(TestCase):
 
         Pass in ``False`` for ``apply_tags`` to only use whatever tags happen to
         be present in the source basefile.
+
+        Returns the full filename of the added file.
         """
 
         full_filename = self.add_file(basefile, filename, path=path)
 
         # Finish here if we've been told to.
         if not apply_tags:
-            return
+            return full_filename
 
         # Apply the tags as specified
         tags = ID3()
@@ -160,6 +162,28 @@ class ExordiumTests(TestCase):
 
         # Save to our filename
         tags.save(full_filename)
+
+        # Return
+        return full_filename
+
+    def bump_mtime(self, starting_mtime, filename=None, full_filename=None):
+        """
+        Given the specified `filename` or `full_filename`, ensure that its
+        on-disk mtime is higher than `starting_mtime`.
+        """
+
+        # Figure out the full filename and make sure it exists
+        if full_filename is None:
+            full_filename = self.check_library_filename(filename)
+        self.assertEqual(os.path.exists(full_filename), True)
+
+        # Now grab the new mtime and make sure that it's at least 1sec
+        # higher than `starting_mtime`
+        stat_result = os.stat(full_filename)
+        ending_mtime = int(stat_result.st_mtime)
+        if starting_mtime == ending_mtime:
+            new_mtime = ending_mtime + 1
+            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
 
     def update_mp3(self, filename, artist=None, album=None,
             title=None, tracknum=None, maxtracks=None, year=None,
@@ -228,11 +252,7 @@ class ExordiumTests(TestCase):
         tags.save()
 
         # Check on mtime update and manually fix it if it's not updated
-        stat_result = os.stat(full_filename)
-        ending_mtime = int(stat_result.st_mtime)
-        if starting_mtime == ending_mtime:
-            new_mtime = ending_mtime + 1
-            os.utime(full_filename, times=(stat_result.st_atime, new_mtime))
+        self.bump_mtime(starting_mtime, full_filename=full_filename)
 
     def add_ogg(self, path='', filename='file.ogg', artist='', album='',
             title='', tracknum=None, year=None, group='', conductor='', composer='',
