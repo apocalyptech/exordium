@@ -7,6 +7,8 @@
   where all files in an album get updated, but a subset are also
   renamed -- only the renamed files were actually getting updated
   in the database properly).
+- Expanded the internal "normalization" character set to handle some
+  more cases, namely super-and-subscript numerals.
 
 1.4.1 (2022-03-04)
 ------------------
