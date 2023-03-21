@@ -1,7 +1,9 @@
-1.4.3 (unreleased)
+1.4.3 (2023-03-21)
 ------------------
 
-*(nothing yet)*
+**Bugfixes/Tweaks**
+
+- Added an extra normalization char (ō / Ō)
 
 1.4.2 (2022-03-15)
 ------------------

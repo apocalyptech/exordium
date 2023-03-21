@@ -1279,11 +1279,11 @@ class App(object):
     livere = re.compile('^....[-\._]..[-\._].. - live', re.IGNORECASE)
 
     norm_translation = str.maketrans(
-            '⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉äáàâãåάαëéèêẽηήεέïíìîĩiίιöóòôõøοόώωüúùûũůύÿýỳŷỹβçðδğφğγřκλμνπřρşσς$τξχυζ“”‘’',
-            '01234567890123456789aaaaaaaaeeeeeeeeeiiiiiiiioooooooooouuuuuuuyyyyybcddgfggrklmnprrsssstxxyz""\'\'')
+            '⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉äáàâãåάαëéèêẽηήεέïíìîĩiίιōöóòôõøοόώωüúùûũůύÿýỳŷỹβçðδğφğγřκλμνπřρşσς$τξχυζ“”‘’',
+            '01234567890123456789aaaaaaaaeeeeeeeeeiiiiiiiiooooooooooouuuuuuuyyyyybcddgfggrklmnprrsssstxxyz""\'\'')
     norm_translation_filename = str.maketrans(
-            '⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉äÄáÁàÀâÂãÃåÅάΆαΑëËéÉèÈêÊẽẼηΗήΉεΕέΈïÏíÍìÌîÎĩĨiİίΊιΙöÖóÓòÒôÔõÕøØοΟόΌώΏωΩüÜúÚùÙûÛũŨůŮύΎÿŸýÝỳỲŷŶỹỸβΒçÇðÐδΔğφΦğĞγΓřκΚλΛμΜνΝπΠřŘρΡşŞσΣς$τΤξΞχΧυΥζΖ',
-            '01234567890123456789aAaAaAaAaAaAaAaAeEeEeEeEeEeEeEeEeEiIiIiIiIiIiIiIiIoOoOoOoOoOoOoOoOoOoOuuuUuUuUuUuUuUyYyYyYyYyYbBcCdDdDgfFgGgGrkKlLmMnNpPrRrRsSsSsstTxXxXyYzZ')
+            '⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉äÄáÁàÀâÂãÃåÅάΆαΑëËéÉèÈêÊẽẼηΗήΉεΕέΈïÏíÍìÌîÎĩĨiİίΊιΙōŌöÖóÓòÒôÔõÕøØοΟόΌώΏωΩüÜúÚùÙûÛũŨůŮύΎÿŸýÝỳỲŷŶỹỸβΒçÇðÐδΔğφΦğĞγΓřκΚλΛμΜνΝπΠřŘρΡşŞσΣς$τΤξΞχΧυΥζΖ',
+            '01234567890123456789aAaAaAaAaAaAaAaAeEeEeEeEeEeEeEeEeEiIiIiIiIiIiIiIiIoOoOoOoOoOoOoOoOoOoOoOuuuUuUuUuUuUuUyYyYyYyYyYbBcCdDdDgfFgGgGrkKlLmMnNpPrRrRsSsSsstTxXxXyYzZ')
 
     cover_extensions = ['.png', '.jpg', '.gif']
     image_format_to_mime = {
