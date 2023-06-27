@@ -73,7 +73,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
@@ -99,7 +99,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
@@ -125,7 +125,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
@@ -156,7 +156,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
@@ -181,7 +181,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_results'].data, [album])
         self.assertContains(response, 'Albums')
         self.assertContains(response, '%s<' % (album))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
@@ -207,7 +207,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['song_results'].data, [song])
         self.assertContains(response, 'Songs')
         self.assertContains(response, '%s<' % (song.title))
         self.assertContains(response, reverse('exordium:album', args=(song.album.pk,)))
@@ -235,20 +235,20 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (artist))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
         self.assertContains(response, '1 artist')
 
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_results'].data, [album])
         self.assertContains(response, 'Albums')
         self.assertContains(response, '%s<' % (album))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
         self.assertContains(response, '1 album')
 
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['song_results'].data, [song])
         self.assertContains(response, 'Songs')
         self.assertContains(response, '%s<' % (song.title))
         self.assertContains(response, reverse('exordium:album', args=(song.album.pk,)))
@@ -280,20 +280,20 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(artist)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, [artist])
         self.assertContains(response, 'Artists')
         self.assertContains(response, '%s<' % (html.escape(artist)))
         self.assertContains(response, reverse('exordium:artist', args=(artist.normname,)))
         self.assertContains(response, '1 artist')
 
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_results'].data, [album])
         self.assertContains(response, 'Albums')
         self.assertContains(response, '%s<' % (html.escape(album)))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
         self.assertContains(response, '1 album')
 
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['song_results'].data, [song])
         self.assertContains(response, 'Songs')
         self.assertContains(response, '%s<' % (html.escape(song.title)))
         self.assertContains(response, reverse('exordium:album', args=(song.album.pk,)))
@@ -345,7 +345,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_results'].data, [album])
         self.assertContains(response, 'Albums')
         self.assertContains(response, '%s<' % (album))
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
@@ -381,7 +381,7 @@ class SearchViewTests(ExordiumTests):
         self.assertEqual(response.context['found_results'], True)
         self.assertNotContains(response, 'No results found!')
 
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['song_results'].data, [song])
         self.assertContains(response, 'Songs')
         self.assertContains(response, '%s<' % (song.title))
         self.assertContains(response, reverse('exordium:album', args=(song.album.pk,)))
@@ -561,7 +561,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'artist'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['artist_results'].data), 3)
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(ar) for ar in artists])
+        self.assertQuerysetEqual(response.context['artist_results'].data, artists)
         self.assertContains(response, 'artist-sort=-name')
         self.assertContains(response, '3 artists')
 
@@ -569,7 +569,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'artist', 'artist-sort': '-name'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['artist_results'].data), 3)
-        self.assertQuerysetEqual(response.context['artist_results'].data, [repr(ar) for ar in reversed(artists)])
+        self.assertQuerysetEqual(response.context['artist_results'].data, list(reversed(artists)))
         self.assertContains(response, 'artist-sort=name')
         self.assertContains(response, '3 artists')
 
@@ -595,7 +595,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'album'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['album_results'].data), 3)
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in albums])
+        self.assertQuerysetEqual(response.context['album_results'].data, albums)
         self.assertContains(response, 'album-sort=year')
         self.assertContains(response, '3 albums')
 
@@ -603,7 +603,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'album', 'album-sort': 'year'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['album_results'].data), 3)
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in reversed(albums)])
+        self.assertQuerysetEqual(response.context['album_results'].data, list(reversed(albums)))
         self.assertContains(response, 'album-sort=-year')
         self.assertContains(response, '3 albums')
 
@@ -628,7 +628,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'album', 'album-sort': 'year'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['album_results'].data), 2)
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in albums])
+        self.assertQuerysetEqual(response.context['album_results'].data, albums)
         self.assertContains(response, 'album-sort=-year')
         self.assertContains(response, '2 albums')
 
@@ -636,7 +636,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'album', 'album-sort': '-year'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['album_results'].data), 2)
-        self.assertQuerysetEqual(response.context['album_results'].data, [repr(al) for al in reversed(albums)])
+        self.assertQuerysetEqual(response.context['album_results'].data, list(reversed(albums)))
         self.assertContains(response, 'album-sort=year')
         self.assertContains(response, '2 albums')
 
@@ -661,7 +661,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'title'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['song_results'].data), 3)
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song) for song in songs])
+        self.assertQuerysetEqual(response.context['song_results'].data, songs)
         self.assertContains(response, 'song-sort=album')
         self.assertContains(response, '3 songs')
 
@@ -669,7 +669,7 @@ class SearchViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:search'), {'q': 'title', 'song-sort': 'album'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['song_results'].data), 3)
-        self.assertQuerysetEqual(response.context['song_results'].data, [repr(song) for song in reversed(songs)])
+        self.assertQuerysetEqual(response.context['song_results'].data, list(reversed(songs)))
         self.assertContains(response, 'song-sort=-album')
         self.assertContains(response, '3 songs')
 

@@ -75,7 +75,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Test Album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -97,7 +97,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Test Album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -126,7 +126,7 @@ class IndexViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['album_list'].data,
-            [repr(al) for al in [album_1, album_2, album_3, album_4]])
+            [album_1, album_2, album_3, album_4])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, 'Album 2')
         self.assertContains(response, 'Album 3')
@@ -150,7 +150,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -179,7 +179,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -206,7 +206,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -238,7 +238,7 @@ class IndexViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['album_list'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['album_list'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -311,7 +311,7 @@ class IndexViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:index'))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['album_list'].data,
-            [repr(al) for al in [album_1, album_2]])
+            [album_1, album_2])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, 'Album 2')
         self.assertContains(response, '"?sort=year"')
@@ -320,7 +320,7 @@ class IndexViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:index'), {'sort': 'year'})
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['album_list'].data,
-            [repr(al) for al in [album_2, album_1]])
+            [album_2, album_1])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, 'Album 2')
         self.assertContains(response, '"?sort=-year"')

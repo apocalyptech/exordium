@@ -17,7 +17,7 @@ class BrowseArtistViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_artist'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(various)])
+        self.assertQuerysetEqual(response.context['table'].data, [various])
         self.assertContains(response, '1 artist')
         self.assertContains(response, reverse('exordium:artist', args=(various.normname,)))
 
@@ -34,7 +34,7 @@ class BrowseArtistViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_artist'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(artist), repr(various)])
+        self.assertQuerysetEqual(response.context['table'].data, [artist, various])
         self.assertContains(response, '2 artists')
         for a in [various, artist]:
             self.assertContains(response, reverse('exordium:artist', args=(a.normname,)))
@@ -67,8 +67,7 @@ class BrowseArtistViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_artist'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data,
-            [repr(artist) for artist in artist_objs])
+        self.assertQuerysetEqual(response.context['table'].data, artist_objs)
         self.assertContains(response, '11 artists')
         for artist in artist_objs:
             self.assertContains(response, reverse('exordium:artist',
@@ -94,8 +93,7 @@ class BrowseArtistViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_artist'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data,
-            [repr(artist) for artist in artists])
+        self.assertQuerysetEqual(response.context['table'].data, artists)
         self.assertContains(response, '5 artists')
         for artist in artists:
             self.assertContains(response, str(artist))
@@ -162,13 +160,13 @@ class BrowseArtistViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:browse_artist'))
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['table'].data,
-            [repr(artist_a), repr(artist_b), repr(various)])
+            [artist_a, artist_b, various])
         self.assertContains(response, "?sort=-name")
 
         # Now sort by name descending
         response = self.client.get(reverse('exordium:browse_artist'), {'sort': '-name'})
         self.assertEqual(response.status_code, 200)
         self.assertQuerysetEqual(response.context['table'].data,
-            [repr(various), repr(artist_b), repr(artist_a)])
+            [various, artist_b, artist_a])
         self.assertContains(response, "?sort=name")
 

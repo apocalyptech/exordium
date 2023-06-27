@@ -34,7 +34,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
         self.assertEqual(response.context['groups'], [])
         self.assertEqual(response.context['composers'], [])
         self.assertEqual(response.context['conductors'], [])
@@ -82,7 +82,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
         self.assertEqual(response.context['groups'], [])
         self.assertEqual(response.context['composers'], [])
         self.assertEqual(response.context['conductors'], [])
@@ -176,10 +176,10 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
-        self.assertQuerysetEqual(response.context['groups'], [repr(group)])
-        self.assertQuerysetEqual(response.context['composers'], [repr(composer)])
-        self.assertQuerysetEqual(response.context['conductors'], [repr(conductor)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
+        self.assertQuerysetEqual(response.context['groups'], [group])
+        self.assertQuerysetEqual(response.context['composers'], [composer])
+        self.assertQuerysetEqual(response.context['conductors'], [conductor])
         self.assertEqual(response.context['have_empty_group'], False)
         self.assertEqual(response.context['have_empty_composer'], False)
         self.assertEqual(response.context['have_empty_conductor'], False)
@@ -241,10 +241,10 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
-        self.assertQuerysetEqual(response.context['groups'], [repr(group) for group in groups])
-        self.assertQuerysetEqual(response.context['composers'], [repr(composer) for composer in composers])
-        self.assertQuerysetEqual(response.context['conductors'], [repr(conductor) for conductor in conductors])
+        self.assertQuerysetEqual(response.context['songs'].data, songs)
+        self.assertQuerysetEqual(response.context['groups'], groups)
+        self.assertQuerysetEqual(response.context['composers'], composers)
+        self.assertQuerysetEqual(response.context['conductors'], conductors)
         self.assertEqual(response.context['have_empty_group'], False)
         self.assertEqual(response.context['have_empty_composer'], False)
         self.assertEqual(response.context['have_empty_conductor'], False)
@@ -310,10 +310,10 @@ class AlbumViewTests(ExordiumUserTests):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Various')
         self.assertContains(response, reverse('exordium:artist', args=(various.normname,)))
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
-        self.assertQuerysetEqual(response.context['groups'], [repr(group) for group in groups])
-        self.assertQuerysetEqual(response.context['composers'], [repr(composer) for composer in composers])
-        self.assertQuerysetEqual(response.context['conductors'], [repr(conductor) for conductor in conductors])
+        self.assertQuerysetEqual(response.context['songs'].data, songs)
+        self.assertQuerysetEqual(response.context['groups'], groups)
+        self.assertQuerysetEqual(response.context['composers'], composers)
+        self.assertQuerysetEqual(response.context['conductors'], conductors)
         self.assertEqual(response.context['have_empty_group'], False)
         self.assertEqual(response.context['have_empty_composer'], False)
         self.assertEqual(response.context['have_empty_conductor'], False)
@@ -366,10 +366,10 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
-        self.assertQuerysetEqual(response.context['groups'], [repr(group)])
-        self.assertQuerysetEqual(response.context['composers'], [repr(composer)])
-        self.assertQuerysetEqual(response.context['conductors'], [repr(conductor)])
+        self.assertQuerysetEqual(response.context['songs'].data, songs)
+        self.assertQuerysetEqual(response.context['groups'], [group])
+        self.assertQuerysetEqual(response.context['composers'], [composer])
+        self.assertQuerysetEqual(response.context['conductors'], [conductor])
         self.assertEqual(response.context['have_empty_group'], True)
         self.assertEqual(response.context['have_empty_composer'], True)
         self.assertEqual(response.context['have_empty_conductor'], True)
@@ -408,7 +408,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
         self.assertContains(response, song.title)
         self.assertNotContains(response, '"?sort=tracknum"')
         self.assertContains(response, '1 item')
@@ -436,7 +436,7 @@ class AlbumViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['songs'].data), 3)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
+        self.assertQuerysetEqual(response.context['songs'].data, songs)
         self.assertContains(response, '"?sort=title"')
         self.assertContains(response, '3 items')
 
@@ -444,7 +444,7 @@ class AlbumViewTests(ExordiumUserTests):
         response = self.client.get(reverse('exordium:album', args=(album.pk,)), {'sort': 'title'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['songs'].data), 3)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in reversed(songs)])
+        self.assertQuerysetEqual(response.context['songs'].data, list(reversed(songs)))
         self.assertContains(response, '"?sort=-title"')
         self.assertContains(response, '3 items')
 
@@ -524,7 +524,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
         self.assertContains(response, 'playbutton')
         self.assertContains(response, 'Stream this track')
 
@@ -545,7 +545,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song)])
+        self.assertQuerysetEqual(response.context['songs'].data, [song])
         self.assertNotContains(response, 'playbutton')
         self.assertNotContains(response, 'Stream this track')
         self.assertContains(response, 'Track cannot be streamed')
@@ -556,9 +556,13 @@ class AlbumViewTests(ExordiumUserTests):
         for an album with one streamable and one non-streamable track.
         """
         self.add_mp3(artist='Artist', title='Title 1',
-            album='Album', filename='song1.mp3')
+            album='Album',
+            tracknum=1,
+            filename='song1.mp3')
         self.add_opus(artist='Artist', title='Title 2',
-            album='Album', filename='song2.opus')
+            album='Album',
+            tracknum=2,
+            filename='song2.opus')
         self.run_add()
 
         self.assertEqual(Album.objects.count(), 1)
@@ -572,7 +576,7 @@ class AlbumViewTests(ExordiumUserTests):
 
         response = self.client.get(reverse('exordium:album', args=(album.pk,)))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['songs'].data, [repr(song) for song in songs])
+        self.assertQuerysetEqual(response.context['songs'].data, songs)
         self.assertContains(response, 'playbutton')
         self.assertContains(response, 'Stream this track')
         self.assertContains(response, 'Track cannot be streamed')

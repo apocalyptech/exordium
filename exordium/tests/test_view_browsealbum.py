@@ -33,7 +33,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, '1 album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -53,7 +53,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, '1 album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -81,7 +81,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertQuerysetEqual(response.context['table'].data, albums)
         self.assertContains(response, '3 albums')
         for al in albums:
             self.assertContains(response, reverse('exordium:album', args=(al.pk,)))
@@ -123,7 +123,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertQuerysetEqual(response.context['table'].data, albums)
         self.assertContains(response, '7 albums')
         for al in albums:
             self.assertContains(response, reverse('exordium:album', args=(al.pk,)))
@@ -146,7 +146,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -175,7 +175,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -202,7 +202,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, 'Album')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -234,7 +234,7 @@ class BrowseAlbumViewTests(ExordiumTests):
 
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(album)])
+        self.assertQuerysetEqual(response.context['table'].data, [album])
         self.assertContains(response, 'Album 1')
         self.assertContains(response, reverse('exordium:album', args=(album.pk,)))
         self.assertContains(response, reverse('exordium:artist', args=(album.artist.normname,)))
@@ -307,13 +307,13 @@ class BrowseAlbumViewTests(ExordiumTests):
         response = self.client.get(reverse('exordium:browse_album'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['table'].data), 3)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in albums])
+        self.assertQuerysetEqual(response.context['table'].data, albums)
         self.assertContains(response, '"?sort=artist"')
 
         # test the sorting button
         response = self.client.get(reverse('exordium:browse_album'), {'sort': 'artist'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['table'].data), 3)
-        self.assertQuerysetEqual(response.context['table'].data, [repr(al) for al in reversed(albums)])
+        self.assertQuerysetEqual(response.context['table'].data, list(reversed(albums)))
         self.assertContains(response, '"?sort=-artist"')
 
